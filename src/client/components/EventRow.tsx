@@ -1,7 +1,7 @@
-import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle } from 'lucide-react';
+import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle, type LucideIcon } from 'lucide-react';
 import type { ActionKind, EventRecord } from '../lib/types';
 
-const KIND_ICON: Record<ActionKind, React.ComponentType<any>> = {
+const KIND_ICON: Record<ActionKind, LucideIcon> = {
   remove: Trash2,
   approve: Check,
   lock: Lock,
