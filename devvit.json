@@ -1,0 +1,78 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "context-mod-devvit",
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "permissions": {
+    "reddit": { "enable": true, "scope": "moderator" },
+    "redis": { "enable": true },
+    "http": {
+      "enable": true,
+      "domains": [
+        "api.moderatehatespeech.com",
+        "i.redd.it",
+        "preview.redd.it",
+        "external-preview.redd.it",
+        "external-i.redd.it"
+      ]
+    }
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/app-install",
+    "onAppUpgrade": "/internal/triggers/app-upgrade",
+    "onPostSubmit": "/internal/triggers/post-submit",
+    "onCommentSubmit": "/internal/triggers/comment-submit"
+  },
+  "scheduler": {
+    "tasks": {
+      "refresh-config": {
+        "endpoint": "/internal/cron/refresh-config",
+        "cron": "*/5 * * * *"
+      },
+      "stats-rollup": {
+        "endpoint": "/internal/cron/stats-rollup",
+        "cron": "0 * * * *"
+      },
+      "image-hash-worker": {
+        "endpoint": "/internal/cron/image-hash-worker"
+      },
+      "delayed-eval": {
+        "endpoint": "/internal/cron/delayed-eval"
+      }
+    }
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "ContextMod: Reload config from wiki",
+        "description": "Re-read the rule config from your sub's wiki page",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/reload-config"
+      },
+      {
+        "label": "ContextMod: View recent actions",
+        "description": "See the last 50 mod actions taken by ContextMod",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/recent-actions"
+      },
+      {
+        "label": "ContextMod: Test rules on this item",
+        "description": "Dry-run rules against this post or comment",
+        "location": ["post", "comment"],
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/test-rules"
+      }
+    ]
+  },
+  "forms": {
+    "testRules": "/internal/form/test-rules-submit"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  }
+}
