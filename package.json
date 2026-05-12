@@ -3,7 +3,7 @@
   "name": "cm-devvit",
   "version": "0.0.2",
   "description": "Devvit Web port of FoxxMD's ContextMod rule-engine moderation bot",
-  "license": "BSD-3-Clause",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "vite build",
