@@ -36,7 +36,7 @@ export function Sparkline({ data, height = 36, width = 280 }: { data?: number[];
         strokeLinejoin="round"
         strokeLinecap="round"
         className="cm-draw"
-        style={{ ['--line-len' as any]: lineLen }}
+        style={{ '--line-len': lineLen } as React.CSSProperties}
       />
     </svg>
   );
