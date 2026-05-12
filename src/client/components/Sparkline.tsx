@@ -1,5 +1,5 @@
-export function Sparkline({ data, height = 36, width = 280 }: { data: number[]; height?: number; width?: number }) {
-  if (!data.length) return null;
+export function Sparkline({ data, height = 36, width = 280 }: { data?: number[]; height?: number; width?: number }) {
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
   const max = Math.max(...data, 1);
   const step = width / (data.length - 1 || 1);
   const points = data.map((v, i) => `${i * step},${height - (v / max) * (height - 4) - 2}`);

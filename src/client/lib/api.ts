@@ -16,7 +16,10 @@ export async function fetchStats(): Promise<StatsRollup | null> {
     const res = await fetch('/api/stats');
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.counters ?? null;
+    const c = data?.counters;
+    // Treat empty/partial response as "no stats yet" so demo fallback kicks in
+    if (!c || typeof c !== 'object' || !Array.isArray(c.hourlyActions24h)) return null;
+    return c as StatsRollup;
   } catch {
     return null;
   }
