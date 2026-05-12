@@ -27,7 +27,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.4 | Privacy Policy + ToS drafted | `policies/` | **Stephen** | ✅ | 0.3 | GH Pages host pending repo push |
 | 0.5 | Mop template removed, ContextMod route stubs | `src/routes/*` | **Stephen** | ✅ | 0.2 | All devvit.json paths wired, no 404s |
 | 0.6 | Dual idempotency + cron lock helpers | `src/lib/idem.ts` | **Stephen** | ✅ | 0.5 | firstSeen + reserveAction + acquireLock + FNV-1a |
-| 0.7 | First playtest + domain approval submit | terminal | **Stephen** | 🟡 May 12 4pm | 0.5, 0.8 | Run `npx devvit playtest <sub>`. Triggers Reddit domain approval review. |
+| 0.7 | First playtest + domain approval submit | terminal | **Stephen** | ✅ | 0.5, 0.8 | Run `npx devvit playtest <sub>`. Triggers Reddit domain approval review. |
 | 0.8 | Create private test sub | reddit.com | **Stephen** | ✅ | — | <200 members per hackathon rule. e.g., r/cowsufficient_cm_test |
 | 0.9 | GitHub repo create + push | github.com | **Stephen** | ✅ | 0.1 | Private; flip public before submission. Needs explicit Bash permission. |
 | 0.10 | Image-decode + blockhash spike | `experiments/image-spike/` | **Vinh** | ⬜ | 0.8 | ⚠️ GO/NO-GO gate for Phase 4 image hashing. Day 0–2 max. → Vinh |
