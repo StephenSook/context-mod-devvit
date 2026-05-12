@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# CLI helper for PLAN.md — atomic status updates without manual table editing.
+# Usage: ./scripts/plan <command> <task#> [options]
+
+set -e
+
+PLAN="PLAN.md"
+[ ! -f "$PLAN" ] && echo "No PLAN.md found in $(pwd)." && exit 1
+
+COMMITTER=$(git config user.name)
+[ -z "$COMMITTER" ] && echo "Set git user.name first: git config user.name 'Your Name'" && exit 1
+
+TIMESTAMP=$(date "+%b %d %-I%p" | tr 'A-Z' 'a-z' | sed 's/^./\U&/')  # e.g., "May 12 4pm"
+
+cmd="$1"
+task="$2"
+extra="$3"
+
+usage() {
+  echo "Usage: ./scripts/plan <command> <task#> [arg]"
+  echo ""
+  echo "Commands:"
+  echo "  claim   2.1            — mark task in-progress (🟡) + timestamp + commit"
+  echo "  done    2.1            — mark task complete (✅) + commit"
+  echo "  block   2.1 \"reason\"   — mark task blocked (⛔) + commit"
+  echo "  handoff 2.1 Vinh       — hand off to teammate + commit"
+  echo "  ls [--active|--mine|--blocked]  — list tasks"
+  echo ""
+  echo "Examples:"
+  echo "  ./scripts/plan claim 1.4"
+  echo "  ./scripts/plan block 2.3 \"waiting on idem helper API\""
+  echo "  ./scripts/plan ls --mine"
+}
+
+case "$cmd" in
+  claim)
+    [ -z "$task" ] && usage && exit 1
+    # Flip status emoji ⬜ → 🟡 on the row that starts with "| $task |"
+    sed -i.bak "/^| $task |/s/| ⬜ |/| 🟡 $TIMESTAMP |/" "$PLAN" && rm "$PLAN.bak"
+    git add "$PLAN"
+    git commit -m "status: $task 🟡 claimed by $COMMITTER" --no-verify
+    echo "✅ Claimed $task — push when ready"
+    ;;
+  done)
+    [ -z "$task" ] && usage && exit 1
+    sed -i.bak "/^| $task |/s/| 🟡[^|]*|/| ✅ |/" "$PLAN" && rm "$PLAN.bak"
+    git add "$PLAN"
+    git commit -m "status: $task ✅ completed by $COMMITTER" --no-verify
+    echo "✅ Done $task — push when ready"
+    ;;
+  block)
+    [ -z "$task" ] || [ -z "$extra" ] && usage && exit 1
+    sed -i.bak "/^| $task |/s/| 🟡[^|]*|/| ⛔ |/" "$PLAN" && rm "$PLAN.bak"
+    git add "$PLAN"
+    git commit -m "status: $task ⛔ blocked — $extra" --no-verify
+    echo "⛔ Blocked $task: $extra — push + ping teammate"
+    ;;
+  handoff)
+    [ -z "$task" ] || [ -z "$extra" ] && usage && exit 1
+    # Append "→ Name TIMESTAMP" to the Notes column (last cell before final |)
+    sed -i.bak "/^| $task |/s/|\([^|]*\)|$/| \1 → $extra $TIMESTAMP |/" "$PLAN" && rm "$PLAN.bak"
+    git add "$PLAN"
+    git commit -m "status: $task → $extra" --no-verify
+    echo "➡️  Handed off $task to $extra — push + ping"
+    ;;
+  ls)
+    filter="$task"
+    case "$filter" in
+      --active)  grep '🟡' "$PLAN" ;;
+      --mine)    grep '🟡' "$PLAN" | grep -F "$COMMITTER" ;;
+      --blocked) grep '⛔' "$PLAN" ;;
+      --done)    grep '✅' "$PLAN" ;;
+      *)         grep -E '⬜|🟡|⛔|✅|✂️' "$PLAN" | head -40 ;;
+    esac
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac
