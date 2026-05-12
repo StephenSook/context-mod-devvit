@@ -1,6 +1,8 @@
 export function Sparkline({ data, height = 36, width = 280 }: { data?: number[]; height?: number; width?: number }) {
   if (!data || !Array.isArray(data) || data.length === 0) return null;
-  const max = Math.max(...data, 1);
+  // Use reduce instead of Math.max(...data) — spread on large arrays can
+  // hit "Maximum call stack size exceeded" (per Codex review HIGH).
+  const max = data.reduce((m, v) => (Number.isFinite(v) && v > m ? v : m), 1);
   const step = width / (data.length - 1 || 1);
   const points = data.map((v, i) => `${i * step},${height - (v / max) * (height - 4) - 2}`);
   const path = `M ${points[0]} L ${points.slice(1).join(' L ')}`;
