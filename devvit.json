@@ -6,7 +6,10 @@
     "entry": "index.cjs"
   },
   "permissions": {
-    "reddit": { "enable": true, "scope": "moderator" },
+    "reddit": {
+      "enable": true,
+      "scope": "moderator"
+    },
     "redis": true,
     "http": {
       "enable": true,
@@ -62,7 +65,10 @@
       {
         "label": "ContextMod: Test rules on this item",
         "description": "Dry-run rules against this post or comment",
-        "location": ["post", "comment"],
+        "location": [
+          "post",
+          "comment"
+        ],
         "forUserType": "moderator",
         "endpoint": "/internal/menu/test-rules"
       }

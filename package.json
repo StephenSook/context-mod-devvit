@@ -1,9 +1,9 @@
 {
   "private": true,
-  "name": "context-mod-devvit",
-  "version": "0.0.1",
+  "name": "cm-devvit",
+  "version": "0.0.0",
   "description": "Devvit Web port of FoxxMD's ContextMod rule-engine moderation bot",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "type": "module",
   "scripts": {
     "build": "vite build",
