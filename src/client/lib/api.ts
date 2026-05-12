@@ -25,7 +25,23 @@ export async function fetchStats(): Promise<StatsRollup | null> {
   }
 }
 
-// Demo fixture for empty-state preview (used when API returns nothing — Phase 0-1)
+/**
+ * Genuine zero-state stats. Used when the API is reachable + empty (no demo flag).
+ * Replaces the fabricated DEMO_STATS as the default empty-state shape so production
+ * never shows invented mod-action counts (per Codex review M6).
+ */
+export const ZERO_STATS: StatsRollup = {
+  actionsToday: 0,
+  timeSavedMin: 0,
+  activeRules: 0,
+  topRule: '—',
+  hourlyActions24h: new Array(24).fill(0),
+};
+
+/**
+ * Demo fixtures. Opt-in only via ?demo=1 in URL — never auto-shown in production.
+ * Helps capture screenshots + verify dashboard chrome before Phase 2 backend lands.
+ */
 export const DEMO_EVENTS: EventRecord[] = [
   { ts: Date.now() - 1000 * 60 * 2, activityId: 't3_demo_a', runName: 'main', checkName: 'spam-filter', triggered: true, actions: [{ kind: 'remove', ok: true }, { kind: 'comment', ok: true }] },
   { ts: Date.now() - 1000 * 60 * 7, activityId: 't1_demo_b', runName: 'main', checkName: 'age-gate', triggered: true, actions: [{ kind: 'remove', ok: true }] },

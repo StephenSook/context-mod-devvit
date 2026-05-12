@@ -4,10 +4,16 @@ import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
 import { EventRow } from './components/EventRow';
 import { ActionBar } from './components/ActionBar';
-import { fetchRecent, fetchStats, DEMO_EVENTS, DEMO_STATS } from './lib/api';
+import { fetchRecent, fetchStats, DEMO_EVENTS, DEMO_STATS, ZERO_STATS } from './lib/api';
 import type { EventRecord, StatsRollup } from './lib/types';
 
 const POLL_MS = 10_000;
+
+// Demo data is OPT-IN only via ?demo=1 — production never shows fabricated mod
+// actions (per Codex review M6: invented data risks Devvit app review rejection).
+const DEMO_ENABLED =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('demo') === '1';
 
 export default function App() {
   const [events, setEvents] = useState<EventRecord[]>([]);
@@ -18,12 +24,20 @@ export default function App() {
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecent(), fetchStats()]);
     if (recent.length === 0 && !statsData) {
-      setEvents(DEMO_EVENTS);
-      setStats(DEMO_STATS);
-      setUsingDemo(true);
+      if (DEMO_ENABLED) {
+        setEvents(DEMO_EVENTS);
+        setStats(DEMO_STATS);
+        setUsingDemo(true);
+      } else {
+        // Genuine empty state — zero stats + empty event list. Dashboard chrome
+        // still renders so first-install mods see the layout they'll get later.
+        setEvents([]);
+        setStats(ZERO_STATS);
+        setUsingDemo(false);
+      }
     } else {
       setEvents(recent);
-      setStats(statsData ?? DEMO_STATS);
+      setStats(statsData ?? ZERO_STATS);
       setUsingDemo(false);
     }
     setRefreshedAt(Date.now());
