@@ -1,15 +1,14 @@
 /**
  * Mod menu handlers for ContextMod.
  *
- * STUBS for Phase 0 — return user-visible toasts so playtest UX works.
- * Real implementations:
- *   - /reload-config: Phase 3 Task 28
- *   - /recent-actions: Phase 3 Task 29-30
- *   - /test-rules: Phase 3 Task 32
+ * /reload-config: stub for Phase 3 Task 28
+ * /recent-actions: creates/navigates to the Observatory custom post
+ * /test-rules: stub for Phase 3 Task 32
  */
 
 import { Hono } from 'hono';
 import type { MenuItemRequest } from '@devvit/web/shared';
+import { reddit } from '@devvit/web/server';
 
 export const menu = new Hono();
 
@@ -21,10 +20,24 @@ menu.post('/reload-config', async (c) => {
 });
 
 menu.post('/recent-actions', async (c) => {
-  await c.req.json<MenuItemRequest>();
-  console.log(`[cm/menu/recent-actions] triggered`);
-  // TODO Phase 3 Task 30: pin or navigate to the dashboard custom post
-  return c.json({ showToast: 'Recent actions dashboard — Phase 3' });
+  try {
+    await c.req.json<MenuItemRequest>();
+    console.log(`[cm/menu/recent-actions] creating Observatory post`);
+    const subreddit = await reddit.getCurrentSubreddit();
+    const post = await reddit.submitCustomPost({
+      subredditName: subreddit.name,
+      title: 'ContextMod Observatory',
+      splash: { appDisplayName: 'ContextMod Observatory' },
+    });
+    console.log(`[cm/menu/recent-actions] post created ${post.id}`);
+    return c.json({
+      navigateTo: `https://reddit.com${post.permalink}`,
+      showToast: 'Observatory dashboard pinned',
+    });
+  } catch (err) {
+    console.error(`[cm/menu/recent-actions] failed:`, err);
+    return c.json({ showToast: 'Could not create dashboard post — check logs' });
+  }
 });
 
 menu.post('/test-rules', async (c) => {
