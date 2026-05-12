@@ -43,7 +43,8 @@ case "$cmd" in
     ;;
   done)
     [ -z "$task" ] && usage && exit 1
-    sed -i.bak "/^| $task |/s/| 🟡[^|]*|/| ✅ |/" "$PLAN" && rm "$PLAN.bak"
+    # Accept both ⬜ → ✅ (atomic completion) and 🟡 → ✅ (claim → done)
+    sed -i.bak -E "/^\| $task \|/s/\| (🟡[^|]*|⬜) \|/| ✅ |/" "$PLAN" && rm "$PLAN.bak"
     git add "$PLAN"
     git commit -m "status: $task ✅ completed by $COMMITTER" --no-verify
     echo "✅ Done $task — push when ready"
