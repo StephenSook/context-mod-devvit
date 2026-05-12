@@ -73,3 +73,27 @@ SHIP-WITH-CHANGES. 3 CRITICAL + 4 HIGH need fixing before Phase 1 starts.
 - `npm run build` — must pass
 - Playtest deploy — Observatory still renders, mod menu still works
 - Manual: post in test sub → check no duplicate handler runs (idempotency)
+
+---
+
+## Execution status — 2026-05-12 EOD
+
+13 atomic commits delivered. Verification: type-check ✓ · lint ✓ · 9/9 tests ✓ · build ✓.
+
+### Done
+- [x] **1.1** BigInt FNV-1a + golden test vectors (commit `3664ce0` + `d2f743d`)
+- [x] **1.3** firstSeen fail-closed on Redis err (commit `3664ce0`)
+- [x] **2.1** Sparkline reduce (commit `ca30f51`)
+- [x] **2.3** Menu toast surfaces real err.message + branches on permission/rate-limit (commit `7efe8ba`)
+- [x] **3.1** ESLint browser globals split for src/client/** (commit `23bac55`)
+- [x] **3.2** App void refresh() + EventRow LucideIcon + Sparkline CSSProperties (commits `520b13c`, `a3ff48e`, `aa16fb6`)
+- [x] **4.1** reserveAction pending/done split — 5min pending TTL, 7d done TTL (commit `3664ce0`)
+- [x] **4.2** acquireLock defensive release try/catch (commit `3664ce0`)
+- [x] **5.1** submitCustomPost entry+textFallback (splash deprecated) (commit `61ce2d8`)
+- [x] **5.2** DEMO data gated behind ?demo=1 URL param + ZERO_STATS empty-state default (commit `8214c21`)
+- [x] Bonus: package.json license MIT (was BSD-3-Clause carryover) (commit `b235d20`)
+- [x] Bonus: vitest config bypasses devvit plugin (commit `ff0a7e9`)
+
+### Deferred (with rationale)
+- **1.2 safeHandle rewrite** — current trigger handlers are minimal stubs that don't perform work. Nothing to swallow. The fix lands naturally with Phase 2 task 2.3 (handleActivity wiring) per master plan.
+- **2.2 API discriminated union** — architectural refactor. Current empty-fallback (ZERO_STATS) is correct UX for Phase 0 since API endpoints return empty stubs anyway. Promote to Day 2 work when /api/recent + /api/stats start returning real data.
