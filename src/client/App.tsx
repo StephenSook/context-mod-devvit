@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from 'react';
-import { motion } from 'motion/react';
 import { Header } from './components/Header';
 import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
@@ -19,8 +18,6 @@ export default function App() {
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecent(), fetchStats()]);
     if (recent.length === 0 && !statsData) {
-      // No data yet (Phase 0 — server stubs return empty). Show demo so the dashboard
-      // looks alive in the playtest preview. Real data flows in once handleActivity ships.
       setEvents(DEMO_EVENTS);
       setStats(DEMO_STATS);
       setUsingDemo(true);
@@ -38,7 +35,6 @@ export default function App() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  // Detect subreddit from URL (?subreddit=foo) for header label; harmless fallback
   const subreddit =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('subreddit') ?? 'cm_devvit_test'
@@ -46,7 +42,6 @@ export default function App() {
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col bg-ink-950 grain">
-      {/* Atmospheric background — subtle 2-stop radial, mission-control feel */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none"
@@ -61,12 +56,9 @@ export default function App() {
 
         {stats && <StatsRow stats={stats} />}
 
-        {/* Sparkline + caption row */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="px-5 pt-3.5 pb-1"
+        <div
+          className="cm-fade-up px-5 pt-3.5 pb-1"
+          style={{ animationDelay: '0.35s' }}
         >
           <div className="flex items-baseline justify-between mb-1">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
@@ -79,9 +71,8 @@ export default function App() {
             )}
           </div>
           {stats && <Sparkline data={stats.hourlyActions24h} />}
-        </motion.div>
+        </div>
 
-        {/* Events table */}
         <div className="flex-1 min-h-0 mt-2 flex flex-col">
           <div className="flex items-baseline justify-between px-5 pb-2">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">

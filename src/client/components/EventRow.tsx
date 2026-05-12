@@ -1,8 +1,7 @@
-import { motion } from 'motion/react';
 import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle } from 'lucide-react';
 import type { ActionKind, EventRecord } from '../lib/types';
 
-const KIND_ICON: Record<ActionKind, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
+const KIND_ICON: Record<ActionKind, React.ComponentType<any>> = {
   remove: Trash2,
   approve: Check,
   lock: Lock,
@@ -32,37 +31,29 @@ function relTime(ts: number): string {
 
 export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
   const allOk = event.actions.every((a) => a.ok);
+  const FirstIcon = event.actions[0] ? KIND_ICON[event.actions[0].kind] ?? AlertTriangle : AlertTriangle;
+  const firstColor = event.actions[0] ? KIND_COLOR[event.actions[0].kind] ?? '#71717A' : '#71717A';
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay: 0.05 * idx + 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="group grid grid-cols-[44px_60px_1fr_auto] items-center gap-3 px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
+    <div
+      className="cm-fade-left group grid grid-cols-[44px_60px_1fr_auto] items-center gap-3 px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
+      style={{ animationDelay: `${0.05 * idx + 0.4}s` }}
     >
-      {/* Status dot + first action icon */}
       <div className="flex items-center gap-1.5">
         <span
           className="w-1.5 h-1.5 rounded-full shrink-0"
           style={{ background: allOk ? '#4ADE80' : '#FB7185' }}
           aria-label={allOk ? 'ok' : 'failed'}
         />
-        {event.actions[0] && (() => {
-          const Icon = KIND_ICON[event.actions[0].kind] ?? AlertTriangle;
-          const color = KIND_COLOR[event.actions[0].kind] ?? '#71717A';
-          return <Icon size={13} strokeWidth={1.6} {...({ color } as any)} />;
-        })()}
+        {event.actions[0] && <FirstIcon size={13} strokeWidth={1.6} color={firstColor} />}
       </div>
 
-      {/* Time */}
       <span className="telemetry text-[11px] text-bone-300 tabular-nums">{relTime(event.ts)}</span>
 
-      {/* Rule + Activity */}
       <div className="min-w-0 flex items-baseline gap-2">
         <span className="text-[12px] text-bone-50 truncate font-medium">{event.checkName ?? '—'}</span>
         <span className="telemetry text-[10.5px] text-bone-300 truncate">{event.activityId}</span>
       </div>
 
-      {/* Action chips */}
       <div className="flex items-center gap-1.5">
         {event.actions.map((a, i) => (
           <span
@@ -78,6 +69,6 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
           </span>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }

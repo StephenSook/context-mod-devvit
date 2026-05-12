@@ -1,13 +1,10 @@
-import { motion } from 'motion/react';
 import type { StatsRollup } from '../lib/types';
 
 function Card({ label, value, accent, delay }: { label: string; value: string; accent?: string; delay: number }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] }}
-      className="relative rounded-xl glass p-3.5 flex flex-col gap-1.5 min-w-0"
+    <div
+      className="cm-fade-up relative rounded-xl glass p-3.5 flex flex-col gap-1.5 min-w-0"
+      style={{ animationDelay: `${delay}s` }}
     >
       <span className="text-[10px] tracking-[0.18em] uppercase text-bone-300 font-medium">{label}</span>
       <span
@@ -17,7 +14,7 @@ function Card({ label, value, accent, delay }: { label: string; value: string; a
       >
         {value}
       </span>
-    </motion.div>
+    </div>
   );
 }
 

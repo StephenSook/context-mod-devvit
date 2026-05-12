@@ -1,5 +1,3 @@
-import { motion } from 'motion/react';
-
 export function Sparkline({ data, height = 36, width = 280 }: { data: number[]; height?: number; width?: number }) {
   if (!data.length) return null;
   const max = Math.max(...data, 1);
@@ -8,16 +6,17 @@ export function Sparkline({ data, height = 36, width = 280 }: { data: number[]; 
   const path = `M ${points[0]} L ${points.slice(1).join(' L ')}`;
   const area = `M 0,${height} L ${points.join(' L ')} L ${width},${height} Z`;
 
+  // Rough path length for the CSS dasharray draw animation
+  const lineLen = Math.round(width * 1.4);
+
   return (
-    <motion.svg
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8, delay: 0.55 }}
+    <svg
       viewBox={`0 0 ${width} ${height}`}
       width="100%"
       height={height}
       preserveAspectRatio="none"
-      className="overflow-visible"
+      className="overflow-visible cm-fade-in"
+      style={{ animationDelay: '0.55s' }}
       aria-label="hourly action volume, last 24h"
     >
       <defs>
@@ -27,17 +26,16 @@ export function Sparkline({ data, height = 36, width = 280 }: { data: number[]; 
         </linearGradient>
       </defs>
       <path d={area} fill="url(#spark-fill)" />
-      <motion.path
+      <path
         d={path}
         fill="none"
         stroke="#4ADE80"
         strokeWidth="1.25"
         strokeLinejoin="round"
         strokeLinecap="round"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 1.1, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="cm-draw"
+        style={{ ['--line-len' as any]: lineLen }}
       />
-    </motion.svg>
+    </svg>
   );
 }
