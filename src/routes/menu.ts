@@ -27,7 +27,12 @@ menu.post('/recent-actions', async (c) => {
     const post = await reddit.submitCustomPost({
       subredditName: subreddit.name,
       title: 'ContextMod Observatory',
-      splash: { appDisplayName: 'ContextMod Observatory' },
+      entry: 'default',
+      textFallback: {
+        text:
+          'ContextMod Observatory — recent rule firings and mod-action telemetry. ' +
+          'Open this post in a Devvit-compatible Reddit client to view the dashboard.',
+      },
     });
     console.log(`[cm/menu/recent-actions] post created ${post.id}`);
     return c.json({
