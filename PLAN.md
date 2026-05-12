@@ -63,7 +63,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 3.2 | Wiki config loader + refresh-config cron | `src/core/configSource.ts`, `src/routes/scheduler.ts` | **Vinh** | ⬜ | 1.3 | Atomic revision swap |
 | 3.3 | Reload-config mod menu action | `src/routes/menu.ts` | **Vinh** | ⬜ | 3.2 | Toast w/ rule count |
 | 3.4 | Recent events ZSET + /api/recent | `src/state/recentEvents.ts`, `src/routes/api.ts` | **Vinh** | ⬜ | 2.3 | ZADD score=ts, ZREMRANGEBYRANK trim |
-| 3.5 | Dashboard custom post (Vite + React) | `src/client/*` | **Stephen** | ⬜ | 3.4 | Mobile-first Tailwind, Lighthouse>80 |
+| 3.5 | Dashboard custom post (Vite + React) | `src/client/*` | **Stephen** | 🟡 Umay 12 5pm | 3.4 | Mobile-first Tailwind, Lighthouse>80 |
 | 3.6 | Dry-run rule tester menu + form | `src/routes/{menu,forms}.ts` | **Stephen** | ⬜ | 2.3 | UiResponse.showForm |
 | 3.7 | onAppUpgrade migrations | `src/state/migrations.ts` | **Vinh** | ⬜ | 1.1 | Version table |
 
