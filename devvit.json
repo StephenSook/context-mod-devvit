@@ -5,6 +5,15 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
+  "post": {
+    "dir": "src/client",
+    "entrypoints": {
+      "default": {
+        "entry": "index.html",
+        "height": "tall"
+      }
+    }
+  },
   "permissions": {
     "reddit": {
       "enable": true,
