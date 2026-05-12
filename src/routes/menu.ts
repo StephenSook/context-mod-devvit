@@ -35,8 +35,19 @@ menu.post('/recent-actions', async (c) => {
       showToast: 'Observatory dashboard pinned',
     });
   } catch (err) {
-    console.error(`[cm/menu/recent-actions] failed:`, err);
-    return c.json({ showToast: 'Could not create dashboard post — check logs' });
+    // Surface real error class to the mod so they have something actionable.
+    // Mods cannot read Devvit server logs, so "check logs" is useless to them.
+    const msg = err instanceof Error ? err.message : String(err);
+    const name = err instanceof Error ? err.name : 'Error';
+    console.error(`[cm/menu/recent-actions] failed:`, name, msg, err);
+
+    let toast = `Could not create dashboard post: ${msg}`;
+    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('scope')) {
+      toast = 'App is missing the submit-post permission. Reinstall or contact app author.';
+    } else if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('429')) {
+      toast = 'Reddit rate-limited us. Try again in 60 seconds.';
+    }
+    return c.json({ showToast: toast });
   }
 });
 
