@@ -74,5 +74,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
+  },
+  "dev": {
+    "subreddit": "cm_devvit_test"
   }
 }
