@@ -6,8 +6,9 @@ import tseslint from 'typescript-eslint';
 export default defineConfig([
   tseslint.configs.recommended,
   {
+    // Server code — Node globals
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['src/**/*.{ts,tsx,mjs,cjs,js}'],
+    files: ['src/server/**/*.{ts,tsx,mjs,cjs,js}', 'src/lib/**/*.{ts,tsx,mjs,cjs,js}', 'src/routes/**/*.{ts,tsx,mjs,cjs,js}', 'src/index.ts'],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.node,
@@ -15,6 +16,24 @@ export default defineConfig([
         project: ['./tsconfig.json'],
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+  },
+  {
+    // Client code — Browser globals + React JSX. No project-based rules to avoid
+    // "no-undef" on React (handled by TypeScript's JSX transform) while keeping
+    // strict TS via type-check.
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['src/client/**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2023,
+      globals: { ...globals.browser, React: 'readonly' },
+      parserOptions: {
+        project: ['./tsconfig.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      'no-undef': 'off', // TypeScript handles undefined references
     },
   },
   {
