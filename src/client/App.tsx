@@ -30,8 +30,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    refresh();
-    const id = setInterval(refresh, POLL_MS);
+    void refresh();
+    const id = setInterval(() => void refresh(), POLL_MS);
     return () => clearInterval(id);
   }, [refresh]);
 
