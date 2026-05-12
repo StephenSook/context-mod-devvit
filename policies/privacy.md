@@ -79,5 +79,5 @@ If this policy materially changes, the updated version will be published at the 
 For privacy questions, data deletion requests, or any other concerns:
 
 **Email:** stephensookra@gmail.com
-**Reddit:** u/Chi_blu (or modmail to r/stephens_cm_test for hackathon period)
+**Reddit:** u/CowSufficient3840 (or modmail to r/stephens_cm_test for hackathon period)
 **GitHub:** https://github.com/StephenSook/context-mod-devvit
