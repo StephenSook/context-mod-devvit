@@ -94,7 +94,7 @@ export default function App() {
           </div>
         </div>
 
-        <ActionBar onReload={refresh} />
+        <ActionBar subreddit={subreddit} onReload={refresh} />
       </div>
     </div>
   );
