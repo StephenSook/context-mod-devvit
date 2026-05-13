@@ -106,6 +106,24 @@ Source: [support.reddithelp.com — Developer Funds 2026 Terms](https://support.
 
 **Max payout per app:** $75K (DQE side), $3,500 (QI side). $500K total across 3 apps. One-time per tier.
 
+## 7.5. Reddit CEO confirms mod-bot porting as a strategic line item
+
+**Steve Huffman, Reddit Q1 2026 earnings call (2026-04-30):**
+> "We have what we call good bots on Reddit, which are basically programs that mostly moderators have written to help run communities on Reddit. We're porting those over to our developer platform."
+
+Source: [Q1 2026 earnings call transcript (Motley Fool)](https://www.fool.com/earnings/call-transcripts/2026/05/01/reddit-rddt-q1-2026-earnings-transcript/). The CEO of a public company stated this thesis verbatim on the earnings call. The exact archetype of this hackathon project is named as a corporate priority.
+
+**S-1 framing** (per [TechCrunch S-1 analysis](https://techcrunch.com/2024/02/23/reddit-downplays-risks-of-developer-backlash-decentralized-social-media-in-its-ipo-filing/), [SEC EDGAR filing](https://www.sec.gov/Archives/edgar/data/1713445/000162828024006294/reddits-1q423.htm)): Reddit's S-1 named the developer platform as a means of "enhancing its own site — by building bots and creating features that shape their communities." The 2023 blackout (8,800 subs, 28,606 mods) is the disclosed risk; Devvit is the disclosed mitigation. Porting ContextMod is therefore directly tied to a named IPO risk-factor mitigation.
+
+**Q1 2026 financial backdrop** ([businesswire release](https://www.businesswire.com/news/home/20260430242740/en/Reddit-Reports-First-Quarter-2026-Results)):
+- Revenue $663M (+69% YoY — 7th consecutive quarter >60%)
+- Ad revenue $625M (+74% YoY)
+- GAAP net income $204M; FCF $311M (47% margin)
+- Adjusted EBITDA $266M (40% margin, +1,100 bps YoY)
+- DAU 126.8M (+17%); capex just $1M
+
+The Developer Funds pool ($500K/dev max) is a rounding error against $311M quarterly FCF. Reddit can fund this indefinitely without flinching.
+
 ## 8. App Migration Program 2026
 
 Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://support.reddithelp.com/hc/en-us/articles/47822311698452).
