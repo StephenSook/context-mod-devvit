@@ -38,20 +38,6 @@ export async function fetchStatsSafe(): Promise<ApiResult<StatsRollup>> {
   }
 }
 
-// ---- Legacy wrappers (retained until App.tsx migrates) ----
-
-export async function fetchRecent(): Promise<EventRecord[]> {
-  const r = await fetchRecentSafe();
-  if (r.ok && !r.empty) return r.data;
-  return [];
-}
-
-export async function fetchStats(): Promise<StatsRollup | null> {
-  const r = await fetchStatsSafe();
-  if (r.ok && !r.empty) return r.data;
-  return null;
-}
-
 /**
  * Genuine zero-state stats. Used when the API is reachable + empty (no demo flag).
  * Replaces the fabricated DEMO_STATS as the default empty-state shape so production
