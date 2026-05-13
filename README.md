@@ -40,49 +40,105 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 ## Architecture
 
-```
-                  Reddit subreddit
-                         │
-   ┌─────────────────────┼─────────────────────┐
-   │                     │                     │
-   ▼                     ▼                     ▼
-onPostSubmit       onCommentSubmit       onModAction
-   │                     │                     │
-   └──────────┬──────────┴──────────────┬──────┘
-              ▼                         ▼
-        Hono server                 ┌────────────────┐
-        (Node.js,                   │  Mod menu:     │
-         CommonJS)                  │  /reload-config│
-              │                     │  /test-rules   │
-              ▼                     │  /recent-actions
-        firstSeen                   └────────┬───────┘
-        (24h Redis SETNX,                    ▼
-         fail-closed)              Observatory dashboard
-              │                    (Vite + React, custom
-              ▼                     post webview)
-   Load cfg:current_rev → cfg:rev:{n} from Redis
-              │
-              ▼
-       Run → Check → Rule → Action pipeline
-        │
-        ├─ filters (authorIs, itemIs)
-        ├─ named rules + composition
-        ├─ Mustache action templating
-        └─ per-action idempotency (reserve → side-effect → commit)
-              │
-              ▼
-        reddit.{remove, approve, lock, comment, report, ban, setUserFlair}
-              │
-              ▼
-        Push compact event → events:recent ZSET (50-deep ring buffer)
-              │
-              ▼
-        Dashboard polls /api/recent every 10s → renders timeline
+```mermaid
+flowchart TB
+  accTitle: ContextMod Devvit Architecture
+  accDescr: Reddit Devvit platform delivers trigger events and cron jobs to a Hono server that runs the rule engine and emits moderation actions back to Reddit while telemetry feeds a React webview dashboard.
+
+  subgraph Platform["Reddit Devvit Platform"]
+    direction LR
+    TRIG[/"Triggers<br/>onPostSubmit · onCommentSubmit<br/>onAppInstall · onAppUpgrade"/]
+    SCHED[/"Scheduler (cron)<br/>refresh-config · stats-rollup<br/>image-hash · delayed-eval"/]
+    WIKI[("Wiki API<br/>r/&lt;sub&gt;/wiki/contextmod")]
+    REDIS[("Per-sub Redis<br/>strings · hashes · zsets")]
+    RAPI{{"Reddit API<br/>remove · approve · ban · flair<br/>comment · lock · report"}}
+  end
+
+  subgraph Server["Hono Server (CommonJS)"]
+    HA["handleActivity()"]
+    CFG[("Config store<br/>cfg:rev:n + cfg:current_rev")]
+    PIPE["runRun → runCheck → runRule<br/>filters · named rules · Mustache"]
+    IDEM["Idempotency<br/>cm:proc 24h · cm:action:pending 5m<br/>cm:action:done 7d"]
+    ACT["Actions"]
+    STATS["Stats rollup<br/>events:recent ZSET (50-deep)"]
+  end
+
+  subgraph Client["Observatory Webview (React + Vite)"]
+    DASH["Dashboard<br/>stat cards · sparkline · event stream"]
+  end
+
+  subgraph External["External HTTP (allowlist)"]
+    MHS{{"api.moderatehatespeech.com<br/>⚠ pending review"}}
+    RIMG{{"i.redd.it · preview.redd.it<br/>✓ global allowlist"}}
+  end
+
+  TRIG ==>|"POST /internal/triggers/*"| HA
+  SCHED -->|"POST /internal/cron/*"| HA
+  SCHED -->|"refresh-config"| CFG
+  WIKI -.->|"5-min poll"| CFG
+  CFG -.->|"read at event start"| HA
+  HA ==> PIPE
+  PIPE ==> IDEM
+  IDEM ==> ACT
+  ACT ==>|"mod action"| RAPI
+  ACT --> STATS
+  IDEM <-.->|"SET NX"| REDIS
+  CFG <-.->|"SET cfg:rev:n"| REDIS
+  STATS <-.->|"ZADD"| REDIS
+  DASH -->|"GET /api/recent · /api/stats · /api/health"| HA
+  PIPE -.->|"fetch (MHS rule)"| MHS
+  PIPE -.->|"fetch (image hash)"| RIMG
+
+  classDef platform fill:#FF4500,stroke:#CC3700,color:#fff
+  classDef server fill:#0079D3,stroke:#005FA3,color:#fff
+  classDef client fill:#10B981,stroke:#047857,color:#fff
+  classDef external fill:#6B7280,stroke:#4B5563,color:#fff
+  class TRIG,SCHED,WIKI,REDIS,RAPI platform
+  class HA,CFG,PIPE,IDEM,ACT,STATS server
+  class DASH client
+  class MHS,RIMG external
 ```
 
-**Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB, no Lists, no Sets — strings + hashes + sorted sets only.
+**Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB. Strings + hashes + sorted sets only — no Lists, no Sets, per Devvit constraints.
 
-**Atomic config publish:** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every handleActivity reads the pointer ONCE at event start so the entire pipeline runs against a consistent config snapshot.
+**Atomic config publish:** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the pointer once at event start so the entire pipeline runs against a consistent config snapshot — no mid-event tear under concurrent reload.
+
+### Request lifecycle
+
+How a single Reddit trigger flows through the engine end-to-end, including the three-stage idempotency that makes Devvit's at-least-once trigger delivery safe:
+
+```mermaid
+sequenceDiagram
+  accTitle: handleActivity request lifecycle
+  accDescr: The handleActivity pipeline processes a single Reddit trigger end-to-end, gated by three sequential Redis idempotency keys so that retries never double-apply moderation actions.
+  autonumber
+  participant R as Reddit
+  participant T as Devvit Trigger
+  participant S as Hono Server
+  participant X as Redis
+  participant API as Reddit API
+
+  R->>T: post submitted
+  T->>S: POST /internal/triggers/post-submit
+  S->>X: SET cm:proc:postId NX EX 86400
+  alt First time seen
+    X-->>S: OK
+    S->>X: GET cfg:current_rev → cfg:rev:n
+    X-->>S: { schema_version, runs[] }
+    Note over S: runRun → runCheck → runRule<br/>filters · named rules · Mustache
+    loop For each action queued
+      S->>X: SET cm:action:pending:hash NX EX 300
+      S->>API: remove · comment · ban · flair · ...
+      API-->>S: 200 OK
+      S->>X: SET cm:action:done:hash EX 604800
+      S->>X: ZADD events:recent score=ts member=event
+    end
+    S-->>T: 200 OK
+  else Retry (already processed)
+    X-->>S: nil
+    S-->>T: 200 OK (no-op, idempotent)
+  end
+```
 
 ## Config schema
 
