@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/StephenSook/context-mod-devvit/discussions
+    about: Use GitHub Discussions for usage questions + design conversations. Not Issues.
+  - name: Security vulnerability
+    url: https://github.com/StephenSook/context-mod-devvit/security/advisories/new
+    about: Report security issues privately via GitHub Security Advisories. See SECURITY.md.
+  - name: Original upstream — FoxxMD/context-mod
+    url: https://github.com/FoxxMD/context-mod/issues
+    about: This is the Devvit port. If your issue is about the PRAW-era upstream behavior, file there instead.

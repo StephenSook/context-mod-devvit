@@ -1,0 +1,47 @@
+name: Feature request
+description: Suggest a new moderation rule, action, or integration
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. ContextMod's scope is documented in [CONTRIBUTING.md](../CONTRIBUTING.md) — features outside that scope may be deferred or declined.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What moderation pain point does this solve? Be specific about the type of content / behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should ContextMod handle this? Rule kind, action, or config syntax suggestion.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you tried doing this with AutoMod, an existing CM rule, or another bot?
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase does this belong to?
+      description: See README "What's ported" for the current phase scope. Pick "Don't know" if unsure.
+      options:
+        - Phase 1 (core engine)
+        - Phase 2 (actions / triggers)
+        - Phase 3 (dashboard / UX)
+        - Phase 4 (stretch rules)
+        - Phase 5+ (post-hackathon)
+        - Don't know
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's [Code of Conduct](../CODE_OF_CONDUCT.md)
+          required: true
