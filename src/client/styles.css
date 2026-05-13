@@ -99,6 +99,23 @@
     from { opacity: 0; transform: translateX(-8px); }
     to { opacity: 1; transform: translateX(0); }
   }
+  @keyframes cmEventArrive {
+    0% {
+      opacity: 0;
+      transform: translateX(-8px);
+      background-color: rgba(74, 222, 128, 0.10);
+    }
+    60% {
+      opacity: 1;
+      transform: translateX(0);
+      background-color: rgba(74, 222, 128, 0.08);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+      background-color: transparent;
+    }
+  }
   @keyframes cmFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -115,6 +132,10 @@
   .cm-fade-left {
     opacity: 0;
     animation: cmFadeLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .cm-event-arrive {
+    opacity: 0;
+    animation: cmEventArrive 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .cm-fade-in {
     opacity: 0;

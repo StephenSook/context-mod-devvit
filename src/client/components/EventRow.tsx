@@ -39,7 +39,7 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
   const firstColor = event.actions[0] ? KIND_COLOR[event.actions[0].kind] ?? '#71717A' : '#71717A'; // bone.300 fallback
   return (
     <div
-      className="cm-fade-left group grid grid-cols-[44px_60px_1fr_auto] items-center gap-3 px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
+      className="cm-event-arrive group grid grid-cols-[44px_60px_1fr_auto] items-center gap-3 px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
       style={{ animationDelay: `${0.05 * idx + 0.4}s` }}
     >
       <div className="flex items-center gap-1.5">
