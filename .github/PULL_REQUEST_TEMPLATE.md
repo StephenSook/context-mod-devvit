@@ -23,7 +23,8 @@
 - [ ] Phase 2 — action handlers + trigger routes
 - [ ] Phase 3 — dashboard wire-up
 - [ ] Phase 4 — stretch rules (history / attribution / recentActivity / repost)
-- [ ] Phase 5+ — post-hackathon
+- [ ] Phase 5 — demo + Devpost submission
+- [ ] Phase 6 — post-hackathon ship + opening to upstream operators
 - [ ] Not phase-tagged (docs, infra, tooling)
 
 ## How has this been tested?
