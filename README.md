@@ -130,10 +130,21 @@ See [`src/server/schema/app.schema.json`](./src/server/schema/app.schema.json) f
 
 ## Fetch Domains
 
-Per Devvit policy, this app fetches the following external domains:
+Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), every external domain this app contacts is declared in `devvit.json` and listed here with justification + data flow.
 
-- `api.moderatehatespeech.com` — toxicity classification used by MHSRule (port of CM's MHSRule)
-- `i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `external-i.redd.it` — Reddit-hosted image fetch for perceptual-hash (blockhash) repost detection
+| Domain | Status | Why we need it | What data we send | What data we store |
+|---|---|---|---|---|
+| `api.moderatehatespeech.com` | declared | Toxicity classification (`MHSRule`, port of CM's classifier rule). Only triggered when a mod enables the rule in their config. | Comment/post text, no PII. | Boolean `flagged` + numeric `confidence` (~kb-sized JSON). Never the original text. |
+| `i.redd.it` | pending approval | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 64-bit blockhash + post ID. Never the image bytes. |
+| `preview.redd.it` | pending approval | Same as above for preview-sized Reddit images. | None. | Same. |
+| `external-preview.redd.it` | pending approval | Same for cross-posted previews. | None. | Same. |
+| `external-i.redd.it` | pending approval | Same for cross-posted full-size images. | None. | Same. |
+
+**Privacy commitments:**
+- No PII ever transmitted. No usernames, no IPs, no profile data.
+- No data sold, shared, or used for training (per our [Privacy Policy](./policies/privacy.md)).
+- Image bytes are decoded → hashed → discarded in-process. Only the 64-bit hash is persisted.
+- All cached data is per-installation isolated (Devvit Redis) and TTL'd: hashes auto-expire after 30 days, author profile cache 1h, idempotency keys 24h.
 
 ## License
 
