@@ -44,7 +44,7 @@
 - [x] **E1.1a** `policies/_config.yml` — kramdown GFM
 - [x] **E1.1b** `policies/index.md` — landing page
 - [x] **E1.1c** Jekyll frontmatter on `privacy.md` + `terms.md`
-- [x] **E1.2** Pre-flip audit: no .env, no API keys, no PATs, no AWS, no Devvit tokens in history. Sanitized 3 absolute local paths in `2026-05-12-contextmod-devvit-port.md`.
+- [x] **E1.2** Pre-flip audit: no .env, no API keys, no PATs, no AWS, no Devvit tokens in history. Sanitized 3 absolute local paths in `2026-05-12-contextmod-devvit-port.md`. **Accepted risk:** git history retains the originals (forward-only fix) — paths are personal-directory aesthetics, not credentials. Trade-off preserves the atomic-green-dot commit chain per user policy. If full scrub is ever needed, run `git filter-repo --replace-text` on those three strings — destroys history, regenerates SHAs, breaks any fork pointers.
 - [x] **E1.3** Flipped `StephenSook/context-mod-devvit` private → public
 - [x] **E1.4** Enabled Pages (Source: GitHub Actions) via API
 - [x] **E1.5** Verified URLs return 200:
@@ -53,7 +53,19 @@
   - https://stephensook.github.io/context-mod-devvit/terms/
 
 ### Wave 8 — Devvit developer-settings form (Track E) ✓
-- [x] **E.1** Cheat sheet at `docs/submission/devvit-app-settings.md` — verbatim copy for every field, AI-tone blocklist, pre-submission checklist, post-submission protocol. Stephen pastes the values when filling the form at developers.reddit.com/apps/cm-devvit/settings.
+- [x] **E.1** Cheat sheet at `docs/submission/devvit-app-settings.md` — initial draft fabricated ~70% of fields (tagline, category dropdown, etc.).
+- [x] **E.2** Rewrote against `reddit/devvit-docs:docs/guides/launch/launch-guide.md` + `faq.mdx` + `http-fetch-policy.md`. Real surface: display name + about + mature flag + Privacy/ToS URLs. README is the load-bearing long-description surface. Listing is `npx devvit publish --public`, not a UI toggle. Only `api.moderatehatespeech.com` needs HTTP approval (rest are in global allowlist).
+
+### Wave 9 — Day-2 audit pass (Codex + docs cross-check)
+- [x] **Q.1** Codex adversarial review against commits 1741153..1351b0f. Found: icon is JPEG-in-png (HIGH), action versions stale (NIT), unstyled site (NIT), broken policy links (LOW).
+- [x] **Q.2** Research agent cross-checked dev-settings cheat sheet against official Devvit docs. Found: cheat sheet fabricated most fields (HIGH).
+- [x] **Q.3** Fixed icon — re-encoded via PIL to real PNG (`67127bc`)
+- [x] **Q.4** Rewrote dev-settings against real Devvit surface (`a2a91ff`)
+- [x] **Q.5** Fixed `policies/index.md` root-absolute links (`202b429`)
+- [x] **Q.6** Fixed `policies/terms.md` broken filesystem-relative links (`898a2e7`)
+- [x] **Q.7** Added `jekyll-theme-minimal` for proper rendering (`af725c8`)
+- [x] **Q.8** Bumped `actions/checkout@v5` + `upload-pages-artifact@v4` (`eb32723`)
+- [x] **Q.9** Documented sanitization history-retention trade-off (this commit)
 
 ## Out of scope (Vinh's lane — never touch)
 - `src/lib/idem.ts` — Vinh extends with new gates as needed
