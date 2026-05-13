@@ -107,7 +107,7 @@ See PLAN.md tasks 1.1–1.8.
 
 ### Task 1.2 — Config loader: JSON5 + AJV + named-rule expansion (Vinh, 2–3h)
 
-**Files:** Copy `/Users/stephensookra/Reddiit Hacks/context-mod/src/Schema/App.json` to `src/server/schema/app.schema.json`. Trim defs for cut rules (SentimentRule, RepeatActivityRule, full RepostRule, DispatchAction, MessageAction, ModNoteAction, UserNoteAction, SubmissionAction, ContributorAction, CancelDispatchAction). Add `schema_version: "1"` required field at root. Keep: RegexRule, AuthorRule, RuleSet, SubmissionCheck, CommentCheck, Run, HistoryRule, AttributionRule, RecentActivityRule, MHSRule, RepostRule (URL-only mode), actions Approve/Remove/Lock/Comment/Report/Ban/UserFlair.
+**Files:** Copy `<upstream CM repo>/src/Schema/App.json` to `src/server/schema/app.schema.json`. Trim defs for cut rules (SentimentRule, RepeatActivityRule, full RepostRule, DispatchAction, MessageAction, ModNoteAction, UserNoteAction, SubmissionAction, ContributorAction, CancelDispatchAction). Add `schema_version: "1"` required field at root. Keep: RegexRule, AuthorRule, RuleSet, SubmissionCheck, CommentCheck, Run, HistoryRule, AttributionRule, RecentActivityRule, MHSRule, RepostRule (URL-only mode), actions Approve/Remove/Lock/Comment/Report/Ban/UserFlair.
 
 - [ ] `src/server/core/namedRules.ts` — `extractNamedEntities` + `insertNamedEntities` walking config tree
 - [ ] `src/server/core/config.ts` — `parseConfig(raw: string): Promise<ValidatedConfig>` using JSON5 + Ajv + named-rule expansion + schema_version check
@@ -129,7 +129,7 @@ See PLAN.md tasks 1.1–1.8.
 
 **Files:** `src/server/core/filters.ts`, `tests/filters.test.ts`
 
-Port from `/Users/stephensookra/Reddiit Hacks/context-mod/src/Common/Infrastructure/Filters/{FilterShapes,FilterCriteria,AuthorCritPropHelper}.ts`. MVP subset only.
+Port from `<upstream CM repo>/src/Common/Infrastructure/Filters/{FilterShapes,FilterCriteria,AuthorCritPropHelper}.ts`. MVP subset only.
 
 - [ ] `evalAuthorIs(filter, author)` — handles include/exclude w/ AuthorCriteria (name, nameMatch, age, linkKarma, commentKarma, totalKarma, flairText, isMod, isContributor, verified, shadowBanned)
 - [ ] `evalItemIs(filter, item)` — handles include/exclude w/ ItemCriteria (removed, approved, locked, stickied, score, age, title, over18, isSelf, linkFlairText, depth, op)
@@ -579,7 +579,7 @@ Build private, ship public. Submission requires public listing in App Directory.
 
 ## Sookra Pillar 5 — Hard Numbers (for submission writeup + voiceover)
 
-Sourced from `/Users/stephensookra/.claude/plans/purrfect-mapping-dusk-agent-a9717d3cd25506753.md` Pillar 5 dossier. Every claim citation-traceable.
+Sourced from internal planning notes (private). Every claim citation-traceable.
 
 1. **466 hr/day moderation labor on Reddit.** Li/Hecht/Chancellor ICWSM 2022 (arxiv.org/abs/2205.14529). At $20/hr UpWork median = $3.4M/yr unpaid labor.
 2. **73% of mod actions performed by bots.** Same paper.
