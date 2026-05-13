@@ -103,13 +103,13 @@ body:
 
 i've been heads-down on a port of FoxxMD's context-mod (the rule-engine mod bot ~15 subs have been running since 2019) to Devvit Web for the mod tools hackathon. wanted to share progress in case anyone has feedback.
 
-what's working in v0.1.0:
-- the run → check → rule → action pipeline with postBehavior flow control
-- 3 MVP rule kinds (regex, author, ruleSet) + 7 actions
+what's working in v0.1.0 — verify current state at send time, update bullets to match what actually ships by 2026-05-19:
+- the run → check → rule → action concept model with postBehavior flow control (types + scaffolds; live evaluation lands phase 1)
+- 3 MVP rule kinds (regex, author, ruleSet) + 7 actions (types ship now; handler wiring lands phase 2)
 - filters (authorIs / itemIs)
 - atomic config publish via revision pointer (cfg:rev:n + cfg:current_rev)
 - per-effect idempotency (cm:proc 24h + cm:action:pending 5m + cm:action:done 7d) so devvit's at-least-once delivery never double-applies
-- observatory custom-post dashboard with live action telemetry + 24h sparkline
+- observatory custom-post dashboard (renders with ?demo=1 synthetic until phase 3 wiring lands) + 24h sparkline
 - dry-run mod-menu rule tester
 
 what's still in-flight:

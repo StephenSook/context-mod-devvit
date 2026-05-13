@@ -69,8 +69,10 @@
 - Mention the "Test rules on this item" dry-run mod menu
 - Mention image-hash repost detection (if Phase 4 shipped — gated on Day-2 spike)
 
-**VO:** "Live telemetry: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live."
+**VO:** "Telemetry stream: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live."
 
+> If Phase 3 dashboard wiring is shipped by recording day, swap "Telemetry stream" → "Live telemetry" — claim live only when the dashboard is reading real `events:recent` ZSET data, not `?demo=1` synthetic. If Phase 3 isn't shipped, the synthetic-data fallback from Beat 3 carries through here too.
+>
 > If Phase 4's image-hash repost detection ships before recording day, append: *"And perceptual-hash repost detection — image blockhash in pure JS within Devvit's 30-second execution window."* Otherwise leave out — don't claim what isn't running.
 
 ---
