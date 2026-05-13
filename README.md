@@ -3,7 +3,7 @@
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
-> Write your moderation rules once in JSON5. ContextMod reads every new post and comment, evaluates your filters, and takes the right action — remove, comment, lock, flair, ban — without you ever opening the modqueue.
+> Write your moderation rules once in JSON5. ContextMod evaluates every new post and comment against your filters and takes the configured action — remove, comment, lock, flair, ban — without you ever opening the modqueue. *(Live trigger wiring is finishing through Phase 1+2; the rule engine, idempotency primitives, and Observatory dashboard ship in v0.1.0.)*
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
@@ -210,14 +210,18 @@ If you're already running [FoxxMD/context-mod](https://github.com/FoxxMD/context
 
 **Config compatibility:** YAML/JSON5 → JSON5 only. Convert with [`yaml-to-json`](https://www.npmjs.com/package/yaml-to-json) or any online converter. The schema is a strict subset of upstream — see `What's ported vs deferred` below.
 
-**What's ported (works today):**
-- `Run` / `Check` / `Rule` / `Action` concept model + `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:`)
-- Filters: `authorIs` / `itemIs` with the canonical criteria set (name, age, karma, flair, isMod, isContributor, verified, shadowBanned, removed, approved, locked, score, age, title, isSelf, over18, depth, op)
-- Rules: `regex` (with multi-field `testOn` + threshold), `author`, `ruleSet` (AND/OR composition)
-- Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — all support Mustache templates over `{{item, author, manager, rules, actions}}` context
-- Named rules + composition by name reference
-- Wiki-based config + 5-min refresh cron + manual `Reload config` menu action
-- Per-action idempotency (pending/done split — never double-applies the same action even on Devvit's at-least-once trigger delivery)
+**What's ported (rule engine + dashboard ship in v0.1.0):**
+
+The concept model, schema validation, config publish pipeline, idempotency primitives, and Observatory dashboard all ship. Live trigger wiring (`handleActivity` → rule pipeline → mod action) is the Phase 1+2 integration step Vinh is finishing through Day 5-8.
+
+- ✅ `Run` / `Check` / `Rule` / `Action` concept model + `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:`) — typed + scaffolded
+- ✅ Filters: `authorIs` / `itemIs` with the canonical criteria set (name, age, karma, flair, isMod, isContributor, verified, shadowBanned, removed, approved, locked, score, age, title, isSelf, over18, depth, op) — typed + scaffolded
+- ✅ Rules: `regex` (with multi-field `testOn` + threshold), `author`, `ruleSet` (AND/OR composition) — types ship; live evaluation lands Phase 1
+- ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — types + Mustache templating ship; handler wiring lands Phase 2
+- ✅ Named rules + composition by name reference — types ship; resolver lands Phase 1
+- ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — works
+- ✅ Per-action idempotency primitives (`cm:proc` 24h + `cm:action:pending` 5m + `cm:action:done` 7d) — `src/lib/idem.ts` shipped
+- ✅ Observatory dashboard — renders against `?demo=1` synthetic data; live data wires up at Phase 3
 
 **What's deferred (Phase 4 stretch, not yet shipped):**
 - `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants), `mhs` rules — landing in Phase 4
