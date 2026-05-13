@@ -94,6 +94,8 @@ SHIP-WITH-CHANGES. 3 CRITICAL + 4 HIGH need fixing before Phase 1 starts.
 - [x] Bonus: package.json license MIT (was BSD-3-Clause carryover) (commit `b235d20`)
 - [x] Bonus: vitest config bypasses devvit plugin (commit `ff0a7e9`)
 
+### Done (Day 2 — 2026-05-13)
+- [x] **2.2** API discriminated union (`ApiResult<T>` 3-state) + ErrorBanner component + App.tsx tracks `apiError` separately + preserves last-good state on outage. Split into 6 atomic commits: `4fec9ae`, `7c28f6e`, `b5872a5`, `4748155`, `51bb44c`, `7f0b401`.
+
 ### Deferred (with rationale)
 - **1.2 safeHandle rewrite** — current trigger handlers are minimal stubs that don't perform work. Nothing to swallow. The fix lands naturally with Phase 2 task 2.3 (handleActivity wiring) per master plan.
-- **2.2 API discriminated union** — architectural refactor. Current empty-fallback (ZERO_STATS) is correct UX for Phase 0 since API endpoints return empty stubs anyway. Promote to Day 2 work when /api/recent + /api/stats start returning real data.
