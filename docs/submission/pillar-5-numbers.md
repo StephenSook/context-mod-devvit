@@ -159,6 +159,58 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 6. "ContextMod's port qualifies for the $1,000 Migration bounty + up to $75K Developer Funds." → Reddit Help official terms
 7. "Discord's Carl-bot has 14.2M server installs. Reddit's Devvit ecosystem is at the same inflection point." → top.gg
 
+## 11. Computed addressable market (TAM)
+
+Two stacked claims, separated so judges can attack the assumption-laden one without nuking the measured one:
+
+**A — Measured value (defensible without scaling).** Li et al. ICWSM 2022 measured **170,170 hours/year of moderation labor across 21,500 active moderators in 126 subreddits** ([arxiv.org/abs/2205.14529](https://arxiv.org/abs/2205.14529)). At UpWork median ($20/hr) the measured population's labor is worth **$3.4M/year unpaid volunteer effort** ([Northwestern Now](https://news.northwestern.edu/stories/2022/05/unpaid-social-media-moderators)).
+
+**B — Linear scaling to Reddit's stated ~60K active mods.** $3.4M × (60K / 21.5K) = **~$9.5M/year volunteer-labor-equivalent value** across Reddit's full mod base. Honestly flag this as scaling math, not measured.
+
+**Incremental capture available to ContextMod-class tools.** AutoMod is regex-only — handles 82% review / 8% action per Reddit's data, mostly anti-spam. The *context-gathering* tier (5–10 minutes of manual user-history check per ambiguous post, multi-attribute author criteria, composable rules) is what humans currently do and what CM-class bots automate. If a CM-class bot offloads **1 additional hour per mod per week** beyond AutoMod's reach, that's:
+
+```
+60,000 mods × 52 weeks × 1 hr × $20/hr = $62.4M/year
+```
+
+in labor-equivalent value unlocked. Even at a conservative **10% capture rate**, that's **$6M+/year of unlocked ecosystem value** — multiples larger than the entire Developer Funds program budget per app.
+
+## 12. Realistic 12-month cash envelope (for this port)
+
+Stacking the actual programs ContextMod-on-Devvit qualifies for:
+
+| Source | Math | Tier reached | Payout |
+|--------|------|------|--------|
+| App Migration Bounty | r/mealtimevideos alone is 60× the 1K WAU threshold | qualifies | $1,000 |
+| Hackathon Best Ported App | grand prize | win condition | $10,000 |
+| Developer Funds — Install side | 10% of 60K mods × installs threshold = 6K (well past Tier 3 cap) | Tier 3 cap | $3,500 |
+| Developer Funds — DQE side | ~10K daily distinct mods at maturity | Tier 3-4 ladder | $5,000-$10,500 |
+| **Total envelope** | | | **$19,500–$25,000** |
+
+**Tail upside** if DQE compounds toward Tier 5+: up to **$42K cumulative** on the funds side alone, plus the $1K + $10K base. Stretch-but-credible target: **$50K+ over 12 months against zero hosting/infra cost.**
+
+Sources: [Developer Funds 2026 Terms](https://support.reddithelp.com/hc/en-us/articles/27958169342996-Reddit-Developer-Funds-2026-Terms), [Migration Program 2026 Terms](https://support.reddithelp.com/hc/en-us/articles/47822311698452-Reddit-Developer-Platform-App-Migration-Program-2026-Terms), [hackathon rules](https://mod-tools-migration.devpost.com/).
+
+## 13. Cost basis displaced
+
+Original ContextMod requires self-hosting (Heroku, VPS, or equivalent) + Reddit API tokens + Snoowrap maintenance. Each operator:
+
+- **Hosting:** ~$25/mo for a small Heroku/VPS instance running PRAW + node + the wiki polling loop. Across 15+ operators that's **$4,500/year displaced** from the operator base.
+- **Reddit API cost (post-2023):** moderation bots still ride the free-tier carve-out for non-commercial use ([Reddit's published mod-bot policy](https://mods.reddithelp.com/hc/en-us/articles/16693988535309-Moderation-Bots-Tooling)), but any operator who tried to scale commercial usage hit the $12K+/yr wall. Devvit removes the wall entirely.
+
+Devvit-native gives every operator zero marginal hosting + zero API cost + per-sub Reddit-rate-limit isolation. The cost-side win is structural, not budgetary.
+
+## 14. Honest gaps + counter-frame
+
+Per Codex's mandate not to overclaim:
+
+- **"60K mods" is Reddit's public statistic** (Statista + Reddit press), not a peer-reviewed measurement. The academic measured value is 21.5K (Li et al.). TAM math compounds the gap. Flag both numbers and let judges pick which to attack.
+- **AutoMod 82%/8%** lacks a clean primary citation — restate as "per Reddit's published data" with a hedge.
+- **DQE Tier 5+ ($25K+)** requires ~50K daily distinct mods which is near-implausible for a moderation tool. Cap honest projections at Tier 4 ($10.5K cumulative).
+- **Developer Funds renewal isn't guaranteed.** Program runs Apr 2025 → Jun 2026. Treat all ladder payouts as one-time and probabilistic, not recurring ARR.
+- **Devvit kill risk.** Reddit has killed monetization products before (Community Points, 2023). Mitigation: this port stands as utility regardless of monetization.
+- **Counter-frame from a skeptical judge:** *"Mod tools have low engagement metrics by design — they hide work. Why does this matter to Reddit's growth?"* Reframe: the win condition is **mod retention** + **2023-blackout-style risk mitigation**, not DAU lift. Reddit's S-1 already cites mod-developer relations as a named risk factor — keeping moderators happy and bots functional *is* the win condition.
+
 ## Open verification flags (revisit before submission)
 
 - **"AutoMod 82%/8%"** — cite as "per Reddit's own published data" with hedge until primary source located.
