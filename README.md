@@ -82,6 +82,46 @@ onPostSubmit       onCommentSubmit       onModAction
 
 **Atomic config publish:** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every handleActivity reads the pointer ONCE at event start so the entire pipeline runs against a consistent config snapshot.
 
+## Config schema
+
+Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable example:
+
+```json5
+{
+  schema_version: "1",
+  runs: [
+    {
+      name: "main",
+      checks: [
+        {
+          name: "spam-filter",
+          condition: "AND",
+          rules: [
+            { kind: "regex", regex: "free.{0,5}money|crypto.+(giveaway|drop)", testOn: ["title", "body"] },
+            { kind: "author", include: [{ age: "< 86400" }] }       // accounts <1d old
+          ],
+          actions: [
+            { kind: "remove", spam: true },
+            { kind: "comment", content: "Removed: looks like spam from a fresh account. /u/{{item.author.name}}, modmail us if this was a mistake." }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Concept model** (ported faithfully from the original ContextMod):
+
+- **Run** — ordered list of Checks. Supports `postBehavior` (`next` / `nextRun` / `stop` / `goto:<run>.<check>`) for branching workflows.
+- **Check** — a group of Rules combined with `AND` or `OR`. When triggered, executes its Actions.
+- **Rule** — a single boolean predicate (`regex`, `author`, `history`, `attribution`, `recentActivity`, `repost`, `mhs`, plus composite `ruleSet`).
+- **Filter** — `authorIs` / `itemIs` clauses that gate Rule/Check/Action execution by author + item attributes.
+- **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
+- **Named rules** — declare a rule once with `name:`, reference by string elsewhere — DRY composition.
+
+See [`src/server/schema/app.schema.json`](./src/server/schema/app.schema.json) for the canonical AJV schema, or the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) for an exhaustive reference (concepts identical, surface trimmed).
+
 ## Credits
 
 - **Original bot:** FoxxMD ([github.com/FoxxMD/context-mod](https://github.com/FoxxMD/context-mod)) — MIT License. Used with written permission.
