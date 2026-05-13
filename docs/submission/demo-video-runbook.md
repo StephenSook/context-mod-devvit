@@ -196,14 +196,61 @@ YouTube upload:
 - [ ] Captions written in advance, not improvised after
 - [ ] Stephen rehearsed the full 60s VO twice
 
-## Fallback if Phase 1 slips
+## Fallback if Phase 1 slips — full synthetic-data recording plan
 
-If Phase 1 isn't live by **May 22, 2026**, accept that the demo can't show a real end-to-end trigger and adapt:
+If Phase 1 isn't live by **May 17, 2026** (T-3 days per `submission-day-runbook.md`), execute this complete capture path. The fallback isn't ideal but is honest — Devpost research found that *winners* explicitly caption mockup-vs-real-data; faked numbers torch credibility faster than stated gaps.
 
-1. **Use `?demo=1` synthetic data on the Observatory dashboard.** Load the dashboard URL with the demo query param so the stat cards, sparkline, and event stream all populate with seeded values.
-2. **Caption the fallback transparently.** Add a single line of text near the end of the demo (5–7s before close): *"Dashboard rendered with demo data; Phase 1 backend ships post-hackathon."* This protects integrity vs. judges spotting unrealistic numbers later.
-3. **Re-record narration to match.** Drop the "real-time trigger" line from the VO; replace with "rule engine ports the upstream concept model faithfully — wiring to live triggers is the final integration step."
-4. **Add a static frame at the end.** "v0.1.0: rule engine + dashboard + idempotency layer + config publish — shipping. Phase 1 wiring + Phase 2 actions land 2 weeks post-submission. Open source from day one."
-5. **Document the fallback in the writeup.** Update `docs/submission/writeup-draft.md` Section 3 "Gaps vs upstream (deferred)" to make Phase 1 status explicit.
+### Pre-flight (1 hour before recording)
 
-The fallback isn't ideal but is honest. Judges see through faked dashboards faster than they see through stated gaps.
+- [ ] Load `https://developers.reddit.com/apps/cm-devvit?demo=1` (or playtest equivalent) — confirm dashboard renders with seeded data: 47 actions today / 2h 14m saved / 3 active rules / spam-filter top rule
+- [ ] Open the wiki at `r/cm_devvit_test/wiki/contextmod` — confirm starter JSON5 config visible
+- [ ] Open the App Directory page at `developers.reddit.com/apps/cm-devvit`
+- [ ] Open the mod overflow menu showing the 3 ContextMod items
+- [ ] Pre-position cursor in OBS for each scene transition
+
+### Beat-by-beat capture sequence (60s total)
+
+| Beat | Time | OBS scene | Source data | VO line (Stephen's voice) |
+|------|------|-----------|-------------|---------------------------|
+| Cold open | 0-8s | montage stills | r/AskReddit modqueue + 2023 blackout + Q1 2026 earnings | "Reddit's mods do 466 hours of unpaid labor a day. 73% of mod actions are already bots. The bot infrastructure they depend on got killed in 2023." |
+| History + permission | 8-22s | screenshots | github.com/FoxxMD/context-mod + FoxxMD Discord screenshot + issue #152 | "ContextMod's the rule-engine mod bot 15+ communities run — r/mealtimevideos at 60K weekly, r/piercing at 600K. Last release 2022. I got written permission from FoxxMD to port it to Devvit." |
+| Install | 22-29s | App Directory | live `developers.reddit.com/apps/cm-devvit` | "One click to install on any subreddit. No hosting. No tokens." |
+| Wiki config | 29-36s | wiki tab | live wiki editor with starter JSON5 | "Write rules in JSON5 in your sub's wiki. Composable rules. Mustache-templated action messages. The full ContextMod concept model, ported faithfully." |
+| Trigger flow | 36-43s | dashboard `?demo=1` | synthetic seeded data | "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions." |
+| Dashboard tour | 43-50s | dashboard `?demo=1` | synthetic seeded data | "Telemetry stream: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live." |
+| Wedge + truth caption | 50-58s | title card with caption | static, ffmpeg-rendered | "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program." + ON-SCREEN CAPTION: *"Dashboard rendered with `?demo=1` synthetic data. Phase 1 live-trigger wiring lands post-hackathon."* |
+| Close | 58-60s | three lines fade-up | static | "ContextMod, on Devvit. Now." |
+
+### Caption-as-truth-telling (ffmpeg subtitle bake)
+
+Add this caption block to `captions.srt` between the wedge VO and the close:
+
+```
+N
+00:00:50,000 --> 00:00:57,000
+Dashboard rendered with ?demo=1 synthetic data.
+Phase 1 live-trigger wiring lands post-hackathon.
+```
+
+Bake into the final mp4 via the same `ffmpeg -vf "subtitles=captions.srt:..."` pipeline used for the rest of the captions. **Do not** rely on YouTube auto-captions for this disclosure — judges may watch with captions off.
+
+### Writeup synchronization
+
+After recording the synthetic-data version, sync the writeup state:
+
+- [ ] `docs/submission/writeup-draft.md` Section 3 "Ported faithfully": each shipped bullet stays as ✅ but emphasis on "scaffolds + types + idempotency primitives + dashboard"; gating language for "live evaluation lands Phase 1" / "handler wiring lands Phase 2" / "dashboard live data wires Phase 3" remains intact.
+- [ ] `docs/submission/writeup-draft.md` Section 5 checklist: confirm "Demo video recorded" item references synthetic-data path explicitly.
+- [ ] `docs/submission/devpost-form-cheat-sheet.md` Step 3 image-gallery captions: add `(rendered with ?demo=1 synthetic data)` suffix to dashboard-related images.
+
+### Recording rehearsal checklist
+
+- [ ] Read each beat aloud once at natural pace. If a beat overruns its time-slot, trim words not slow the read.
+- [ ] Read again with the on-screen visual cued (OBS preview window) so VO timing matches scene transitions.
+- [ ] Record VO clip-by-clip; don't try to nail the whole 60s in one take.
+- [ ] Apply Audacity post-process: Filter Curve EQ (Voice low-cut 80Hz) + Compressor (2:1 / -18dB) + Normalize to -1dB peak.
+
+### When to NOT use the synthetic path
+
+If Phase 1 + Phase 2 + Phase 3 all ship by May 17 (`handleActivity` → `runRule` → action → `events:recent` ZSET → dashboard update) — record the live-data version instead. Judges trust real telemetry more than mockups, and the synthetic-data caption costs ~5s of demo time that could be product showcase.
+
+The synthetic-data path is the **honest fallback**, not the preferred path.
