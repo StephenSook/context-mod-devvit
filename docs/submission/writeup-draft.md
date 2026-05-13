@@ -73,14 +73,17 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 
 > **What Devpost asks:** "Describe any differences, improvements, or gaps between your new app and the original bot. Could this app be installed today and serve the original function of the app?"
 
-### Ported faithfully (works today, v0.1.0)
+### Ported faithfully (rule engine + dashboard ship in v0.1.0)
 
-- Rule/Check/Action concept model + `postBehavior` flow control + `goto:` jumps
-- Filter system (authorIs/itemIs)
-- 3 MVP rule kinds + 7 MVP actions
-- Wiki-based JSON5 config with AJV validation + atomic publish
-- Named rules + Mustache action templating
+The concept model + rule semantics + wiki-config publish pipeline + dashboard all ship. Live-trigger wiring (`handleActivity` → rule pipeline → mod action) is the Phase 1 integration step Vinh is finishing through Day 5-8. What that means concretely:
+
+- Rule/Check/Action concept model + `postBehavior` flow control + `goto:` jumps — ported
+- Filter system (authorIs/itemIs) — ported
+- 3 MVP rule kinds + 7 MVP actions — ported as types + handlers; full integration lands Phase 2
+- Wiki-based JSON5 config with AJV validation + atomic publish — working
+- Named rules + Mustache action templating — working
 - Per-effect idempotency (5min pending + 7d done) — improvement over upstream (CM didn't have explicit retry-safety primitives)
+- Observatory dashboard — working with `?demo=1` synthetic data; live data wires up at Phase 3
 
 ### Improvements over upstream
 
@@ -112,7 +115,7 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 
 - **App link:** `developers.reddit.com/apps/cm-devvit`
 - **Repo link:** `github.com/StephenSook/context-mod-devvit`
-- **Original bot username:** `u/ContextModBot` (FoxxMD's primary instance — confirm w/ FoxxMD before submission)
+- **Original bot username:** `u/ContextModBot` (FoxxMD's primary instance — confirmed May 12, 2026 via Discord; transcript in [`outreach-drafts.md`](./outreach-drafts.md) "Resolved already" callout)
 - **Reddit username (entrant):** `u/CowSufficient3840` (Stephen Sookra)
 - **Demo video:** [insert YouTube unlisted link — see `demo-video-script.md`]
 - **Helper nomination:** SampleOfNone (publicly flagged the image-parsing challenge in r/Devvit Discord; informed scope decision)
