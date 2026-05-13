@@ -33,9 +33,9 @@ ContextMod — Devvit port of FoxxMD's PRAW mod bot
 
 **Recommended:**
 ```
-FoxxMD's PRAW moderation bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, live action dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck. 15+ communities ready.
+FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, live action dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck. 15+ communities ready.
 ```
-*200 chars exact. Names the upstream, names the platform, lists the wedge (no hosting/tokens/bottleneck), grounds in a concrete operator base.*
+*198 characters (Devpost cap is 200). Names the upstream, names the platform, lists the wedge (no hosting/tokens/bottleneck), grounds in a concrete operator base.*
 
 **Sookra anchors:** Pillar 1 (FoxxMD) + Pillar 2 (no shared bottleneck) + Pillar 5 (15+ communities).
 
