@@ -4,7 +4,13 @@ import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
 import { EventRow } from './components/EventRow';
 import { ActionBar } from './components/ActionBar';
-import { fetchRecent, fetchStats, DEMO_EVENTS, DEMO_STATS, ZERO_STATS } from './lib/api';
+import {
+  fetchRecentSafe,
+  fetchStatsSafe,
+  DEMO_EVENTS,
+  DEMO_STATS,
+  ZERO_STATS,
+} from './lib/api';
 import type { EventRecord, StatsRollup } from './lib/types';
 
 const POLL_MS = 10_000;
@@ -20,24 +26,39 @@ export default function App() {
   const [stats, setStats] = useState<StatsRollup | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<number>(Date.now());
   const [usingDemo, setUsingDemo] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [recent, statsData] = await Promise.all([fetchRecent(), fetchStats()]);
-    if (recent.length === 0 && !statsData) {
+    const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
+
+    // If EITHER call errored, surface the error and keep the last-good state
+    // so the dashboard doesn't lose its display while the API recovers.
+    if (!recent.ok || !statsData.ok) {
+      const errMsg = !recent.ok ? recent.error : !statsData.ok ? statsData.error : 'unknown';
+      setApiError(errMsg);
+      setRefreshedAt(Date.now());
+      return;
+    }
+
+    setApiError(null);
+
+    // Both calls succeeded. Three branches: real data, empty + demo, empty + zero-state.
+    const recentEvents = recent.empty ? [] : recent.data;
+    const statsValue = statsData.empty ? null : statsData.data;
+
+    if (recentEvents.length === 0 && !statsValue) {
       if (DEMO_ENABLED) {
         setEvents(DEMO_EVENTS);
         setStats(DEMO_STATS);
         setUsingDemo(true);
       } else {
-        // Genuine empty state — zero stats + empty event list. Dashboard chrome
-        // still renders so first-install mods see the layout they'll get later.
         setEvents([]);
         setStats(ZERO_STATS);
         setUsingDemo(false);
       }
     } else {
-      setEvents(recent);
-      setStats(statsData ?? ZERO_STATS);
+      setEvents(recentEvents);
+      setStats(statsValue ?? ZERO_STATS);
       setUsingDemo(false);
     }
     setRefreshedAt(Date.now());
