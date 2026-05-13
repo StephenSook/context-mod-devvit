@@ -124,11 +124,11 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 
 ## Section 5 — Pre-submission checklist
 
-- [ ] FoxxMD confirms bot username for "Original bot" field
-- [ ] All written permission documentation captured (Discord screenshots + GitHub issue 152 link)
-- [ ] App `--public` flag set + Devvit app review passed
-- [ ] `policies/privacy.md` + `policies/terms.md` URLs live on GitHub Pages
-- [ ] Repo flipped to public
-- [ ] Phase 4 image-hash either shipped OR explicitly downgraded in writeup (don't overstate)
-- [ ] Demo video uploaded to YouTube (unlisted)
+- [x] FoxxMD confirms bot username for "Original bot" field (`u/ContextModBot`, confirmed May 12, 2026)
+- [x] Written permission documentation captured (Discord transcript in `outreach-drafts.md` + GitHub [issue #152](https://github.com/FoxxMD/context-mod/issues/152))
+- [x] Repo flipped to public + GitHub Pages live for privacy/ToS (May 13, 2026)
+- [ ] App `--public` flag set + Devvit app review passed (post Phase 1+2)
+- [ ] Phase 4 image-hash + MHS rule either shipped OR explicitly downgraded in writeup (decision tree in `domain-approval-runbook.md`)
+- [ ] Demo video recorded + uploaded to YouTube (unlisted) — gated on Phase 1 backend live
 - [ ] Stephen rewrites every section of this draft in his own voice
+- [ ] Run `./scripts/check-ai-tone.sh --strict` against final pasted text
