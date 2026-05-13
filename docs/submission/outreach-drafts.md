@@ -24,7 +24,7 @@
 
 **Context:** FoxxMD added Stephen + Vinh as repo collaborators on May 12 and said he'd prefer technical discussion to live on GitHub issues/discussions for indexability. Also offered to set up a GitHub Project kanban board. Stephen owes a thank-you + acknowledgement + answer on the board.
 
-**Send:** today (May 13, 2026), Discord — same thread.
+**Send:** Discord same thread (drafted May 13, 2026 — send within 24h of drafting to keep "thanks for the X today" framing accurate).
 
 ```
 thanks for the collab access — confirmed on both ends. fully agree on keeping technical discussion in github issues/discussions for indexability, i'll move anything substantive over there.
@@ -42,7 +42,7 @@ vinh has access too, so once we kick off phase 1 he picks up backend tasks direc
 
 **Context:** SampleOfNone asked on May 12: *"For subs that already run CM, you plan on using their existing wiki pages?"* — a real technical question about the port's compatibility with existing CM operator workflows. Stephen owes a direct answer + this is the natural place to weave in the helper-nomination ask later (separate followup once the Devpost form is filled out).
 
-**Send:** today (May 13, 2026), Discord — same thread.
+**Send:** Discord same thread (drafted May 13, 2026 — send within 24h of drafting to keep "thanks for the X today" framing accurate).
 
 ```
 yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (regex / author / ruleSet) + 7 actions use the same JSON5 schema, so existing CM operators can copy their config across with minimal cleanup. Phase 4 rules (history / attribution / recentActivity / repost / mhs) land later and might need a syntax tweak depending on which upstream edge cases we keep — i'm holding the upstream AJV schema as source of truth except where Devvit's runtime can't support a primitive.
