@@ -4,10 +4,17 @@
 
 > **Calendar note:** today is May 13, 2026. Hackathon deadline is May 27, 2026 at 6pm PT. Dates below use the unambiguous "Month Day, Year" form to avoid ISO-format ambiguity.
 
-> **Resolved already** (per the May 12 Discord thread):
-> - **Original Bot username** = `u/ContextModBot` (FoxxMD confirmed, mods r/mealtimevideos at 60K weekly visitors)
-> - **500 WAU eligibility** = satisfied (FoxxMD: "Safe to say it's over the 500 active users threshold")
-> - **Permission to port** = granted via [issue #152](https://github.com/FoxxMD/context-mod/issues/152) + repo collaborator access for `chiblue` + `vinhbin`
+> **Resolved already** (per the May 12, 2026 Discord thread — Stephen captured the verbatim transcript and pasted it into the Day 3 working session):
+>
+> **Original Bot username = `u/ContextModBot`.** FoxxMD's exact message (May 12, 2026, 3:19 PM):
+> > "Hey @Chi blú! You can see the history for the main CM bot account I personally own/run here: https://www.reddit.com/user/ContextModBot/ Notably, it mods r/mealtimevideos which has 60k visitors a week."
+>
+> **500 WAU eligibility = satisfied.** FoxxMD same message:
+> > "I don't have exact statistics on all the other subreddits, but CM server I run has at least 15 other accounts-as-bots running (by other mods). A few of those are in the 10k-1M subscriber range. There are also a few bots that manage about 150 NSFW subreddits. Safe to say its over the 500 active users threshold."
+>
+> **Permission to port** = granted via [issue #152](https://github.com/FoxxMD/context-mod/issues/152) + repo collaborator access for `chiblue` + `vinhbin` (FoxxMD message, May 12, 2026, 4:21 PM): *"I've added you and vinhbin as repo collaborators."*
+>
+> **GitHub Project board** = shared 2026-05-13 (today), 2:50 PM: *"you should have access to this new project now: https://github.com/users/FoxxMD/projects/6"* — title "ContextMod Devvit."
 >
 > So the previously-drafted "ping #2 to confirm bot username" is obsolete. Below is the actual response Stephen owes right now.
 
