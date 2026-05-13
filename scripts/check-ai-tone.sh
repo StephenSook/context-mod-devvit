@@ -21,9 +21,10 @@
 # instructions, scan-instructions, etc.) are skipped via the AITONE_IGNORE
 # marker. Add `<!-- AITONE_IGNORE -->` on the same line to whitelist.
 
+set -eo pipefail
 set -u
 
-# Blocklist — alphabetical, word-boundary matched
+# Blocklist — alphabetical
 BLOCKLIST=(
   amazing
   cutting-edge
@@ -44,8 +45,17 @@ BLOCKLIST=(
   transform
 )
 
-# Build alternation regex
-pattern="\\b($(IFS='|'; echo "${BLOCKLIST[*]}"))\\b"
+# Build alternation. We use BSD-compatible word-edge anchors instead of \b
+# (which is POSIX-undefined and varies between GNU/BSD grep). [[:<:]] / [[:>:]]
+# work on both BSD (macOS) and GNU when grep is invoked with -E.
+pattern="[[:<:]]($(IFS='|'; echo "${BLOCKLIST[*]}"))[[:>:]]"
+
+# GNU grep (Ubuntu CI runner) doesn't recognize [[:<:]] in ERE. Detect.
+if ! echo "test" | grep -E "[[:<:]]test[[:>:]]" >/dev/null 2>&1; then
+  # GNU grep fallback: \< and \> word boundaries (supported by both BRE + ERE
+  # on GNU; not on BSD, but BSD already took the [[:<:]] branch above).
+  pattern="\\<($(IFS='|'; echo "${BLOCKLIST[*]}"))\\>"
+fi
 
 STRICT=0
 declare -a FILES=()
@@ -82,19 +92,35 @@ if [ ${#SCAN_PATHS[@]} -eq 0 ]; then
   exit 0
 fi
 
-# Run the scan, skip AITONE_IGNORE lines
+# Run the scan, skip AITONE_IGNORE lines.
+# Distinguish grep exit codes: 0=match, 1=no match (both OK), >=2=real error
+# (permission denied, binary file, file vanished). Real errors count as hits
+# so a broken docs file in CI can't silently green the build.
 hits=0
 for p in "${SCAN_PATHS[@]}"; do
+  set +e
+  out=$(grep -niE "$pattern" "$p" 2>&1)
+  rc=$?
+  set -e
+  case $rc in
+    0) ;;                # match
+    1) continue ;;       # no match — next file
+    *)
+      echo "ERROR scanning $p (rc=$rc): $out" >&2
+      hits=$((hits + 1))
+      continue
+      ;;
+  esac
   while IFS= read -r line; do
-    # line format: filename:N:content
-    # Tighten: only the literal HTML-comment marker form counts as an escape.
-    # Substring "AITONE_IGNORE" in documentation/instruction prose does NOT bypass.
+    [ -z "$line" ] && continue
+    # Only the literal HTML-comment marker counts as an escape.
+    # Substring mentions of "AITONE_IGNORE" in prose do NOT bypass.
     if echo "$line" | grep -qF '<!-- AITONE_IGNORE -->'; then
       continue
     fi
     echo "$line"
     hits=$((hits + 1))
-  done < <(grep -niE "$pattern" "$p" 2>/dev/null || true)
+  done <<<"$out"
 done
 
 echo ""
