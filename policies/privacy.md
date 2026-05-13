@@ -1,3 +1,9 @@
+---
+permalink: /privacy/
+title: Privacy Policy
+description: Privacy Policy for the cm-devvit Reddit Devvit app.
+---
+
 # Privacy Policy — context-mod-devvit
 
 **Last updated:** May 12, 2026
