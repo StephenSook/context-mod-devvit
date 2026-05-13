@@ -38,6 +38,24 @@ vinh has access too, so once we kick off phase 1 he picks up backend tasks direc
 
 ---
 
+## 1b. Reply to FoxxMD — kanban board seeded
+
+**Context:** After Stephen's reply offering to seed the board, FoxxMD shared the Projects v2 link (https://github.com/users/FoxxMD/projects/6, "ContextMod Devvit") on May 13, 2026 at 2:50 PM. Stephen confirmed scopes via `gh auth refresh -s project,read:project` and 42 cards were bulk-added via the GraphQL API — full Phase 1-6 mirror of the master plan, tagged `[P1]` through `[P6]` for phase grouping. Stephen owes a heads-up that the seeding is done.
+
+**Send:** Discord same thread (within 24h of seeding — May 13, 2026).
+
+```
+seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you can group by phase. vinh's tagged on phase 1+2+4 (backend), i'm on phase 3+5+6 (dashboard wire / demo / submission). a few cards have blocked dependencies noted in the body — phase 3 dashboard wire-up depends on phase 1 + 2 shipping, phase 4 image-hash depends on a day-0 spike, mhs rule depends on api.moderatehatespeech.com fetch approval (which is high-risk per reddit's personal-domain policy, decision tree documented).
+
+statuses are all set to default; you or i can flip them in the UI as work moves. happy to add custom fields (Status / Owner / Phase) if you want a richer view than what i seeded.
+
+source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update.
+```
+
+**AI-tone scan:** clear.
+
+---
+
 ## 2. Reply to SampleOfNone — "wiki pages for existing CM subs?"
 
 **Context:** SampleOfNone asked on May 12: *"For subs that already run CM, you plan on using their existing wiki pages?"* — a real technical question about the port's compatibility with existing CM operator workflows. Stephen owes a direct answer + this is the natural place to weave in the helper-nomination ask later (separate followup once the Devpost form is filled out).
