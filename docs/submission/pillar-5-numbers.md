@@ -41,7 +41,43 @@
 - **8,800 subreddits went private** in protest.
 - **28,606 moderators participated.**
 - **2.79B subscribers affected.**
+- Reddit's paid Data API tier launched **2023-07-01**. Apollo was quoted **$12,000 per 50M requests / ~$20M/yr** for commercial access ([apolloapp post, Christian Selig](https://www.reddit.com/r/apolloapp/comments/13ws4w3/had_a_call_with_reddit_to_discuss_pricing_bad/), [Wikipedia: Reddit API controversy](https://en.wikipedia.org/wiki/Reddit_API_controversy)).
+- The free tier survives only at **100 QPM per OAuth client** for non-commercial use — mathematically incompatible with full-subreddit moderation streams.
 - This is the moment that **necessitated** this port: Reddit's free Data API was killed, and PRAW-based mod bots needed a new home. Devvit is that home.
+
+## 6.5. Devvit Blocks deprecation — Pillar 4 evidence
+
+The 2023 blackout closed off PRAW. Reddit's 2026 platform decisions close off the only remaining alternative (Devvit Blocks), leaving Devvit Web as the singular path forward. Migration is structurally forced, not stylistically preferred.
+
+**Reddit's own deprecation announcement:**
+> "To better support our development of Devvit Web, in the coming months we will be deprecating Devvit Blocks renderer for interactive posts."
+
+— r/Devvit post [`1r3xcm2`](https://www.reddit.com/r/Devvit/comments/1r3xcm2/devvit_web_and_the_future_of_devvit/) — "Devvit Web and the future of Devvit"
+
+**Reddit's positioning of Devvit Web:**
+> "Devvit Web has reached full feature parity with blocks, and we strongly recommend using Devvit Web for all new apps."
+
+— r/Devvit post [`1pcm13z`](https://www.reddit.com/r/Devvit/comments/1pcm13z/devvit_0125_payments_for_devvit_web/) — "Devvit 0.12.5: Payments for Devvit Web"
+
+**The countdown:**
+> "As announced previously we are approaching the deprecation deadline for apps that use the Blocks renderer. We are about 80 days away from the final deadline..."
+
+— r/Devvit post [`1shophd`](https://www.reddit.com/r/Devvit/comments/1shophd/upcoming_deprecation_of_apps_that_use_blocks/) — "Upcoming Deprecation of apps that use Blocks Renderer." The 80-day window places the hard cutover in 2026 H2 — i.e., this hackathon period.
+
+**The Migration Bounty is scoped to exactly this archetype:**
+> "Moving an app from blocks to Devvit Web does not count towards the migration program bounty. We're only accepting existing Data API apps..."
+
+— r/Devvit post [`1sgwkm7`](https://www.reddit.com/r/Devvit/comments/1sgwkm7/bring_your_data_api_apps_to_devvit_and_details/). Reddit pays the bounty *specifically* for PRAW/Data-API → Devvit Web ports. ContextMod is the textbook target.
+
+**ContextMod's release timing is the case study.** GitHub confirms FoxxMD/context-mod's last release was **v0.13.4 on 2022-11-29**, and the last substantive code commit was **2023-05-01** (PR #143 merge) — weeks before the July 1, 2023 paid-tier launch. The repository was just touched again on **2026-05-12** with commits literally titled *"disable existing workflows"* and *"ci: disable auto workflows for publish/pages"* — the maintainer is winding it down, not reviving it. ([github.com/FoxxMD/context-mod](https://github.com/FoxxMD/context-mod/releases))
+
+**The four arrows of inevitability** all point the same way within the same 18-month window:
+1. Reddit pushes Devvit Web ("strongly recommend... for all new apps")
+2. Reddit deprecates Blocks ("80 days away from final deadline")
+3. Reddit prices out the Data API ($12K+/yr commercial; 100 QPM free is unworkable for moderation)
+4. Reddit *pays $1,000* per qualifying PRAW→Devvit migration
+
+This is structural inevitability, not vibes.
 
 ## 7. Devvit Developer Funds 2026
 
