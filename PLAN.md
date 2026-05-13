@@ -164,7 +164,7 @@ u/CowSufficient3840 (Stephen's logged-in account on devvit). Reflected in `polic
 - [ ] **Q1:** Image-hash spike outcome — GO or NO-GO? (Task 0.10 result). **Decides:** finalize D8, sets Phase 4 shape. Owner: Vinh.
 - [ ] **Q2:** Does `i.redd.it` fetch work post-approval? CDN auth/referer behavior unknown. Test in playtest. **Decides:** image-hash viability even if blockhash decode works. Owner: Vinh during 0.10 spike.
 - [ ] **Q3:** Submission framing — "Devvit-native full port" vs "spiritual successor + dashboard"? Lean former if Phase 4 ships clean. **Decides:** Stephen by Day 14.
-- [ ] **Q4:** Custom post height in `devvit.json.post.entrypoints` — `regular` or `tall`? Currently `regular`. Re-evaluate after dashboard mock. **Decides:** Stephen, Phase 3.
+- [x] **Q4:** Custom post height in `devvit.json.post.entrypoints` — set to `tall` in `devvit.json`. Observatory dashboard needs the vertical room for the action stream + stat cards + sparkline. Decided May 13, 2026 by Stephen.
 
 ---
 
