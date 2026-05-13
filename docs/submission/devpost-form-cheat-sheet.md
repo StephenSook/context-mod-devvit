@@ -1,6 +1,6 @@
 # Devpost Submission Form — Paste-Ready Cheat Sheet
 
-> **Source of truth:** Stephen captured the actual Devpost form on 2026-05-13 (URL: `devpost.com/submit-to/29423-reddit-mod-tools-and-migrated-apps-hackathon/manage/submissions/1017798/...`). Every field below is mapped to the real form, with verbatim paste copy. 14 days to deadline at draft time.
+> **Source of truth:** Stephen captured the actual Devpost form on May 13, 2026 (URL: `devpost.com/submit-to/29423-reddit-mod-tools-and-migrated-apps-hackathon/manage/submissions/1017798/...`). Every field below is mapped to the real form, with verbatim paste copy. Drafted May 13, 2026; hackathon deadline May 27, 2026 at 6pm PT.
 >
 > **Voice:** Stephen edits every paragraph in his own voice before submission. This is structural scaffolding, not final copy. No AI-tone words (`powerful`, `sophisticated`, `revolutionary`, `seamless`, `leverage`, `robust`, `cutting-edge`, `intuitive`, `amazing`, `easily`, `simply`, `effortlessly`, `transform`). <!-- AITONE_IGNORE -->
 
@@ -49,12 +49,12 @@ FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wi
 
 ### About the project (Markdown, LaTeX-capable)
 
-Devpost's template suggests headings: **Inspiration / What it does / How we built it / Challenges / Accomplishments / What I learned / What's next / Built with**. Paste in that order so the project page renders cleanly.
+Devpost's template suggests headings: **Inspiration / What it does / How I built it / Challenges / Accomplishments / What I learned / What's next / Built with**. Paste in that order so the project page renders cleanly.
 
 ```markdown
 ## Inspiration
 
-ContextMod is the rule-engine mod bot that 15+ subreddit teams have been running since 2019. It's why r/mealtimevideos (60K weekly visitors) and r/piercing (600K visitors, 12K contributors) had a fighting chance against spam waves that AutoMod's regex can't catch. Then Reddit killed the free Data API in July 2023, and the entire PRAW-era ContextMod ecosystem started running on dying infrastructure. FoxxMD's last release was November 2022 — weeks before the paid Data API tier launched. In March 2026 Reddit announced the $1,000 Migration Bounty for PRAW → Devvit ports. On the Q1 2026 earnings call Reddit's CEO said: "we have what we call good bots on Reddit... we're porting those over to our developer platform." ContextMod was the obvious target.
+ContextMod is the rule-engine mod bot that 15+ subreddit teams have been running since 2019. It's why r/mealtimevideos (60K weekly visitors) and r/piercing (600K visitors, 12K contributors) had a fighting chance against spam waves that AutoMod's regex can't catch. Then Reddit killed the free Data API in July 2023, and PRAW-era ContextMod installs started running on dying infrastructure. FoxxMD's last release was November 2022 — weeks before the paid Data API tier launched. In March 2026 Reddit announced the $1,000 Migration Bounty for PRAW → Devvit ports. On the Q1 2026 earnings call Reddit's CEO said: "we have what we call good bots on Reddit... we're porting those over to our developer platform." ContextMod was the obvious target.
 
 I got written permission from FoxxMD to port it (GitHub issue [FoxxMD/context-mod#152](https://github.com/FoxxMD/context-mod/issues/152), Discord exchange archived).
 
@@ -81,7 +81,7 @@ TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architectu
 - **`submitCustomPost` deprecated `splash` in 0.12.23.** Had to use `entry` + `textFallback`.
 - **Vitest needed its own config** to bypass the `@devvit/start` plugin (which only works in `vite build` mode).
 - **App icon I generated via Gemini was JPEG bytes inside a `.png` filename** — would've failed Devvit's upload validation. Caught via Codex review on Day 2, re-encoded via PIL with LANCZOS resample.
-- **The first developer-portal cheat sheet I drafted fabricated 70% of fields** (tagline, category dropdown, support URL, etc.) that don't exist in Reddit's actual Developer Portal. Caught via research-agent cross-check against the official Devvit `launch-guide.md`. Rewrote it.
+- **The first developer-portal cheat sheet I drafted invented 8 of 13 fields** (tagline, category dropdown, support URL, etc.) that don't exist in Reddit's actual Developer Portal. Caught via research-agent cross-check against the official Devvit `launch-guide.md`. Rewrote it.
 
 ## Accomplishments
 
@@ -151,7 +151,7 @@ Capture from the running app + repo at submission day:
 [TBD — YouTube unlisted URL after Day 13-14 recording]
 ```
 
-Beat sheet in [`demo-video-script.md`](./demo-video-script.md). Production runbook in [`demo-video-runbook.md`](./demo-video-runbook.md) (to be written in Wave I of the day-3 plan).
+Beat sheet in [`demo-video-script.md`](./demo-video-script.md). Production runbook in [`demo-video-runbook.md`](./demo-video-runbook.md).
 
 ---
 
@@ -160,7 +160,7 @@ Beat sheet in [`demo-video-script.md`](./demo-video-script.md). Production runbo
 ### Sponsor / Special Prizes
 
 Multi-select. Choose:
-- ✅ **Best Ported App** — the $10,000 grand prize (this is our primary target)
+- ✅ **Best Ported App** — the $10,000 grand prize (this is my primary target)
 - Possibly also: any "Most Helpful Migration" / "Community Choice" prize categories if surfaced
 
 *Open verification flag:* check the dropdown's actual entries against the hackathon prize list at `mod-tools-migration.devpost.com` before submitting.
@@ -209,7 +209,7 @@ Paste from [`writeup-draft.md`](./writeup-draft.md) Section 3. Key honest claims
 ### Nominate a most helpful user (optional)
 
 ```
-u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "the hard part on Devvit" while we were scoping Phase 4. That informed our decision to gate the image-hash repost rule on a Day-0 spike before committing to it, and to mark MHS toxicity classification as conditional on Reddit's HTTP-fetch domain review. Direct impact on scope honesty.
+u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "the hard part on Devvit" while I was scoping Phase 4. That informed my decision to gate the image-hash repost rule on a Day-0 spike before committing to it, and to mark MHS toxicity classification as conditional on Reddit's HTTP-fetch domain review. Direct impact on scope honesty.
 ```
 
 ---
@@ -219,7 +219,7 @@ u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "t
 Pre-submission checklist (run in order):
 
 - [ ] All five steps in the Devpost form saved (`1/5` → `5/5` shown at top)
-- [ ] Project name passes AI-tone scan (run `scripts/check-ai-tone.sh` once it lands in Wave G)
+- [ ] Project name passes AI-tone scan (run `./scripts/check-ai-tone.sh --strict`)
 - [ ] Elevator pitch passes AI-tone scan
 - [ ] About-the-project Markdown passes AI-tone scan
 - [ ] Tool overview passes AI-tone scan
