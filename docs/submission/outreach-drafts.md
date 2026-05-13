@@ -2,59 +2,72 @@
 
 > Stephen sends every one of these in his own voice (per the Watchful1 AI-tone lesson). These drafts are starting points — rewrite at least one phrase per message so it doesn't sound copy-pasted. **AI does not send these.**
 
----
+> **Calendar note:** today is May 13, 2026. Hackathon deadline is May 27, 2026 at 6pm PT. Dates below use the unambiguous "Month Day, Year" form to avoid ISO-format ambiguity.
 
-## 1. FoxxMD — ping #2 (Discord DM)
-
-**Context:** Already got permission to port (issue #152). Need two things before submission: (a) confirm the bot username for Devpost's "Original Bot" field, (b) a 1-2 sentence quote we can use in the submission writeup.
-
-**Suggested send time:** 2026-05-15 (gives him 12 days to reply before deadline).
-
-```
-hey FoxxMD, quick update on the Devvit port and two questions if you have a minute
-
-progress: phase 0 scaffold is in, observatory dashboard renders, idem layer + atomic config publish working. repo at github.com/StephenSook/context-mod-devvit (public now). domain approval for the reddit hosts came through as expected.
-
-two things i need from you before i hit submit on devpost may 27:
-
-1. what's the actual bot username i should put in devpost's "original bot" field? i had u/ContextModBot in my notes but want to confirm before submitting.
-
-2. if you're willing — a one or two sentence quote i can include in the project impact section. something like "i've been running CM since X, this port unblocks Y for me" — your call on framing. fine if you'd rather not.
-
-no rush, but if i don't hear back by may 22 i'll put u/ContextModBot and skip the quote. either way, thanks for the permission — port is real and judges can install it.
-```
-
-**AI-tone scan:** clear of blocklist words.
+> **Resolved already** (per the May 12 Discord thread):
+> - **Original Bot username** = `u/ContextModBot` (FoxxMD confirmed, mods r/mealtimevideos at 60K weekly visitors)
+> - **500 WAU eligibility** = satisfied (FoxxMD: "Safe to say it's over the 500 active users threshold")
+> - **Permission to port** = granted via [issue #152](https://github.com/FoxxMD/context-mod/issues/152) + repo collaborator access for `chiblue` + `vinhbin`
+>
+> So the previously-drafted "ping #2 to confirm bot username" is obsolete. Below is the actual response Stephen owes right now.
 
 ---
 
-## 2. SampleOfNone — helper nomination ping (Reddit DM)
+## 1. Reply to FoxxMD — collab access + "let's keep technical on GitHub"
 
-**Context:** Want to nominate them as "Most helpful user" on Devpost. Their public flag in r/Devvit Discord that "image parsing is the hard part on Devvit" directly shaped Phase 4 scope decisions. Need their OK to (a) name them publicly in the submission, (b) cite r/piercing visitor stats.
+**Context:** FoxxMD added Stephen + Vinh as repo collaborators on May 12 and said he'd prefer technical discussion to live on GitHub issues/discussions for indexability. Also offered to set up a GitHub Project kanban board. Stephen owes a thank-you + acknowledgement + answer on the board.
 
-**Suggested send time:** 2026-05-16.
+**Send:** today (May 13, 2026), Discord — same thread.
 
 ```
-hey, sorry for the cold DM. i'm Stephen, building a Devvit Web port of FoxxMD's ContextMod for the mod tools hackathon (deadline may 27). repo: github.com/StephenSook/context-mod-devvit
+thanks for the collab access — confirmed on both ends. fully agree on keeping technical discussion in github issues/discussions for indexability, i'll move anything substantive over there.
 
-two asks if you have a minute:
+the kanban project board would actually help — got an internal phase 1-6 plan i can mirror over so you can see what's in scope vs explicitly cut. lmk if you want me to seed the initial cards or you'd rather start blank.
 
-1. you mentioned in r/Devvit Discord that image parsing is the hard part on Devvit. that comment directly shaped my Phase 4 scope — I gated the image-hash repost rule behind a Day-0 spike before committing to it. I'd like to nominate you as "most helpful user" on the Devpost submission for that reason. OK with me using your username publicly?
-
-2. mind if I reference r/piercing's visitor stats (600K + 12K contributors per Reddit's public metrics) as one of three named "communities served" examples? would only quote your public sub stats, nothing private.
-
-happy to share the dashboard link if you want to see what i built before deciding.
+vinh has access too, so once we kick off phase 1 he picks up backend tasks directly from the board.
 ```
 
 **AI-tone scan:** clear.
 
 ---
 
-## 3. r/Devvit subreddit + Discord update (post + share)
+## 2. Reply to SampleOfNone — "wiki pages for existing CM subs?"
 
-**Context:** Build community-side visibility before submission day. Shows progress without sounding AI-marketed. Stephen posts this in r/Devvit + cross-posts the same text to the r/Devvit Discord #show-and-tell channel.
+**Context:** SampleOfNone asked on May 12: *"For subs that already run CM, you plan on using their existing wiki pages?"* — a real technical question about the port's compatibility with existing CM operator workflows. Stephen owes a direct answer + this is the natural place to weave in the helper-nomination ask later (separate followup once the Devpost form is filled out).
 
-**Suggested send time:** 2026-05-19 (one week before deadline).
+**Send:** today (May 13, 2026), Discord — same thread.
+
+```
+yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (regex / author / ruleSet) + 7 actions use the same JSON5 schema, so existing CM operators can copy their config across with minimal cleanup. Phase 4 rules (history / attribution / recentActivity / repost / mhs) land later and might need a syntax tweak depending on which upstream edge cases we keep — i'm holding the upstream AJV schema as source of truth except where Devvit's runtime can't support a primitive.
+
+install flow: App Directory one-click → seed wiki contents → reload-config from the mod menu. no token migration, no central server.
+```
+
+**AI-tone scan:** clear.
+
+**Followup (separate ping closer to submission day, ~May 24, 2026 if she hasn't asked anything else):** ask permission to nominate her as "most helpful user" on Devpost + cite r/piercing's 600K visitors / 12K contributors as a named "communities served" example in the writeup. Keep that ask separate from this technical reply.
+
+---
+
+## 3. FoxxMD — optional quote ask (only if room left)
+
+**Context:** Nice-to-have, not blocking. Bot username + WAU eligibility are confirmed; submission can ship without a personal quote. But a one-sentence FoxxMD endorsement in the Project Impact section helps Pillar 1.
+
+**Send:** May 20, 2026 only IF Stephen has already moved technical discussion to GitHub issues for at least a week (so it doesn't read as a marketing ask). Otherwise skip.
+
+```
+hey, one more thing — totally fine to say no. when i write up the project impact section for devpost, would you be cool if i pulled a one or two sentence quote from this thread (or wrote one and got your sign-off)? something like "i've been running CM since 2019, this port unblocks the 15+ operators stuck on dying infra" — your framing, your call. zero pressure if you'd rather i just describe the technical port and skip the quote.
+```
+
+**AI-tone scan:** clear.
+
+---
+
+## 4. r/Devvit subreddit + Discord update (post + share)
+
+**Context:** Build community-side visibility before submission day. Shows progress without sounding AI-marketed. Stephen posts in r/Devvit + cross-posts to r/Devvit Discord `#show-and-tell` (or similar channel).
+
+**Send:** May 19, 2026 (one week before deadline). Gated on Vinh's Phase 1 backend being at least partially shipping (otherwise the "what's working" list is sparse).
 
 ```
 title: porting FoxxMD's ContextMod to Devvit Web — progress check
@@ -90,11 +103,11 @@ not asking for a review, just a heads-up that this is happening before submissio
 
 ---
 
-## 4. Submission day announcement (after Devpost submit)
+## 5. Submission day announcement (after Devpost submit)
 
 **Context:** Once Stephen hits submit on Devpost, share the public devpost project page in r/Devvit + Discord. Keep it short — community is fatigued with AI-marketed submissions during hackathon week.
 
-**Suggested send time:** 2026-05-27 (after the actual submission lands).
+**Send:** May 27, 2026 (after the actual submission lands).
 
 ```
 title: ContextMod Devvit Web port — submitted to mod tools hackathon
@@ -121,6 +134,6 @@ thanks to:
 
 For each message:
 1. Read the full draft aloud. If any line makes you wince, rewrite it.
-2. Replace at least one phrase per message with your own wording — it should not sound like the same writer wrote all four.
-3. Re-run `./scripts/check-ai-tone.sh` (if extended to scan this file) against the literal text you're about to paste.
+2. Replace at least one phrase per message with your own wording — it should not sound like the same writer wrote all five.
+3. Re-run `./scripts/check-ai-tone.sh` against the literal text you're about to paste (the scanner now covers this file too).
 4. Don't include the AI-tone scan footers in the actual send.
