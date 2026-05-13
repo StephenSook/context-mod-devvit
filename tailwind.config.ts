@@ -28,6 +28,7 @@ export default {
           warn: '#FBBF24',
           err: '#FB7185',
           info: '#60A5FA',
+          author: '#A78BFA',
         },
         line: 'rgba(255,255,255,0.06)',
         lineStrong: 'rgba(255,255,255,0.12)',

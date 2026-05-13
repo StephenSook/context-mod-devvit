@@ -18,7 +18,7 @@ const KIND_COLOR: Record<ActionKind, string> = {
   comment: '#60A5FA',
   report: '#FBBF24',
   ban: '#FB7185',
-  userFlair: '#A78BFA',
+  userFlair: '#A78BFA', // signal.author token (tailwind.config.ts)
 };
 
 function relTime(ts: number): string {
