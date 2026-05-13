@@ -1,28 +1,55 @@
-import type { EventRecord, StatsRollup } from './types';
+import type { ApiResult, EventRecord, StatsRollup } from './types';
 
-export async function fetchRecent(): Promise<EventRecord[]> {
+/**
+ * fetchRecentSafe / fetchStatsSafe — return a discriminated ApiResult so the
+ * dashboard can distinguish (success+data) vs (success+empty) vs (real error).
+ *
+ * Replaces the prior `return []` / `return null` swallow pattern that made an
+ * API outage indistinguishable from "no events yet" (Codex review HIGH F5).
+ */
+
+export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
   try {
     const res = await fetch('/api/recent');
-    if (!res.ok) return [];
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
-    return Array.isArray(data?.events) ? data.events : [];
-  } catch {
-    return [];
+    const events = Array.isArray(data?.events) ? (data.events as EventRecord[]) : [];
+    if (events.length === 0) return { ok: true, empty: true };
+    return { ok: true, empty: false, data: events };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
   }
 }
 
-export async function fetchStats(): Promise<StatsRollup | null> {
+export async function fetchStatsSafe(): Promise<ApiResult<StatsRollup>> {
   try {
     const res = await fetch('/api/stats');
-    if (!res.ok) return null;
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     const c = data?.counters;
-    // Treat empty/partial response as "no stats yet" so demo fallback kicks in
-    if (!c || typeof c !== 'object' || !Array.isArray(c.hourlyActions24h)) return null;
-    return c as StatsRollup;
-  } catch {
-    return null;
+    if (!c || typeof c !== 'object' || !Array.isArray(c.hourlyActions24h)) {
+      return { ok: true, empty: true };
+    }
+    return { ok: true, empty: false, data: c as StatsRollup };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
   }
+}
+
+// ---- Legacy wrappers (retained until App.tsx migrates) ----
+
+export async function fetchRecent(): Promise<EventRecord[]> {
+  const r = await fetchRecentSafe();
+  if (r.ok && !r.empty) return r.data;
+  return [];
+}
+
+export async function fetchStats(): Promise<StatsRollup | null> {
+  const r = await fetchStatsSafe();
+  if (r.ok && !r.empty) return r.data;
+  return null;
 }
 
 /**
