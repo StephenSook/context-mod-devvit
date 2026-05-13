@@ -59,7 +59,9 @@
 - Cut to the Observatory dashboard (already pinned)
 - New event row appears at top: REMOVE + COMMENT chips for the spam-filter rule
 
-**VO:** "Real-time. Every trigger is idempotent — Devvit's at-least-once delivery never double-applies actions."
+**VO:** "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions."
+
+> Note: if Phase 1 backend isn't live by recording day, swap this beat for `?demo=1` synthetic-data dashboard tour + this VO line: *"This is the rule engine evaluating a config in real time. Live trigger wiring lands in Phase 1 of post-hackathon work — see the writeup for scope honesty."*
 
 **Beat 4 (43-50s) — Dashboard tour:**
 - Pan across stat cards (Actions today, Mod time saved, Active rules, Top rule)
@@ -67,7 +69,9 @@
 - Mention the "Test rules on this item" dry-run mod menu
 - Mention image-hash repost detection (if Phase 4 shipped — gated on Day-2 spike)
 
-**VO:** "Live telemetry. Stats, recent actions, hourly volume. Plus dry-run rule testing and perceptual-hash repost detection."
+**VO:** "Live telemetry: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live."
+
+> If Phase 4's image-hash repost detection ships before recording day, append: *"And perceptual-hash repost detection — image blockhash in pure JS within Devvit's 30-second execution window."* Otherwise leave out — don't claim what isn't running.
 
 ---
 
@@ -76,7 +80,7 @@
 **Visual:** Title card "Migration ready" — text only, dark background.
 
 **Caption / VO:**
-> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks all of them at once. Eligible for Reddit's $1,000 Migration Bounty and up to $75,000 in Developer Funds."
+> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program — realistic 12-month capture for a mod tool is $5K-$10.5K, $75K is the theoretical ceiling."
 
 ---
 
