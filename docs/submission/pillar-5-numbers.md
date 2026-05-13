@@ -136,11 +136,18 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 
 ## 9. Discord mod-bot ecosystem (latent demand framing)
 
-- **Carl-bot:** 14.2M server installs, 1.66B users. $4.99/mo premium.
-- **Dyno:** $5/mo premium.
-- **MEE6:** $11.95/mo premium.
+| Bot | Active servers (top.gg current) | Cumulative installs | Premium | Notes |
+|-----|------------------------------|---------------------|---------|-------|
+| **Carl-bot** | ~3.4M | 10–14M lifetime | $7.99/mo | Launched 2016 ([top.gg](https://top.gg/bot/235148962103951360)) |
+| **MEE6** | (paused at GA) | ~21M lifetime | $11.95/mo | ([mee6.xyz](https://mee6.xyz/)) |
+| **Dyno** | ~3M | ~10M lifetime | $4.99–9.99/mo | ([dyno.gg/premium](https://dyno.gg/premium)) |
 
-Reddit's Devvit ecosystem is at the same inflection point Discord's mod-bot scene was 6 years ago.
+**Discord ecosystem scale** ([SQ Magazine Discord stats 2026](https://sqmagazine.co.uk/discord-statistics/)):
+- **55,000+ bots** in Discord's bot marketplace
+- **680,000 monthly active developers**
+- **96% of Discord moderation actions are bot-driven** (2025 data)
+
+**The timing parallel:** Discord launched 2015. Carl-bot launched 2016. By 2018–2019 Discord's mod-bot economy was a multi-million-dollar premium-tier industry. Devvit Web hit general availability in 2026. Mirror-timing puts Reddit's mod-bot economy on a 5-year trajectory toward Carl-bot-class premium ARR. **First-mover ports (ContextMod) capture the equivalent slot** — there is no Carl-bot-of-Reddit yet, but there will be.
 
 ## 10. Citations for the headline voiceover (60s demo)
 
