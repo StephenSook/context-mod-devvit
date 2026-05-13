@@ -18,4 +18,16 @@ api.get('/stats', async (c) => {
   return c.json({ counters: {} });
 });
 
-api.get('/health', (c) => c.json({ ok: true, version: '0.0.1' }));
+/**
+ * Lightweight liveness probe. Returns app version + server timestamp so external
+ * checks (and our own dashboard reload button) can verify the server is alive
+ * without paying for a Redis round-trip. Cacheable: no.
+ */
+api.get('/health', (c) => {
+  return c.json({
+    ok: true,
+    name: 'cm-devvit',
+    version: process.env.npm_package_version ?? 'unknown',
+    ts: Date.now(),
+  });
+});
