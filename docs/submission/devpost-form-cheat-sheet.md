@@ -108,7 +108,7 @@ TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architectu
 
 ## Built with
 
-TypeScript · React · Hono · Vite · Tailwind CSS · Redis · Devvit Web · Reddit Developer Platform · AJV · JSON5 · Mustache · Vitest · GitHub Actions · GitHub Pages · Mermaid · Codex (review) · Claude Code
+TypeScript · React · Hono · Vite · Tailwind CSS · Lucide React · Redis · Devvit Web · Reddit Developer Platform · AJV · JSON5 · Mustache · Vitest · ESLint · Prettier · GitHub Actions · GitHub Pages · Mermaid · Codex (review) · Claude Code
 ```
 
 **Sookra anchors per section:**
@@ -124,7 +124,7 @@ TypeScript · React · Hono · Vite · Tailwind CSS · Redis · Devvit Web · Re
 ### Built with (comma-separated tags)
 
 ```
-TypeScript, React, Hono, Vite, Tailwind, Redis, Devvit, Devvit Web, Reddit API, AJV, JSON5, Mustache, Vitest, GitHub Actions, GitHub Pages, Mermaid
+TypeScript, React, Hono, Vite, Tailwind, Lucide, Redis, Devvit, Devvit Web, Reddit API, AJV, JSON5, Mustache, Vitest, ESLint, Prettier, GitHub Actions, GitHub Pages, Mermaid
 ```
 
 ### "Try it out" links
