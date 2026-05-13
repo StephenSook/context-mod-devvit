@@ -132,7 +132,7 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 - **Eligibility:** PRAW app existed before 2026-03-25 AND serves a subreddit with ≥1,000 weekly active users.
 - **Program window:** 2026-03-31 → 2026-12-31.
 - **One bounty per developer.**
-- **ContextMod clears the threshold by 60×** — r/mealtimevideos alone is at 60K weekly visitors versus the 1K WAU requirement.
+- **ContextMod clears the Bounty's 1K WAU bar by ~60×** — r/mealtimevideos alone is at ~60K weekly visitors. (Note: the Reddit Mod Tools Hackathon's Ported-track requires only 500 WAU, also satisfied — see FoxxMD's Discord confirmation in [`outreach-drafts.md`](./outreach-drafts.md). The two thresholds belong to different Reddit programs and are sometimes conflated.)
 
 ## 9. Discord mod-bot ecosystem (latent demand framing)
 
