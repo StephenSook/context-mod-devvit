@@ -22,6 +22,16 @@ ContextMod evaluates new posts and comments against a flexible, mod-defined rule
 
 The Devvit port preserves the rule/check/action concept model that mods of [r/mealtimevideos](https://reddit.com/r/mealtimevideos) (60K weekly visitors), [r/piercing](https://reddit.com/r/piercing) (600K visitors, 12K contributors), and 15+ other communities already know — while solving the central-server bottleneck that capped CM's adoption on the original PRAW infrastructure. With Devvit's per-subreddit install model, every mod team can install their own instance.
 
+## Quick start (for moderators)
+
+1. **Install** — Visit [developers.reddit.com/apps/cm-devvit](https://developers.reddit.com/apps/cm-devvit) and click **Add to community**, then pick your subreddit (you must be a mod with `posts` + `wiki` permissions).
+2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows live mod-action telemetry. Stickying it is optional but recommended.
+3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; edit it to taste. See [Config schema](#config-schema) for the full surface.
+4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). The Observatory dashboard shows the rule count + actions taken in near-real-time.
+5. **Test a rule** — Right-click any post or comment, choose **ContextMod: Test rules on this item**. A dry-run shows which rules would fire without taking action.
+
+> **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
+
 ## Status
 
 **Hackathon-era MVP.** Active development; expect rough edges. See [implementation plan](../docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) for what's in scope.
