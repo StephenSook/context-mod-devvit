@@ -14,7 +14,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,3 +29,11 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  ai-tone:
+    runs-on: ubuntu-latest
+    name: AI-tone scan (soft check)
+    steps:
+      - uses: actions/checkout@v5
+      - name: Run blocklist scanner
+        run: ./scripts/check-ai-tone.sh
