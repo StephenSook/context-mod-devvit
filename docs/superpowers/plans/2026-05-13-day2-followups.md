@@ -39,11 +39,16 @@
 - [x] **B.1** Generated 256×256 PNG via Banana (Nano Banana 2, 1K → sips downscale) matching Observatory aesthetic — `assets/icon.png` committed
 - [x] **B.2** Referenced in README hero (right-aligned, 96px). Note: Devvit `config-file.v1.json` schema has no icon field — upload happens via Developer Portal (covered in Wave 8 cheat sheet).
 
-### Wave 7 — Public flip + GH Pages (Track E1, ~2 commits)
+### Wave 7 — Public flip + GH Pages (Track E1)
 > Requires explicit user OK — irreversible-ish (repo becomes world-readable).
-- [ ] **E1.1** Add `.github/workflows/pages.yml` — publish `policies/` to GH Pages
-- [ ] **E1.2** Flip repo private → public via `gh repo edit`
-- [ ] **E1.3** Update README + policies links to point at hosted URLs
+- [x] **E1.1** Added `.github/workflows/pages.yml` — publish `policies/` to GH Pages via jekyll-build-pages
+- [x] **E1.1a** `policies/_config.yml` — kramdown GFM
+- [x] **E1.1b** `policies/index.md` — landing page with /privacy/ + /terms/ links
+- [x] **E1.1c** Jekyll frontmatter on `privacy.md` + `terms.md` — permalinks set
+- [ ] **E1.2** Flip repo private → public via `gh repo edit StephenSook/context-mod-devvit --visibility public` ⚠️ **NEEDS USER OK**
+- [ ] **E1.3** Enable Pages in repo settings (Source: GitHub Actions) — only works after E1.2 on free tier
+- [ ] **E1.4** Verify `https://stephensook.github.io/context-mod-devvit/privacy` returns 200
+- [ ] **E1.5** Update README link rendering if Pages URL needs tweak
 
 ### Wave 8 — Devvit developer-settings form (Track E) ✓
 - [x] **E.1** Cheat sheet at `docs/submission/devvit-app-settings.md` — verbatim copy for every field, AI-tone blocklist, pre-submission checklist, post-submission protocol. Stephen pastes the values when filling the form at developers.reddit.com/apps/cm-devvit/settings.
