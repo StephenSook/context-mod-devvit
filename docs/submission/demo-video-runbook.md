@@ -1,0 +1,189 @@
+# Demo Video Production Runbook
+
+> Bridges [`demo-video-script.md`](./demo-video-script.md) → recording. Stephen records the voiceover in his own voice (per the Watchful1 AI-tone lesson). 60.0-second hard cap. Days 13–14 of the hackathon.
+
+## Tooling (all macOS)
+
+| Tool | Purpose | Install |
+|------|---------|---------|
+| **OBS Studio** | Screen capture (1920×1080 @ 30fps) | `brew install --cask obs` |
+| **Audacity** | Voiceover record + edit | `brew install --cask audacity` |
+| **ffmpeg** | Stitch + bake captions + final encode | `brew install ffmpeg` |
+| **DaVinci Resolve (optional)** | Color match between takes if OBS scenes drift | `brew install --cask davinci-resolve` |
+
+## OBS settings
+
+Settings → Output → Recording:
+- Format: `mkv` (record to mkv; transcode to mp4 in ffmpeg — protects against crashes)
+- Encoder: `Apple VideoToolbox H264` (hardware-accelerated on Apple Silicon)
+- Bitrate: `12000 kbps`
+- Keyframe interval: `2`
+- Audio bitrate: `192 kbps` (we'll re-record VO separately so this is just ambient)
+
+Settings → Video:
+- Base canvas: `1920×1080`
+- Output: `1920×1080`
+- FPS: `30` (NOT 60 — 30fps reads more like a screen tutorial than a marketing reel)
+
+Settings → Audio:
+- Disable desktop audio capture (cleaner mix; we add VO in post)
+- Mic source: built-in or USB mic; gate noise via Filters → Noise Suppression (RNNoise)
+
+## Scene layout
+
+Three OBS scenes, switch via hotkey:
+
+1. **Scene "App Directory"** — full-screen Chrome at `developers.reddit.com/apps/cm-devvit`
+2. **Scene "Subreddit + Wiki"** — full-screen Chrome at `reddit.com/r/cm_devvit_test` (and the wiki page in another tab)
+3. **Scene "Observatory + Mod Menu"** — full-screen Chrome at the dashboard custom post
+
+Pre-position the cursor before each scene begins recording so you don't waste seconds finding the click target.
+
+## Recording sequence (matches `demo-video-script.md`)
+
+| Beat | Time | Scene | What to capture |
+|------|------|-------|-----------------|
+| Cold open | 0.0 – 8.0s | montage (record as separate clips, stitch later) | r/AskReddit modqueue, 2023 blackout headline, Reddit Q1 earnings number |
+| History + permission | 8.0 – 22.0s | (still images / browser tabs) | github.com/FoxxMD/context-mod, FoxxMD's Discord permission screenshot, GitHub issue #152 |
+| Live demo: install | 22.0 – 29.0s | App Directory scene | click "Add to community", pick r/cm_devvit_test |
+| Live demo: wiki | 29.0 – 36.0s | Subreddit + Wiki scene | open `r/cm_devvit_test/wiki/contextmod`, paste JSON5 config, click save |
+| Live demo: trigger | 36.0 – 43.0s | Subreddit + Wiki scene | submit a test post titled "free crypto giveaway scam" |
+| Live demo: dashboard | 43.0 – 50.0s | Observatory + Mod Menu scene | cut to dashboard; event row appears at top; pan over stat cards; mention dry-run mod menu |
+| Wedge | 50.0 – 58.0s | title card (static, generate via ffmpeg `drawtext`) | "Migration ready — eligible for Reddit's $1,000 Migration Bounty + up to $75K Developer Funds" |
+| Close | 58.0 – 60.0s | three lines fade-up | `context-mod-devvit` / `github.com/StephenSook/context-mod-devvit` / `developers.reddit.com/apps/cm-devvit` |
+
+## Voiceover record (Audacity)
+
+1. New project at 48kHz, mono channel.
+2. Read each beat as a separate clip. Don't try to nail the whole 60s in one take.
+3. Speak slower than feels natural — ~2.5 words/second target (the script is dense).
+4. After all clips recorded:
+   - Apply **Effect → Filter Curve EQ → Voice (Low Cut at 80Hz)**
+   - Apply **Effect → Compressor → Soft Limiter** (Ratio 2:1, Threshold -18dB)
+   - Apply **Effect → Normalize → -1.0 dB peak**
+5. Export each beat as `vo-<beat>.wav` (uncompressed PCM 48kHz mono).
+
+## Stitch (ffmpeg)
+
+Folder layout in `docs/submission/_video-source/` (gitignored):
+
+```
+_video-source/
+  raw-obs/
+    install.mkv
+    wiki.mkv
+    trigger.mkv
+    dashboard.mkv
+  raw-vo/
+    vo-cold-open.wav
+    vo-history.wav
+    vo-install.wav
+    vo-wiki.wav
+    vo-trigger.wav
+    vo-dashboard.wav
+    vo-wedge.wav
+    vo-close.wav
+  stills/
+    blackout-headline.png
+    earnings-number.png
+    foxxmd-permission.png
+    title-card-wedge.png
+    close-three-lines.png
+```
+
+**Per-beat ffmpeg (example: install beat, 7s):**
+```bash
+ffmpeg -i raw-obs/install.mkv -i raw-vo/vo-install.wav \
+  -t 7 \
+  -map 0:v:0 -map 1:a:0 \
+  -c:v libx264 -preset slow -crf 18 \
+  -c:a aac -b:a 192k \
+  -shortest \
+  -y beats/install.mp4
+```
+
+**Concatenate beats:**
+```bash
+cat > beats/list.txt <<EOF
+file 'cold-open.mp4'
+file 'history.mp4'
+file 'install.mp4'
+file 'wiki.mp4'
+file 'trigger.mp4'
+file 'dashboard.mp4'
+file 'wedge.mp4'
+file 'close.mp4'
+EOF
+
+ffmpeg -f concat -safe 0 -i beats/list.txt -c copy beats/concat-raw.mp4
+```
+
+**Bake in captions (subtitles file `captions.srt`):**
+```bash
+ffmpeg -i beats/concat-raw.mp4 \
+  -vf "subtitles=captions.srt:force_style='FontName=Geist,FontSize=24,PrimaryColour=&Hffffff,OutlineColour=&H80000000,BorderStyle=3,Outline=1,Shadow=0,Alignment=2,MarginV=80'" \
+  -c:a copy \
+  beats/final.mp4
+```
+
+(`Alignment=2` is bottom-center, `MarginV=80` pushes captions up off the very bottom edge.)
+
+**Final encode (YouTube spec):**
+```bash
+ffmpeg -i beats/final.mp4 \
+  -c:v libx264 -preset slow -crf 18 \
+  -pix_fmt yuv420p \
+  -movflags +faststart \
+  -c:a aac -b:a 192k \
+  -y context-mod-demo.mp4
+```
+
+## Captions
+
+Write `captions.srt` from the script. SRT format:
+
+```
+1
+00:00:00,000 --> 00:00:04,000
+Reddit's volunteer mods do 466 hours of unpaid labor a day.
+
+2
+00:00:04,000 --> 00:00:08,000
+73% of mod actions are already performed by bots.
+
+3
+00:00:08,000 --> 00:00:14,000
+ContextMod is the rule-engine mod bot 15+ communities run.
+```
+
+Source: `demo-video-script.md` line by line. Time each block to ~4 seconds per line max.
+
+## Retake protocol
+
+If a beat is wrong:
+1. Re-record ONLY that beat in OBS (don't restart from scratch).
+2. Re-stitch via the concat list above (only the changed beat re-encodes).
+3. Save final OBS recording + Audacity project files in `_video-source/` (gitignored — already in `.gitignore` per `dist/` rule, but add `docs/submission/_video-source/` explicitly to be safe).
+
+## Upload
+
+YouTube upload:
+1. youtube.com/upload
+2. Title: `ContextMod Devvit Web port — 60-second demo`
+3. Description: `Port of FoxxMD's PRAW ContextMod to Reddit Devvit Web. Repo: github.com/StephenSook/context-mod-devvit · App: developers.reddit.com/apps/cm-devvit · Reddit Mod Tools and Migrated Apps Hackathon 2026 entry.`
+4. Visibility: **Unlisted** (NOT public)
+5. Category: Science & Technology
+6. Tags: `devvit`, `reddit`, `moderation`, `praw`, `typescript`
+7. Captions: upload the same `captions.srt` (don't rely on auto-generated)
+8. Copy the unlisted URL → paste into Devpost Step 3 "Video demo link" field.
+
+## Pre-flight checklist before recording
+
+- [ ] r/cm_devvit_test has the latest ContextMod install
+- [ ] Wiki page `r/cm_devvit_test/wiki/contextmod` has a clean starter config
+- [ ] Observatory dashboard pinned and has demo data (or runs with `?demo=1` query param for seeded data)
+- [ ] FoxxMD's Discord permission screenshot saved as PNG (no shoulder-surfable info)
+- [ ] OBS scene transitions tested without recording
+- [ ] Audacity output device set to mic (not the wrong AirPods)
+- [ ] Captions written in advance, not improvised after
+- [ ] Stephen rehearsed the full 60s VO twice
