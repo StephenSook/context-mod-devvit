@@ -102,15 +102,15 @@ Files this plan creates or modifies:
 After this plan completes, Stephen owns these GitHub UI / external-system steps that the GitHub REST API + CLI don't surface:
 
 - [ ] **Upload social preview** → `github.com/StephenSook/context-mod-devvit/settings` → scroll to "Social preview" → drag `assets/social-preview.png` from the cloned repo
-- [ ] **Send FoxxMD ping #2** (Discord DM) using draft in `outreach-drafts.md` §1 — by 2026-05-15
-- [ ] **Send SampleOfNone helper-nomination ping** (Reddit DM) using draft §2 — by 2026-05-16
-- [ ] **Post r/Devvit progress check** using draft §3 — by 2026-05-19
-- [ ] **Record demo video** following `demo-video-runbook.md` — by 2026-05-25 (leaves 2-day buffer)
+- [ ] **Reply to FoxxMD on Discord** today (May 13, 2026) using draft in `outreach-drafts.md` §1 — collab-access thanks + agree to GitHub-issues preference + answer on kanban offer
+- [ ] **Reply to SampleOfNone on Discord** today (May 13, 2026) using draft §2 — answer her wiki-pages compatibility question. Helper-nomination ask is a separate followup (~May 24, 2026)
+- [ ] **Post r/Devvit progress check** May 19, 2026 using draft §4 — gated on Phase 1 having something to show; sparse "what's working" list = postpone
+- [ ] **Record demo video** following `demo-video-runbook.md` — **GATED on Vinh's Phase 1 backend (handleActivity → runRule → action) being live enough to demo a real trigger**. Realistic window: May 22-26, 2026. If Phase 1 slips, fallback is recording with `?demo=1` synthetic data + transparent caption.
 - [ ] **Upload demo video** to YouTube as unlisted, paste URL into Devpost Step 3
-- [ ] **Run domain-approval check** weekly per `domain-approval-runbook.md` — Mondays + Thursdays
+- [ ] **Run domain-approval check** weekly per `domain-approval-runbook.md` — Mondays + Thursdays until May 27
 - [ ] **Run `./scripts/check-ai-tone.sh --strict`** locally before pasting any text into Devpost
 - [ ] **Run codex:codex-rescue review** on the final Devpost text before clicking Submit
-- [ ] **Submit Devpost** by 2026-05-27 6pm PT
+- [ ] **Submit Devpost** by May 27, 2026 at 6pm PT
 
 ## Out of scope (Vinh's lane — never touch)
 

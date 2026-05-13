@@ -1,6 +1,13 @@
 # Demo Video Production Runbook
 
-> Bridges [`demo-video-script.md`](./demo-video-script.md) → recording. Stephen records the voiceover in his own voice (per the Watchful1 AI-tone lesson). 60.0-second hard cap. Days 13–14 of the hackathon.
+> Bridges [`demo-video-script.md`](./demo-video-script.md) → recording. Stephen records the voiceover in his own voice (per the Watchful1 AI-tone lesson). 60.0-second hard cap.
+
+> **CRITICAL DEPENDENCY:** demo recording is gated on **Vinh's Phase 1 backend** being live enough to demo a real trigger end-to-end. That means `handleActivity` → config load → `runRun` → `runCheck` → `runRule` → action handler → `events:recent` ZSET push must all execute on a real `r/cm_devvit_test` post submission, with the new event chip surfacing on the Observatory dashboard in real time.
+>
+> If Phase 1 isn't ready by **May 22, 2026** (5 days before submission), execute the fallback in [Fallback section](#fallback-if-phase-1-slips).
+>
+> **Realistic recording window:** May 22 — May 26, 2026.
+> **Hard cutoff for upload + paste into Devpost:** May 27, 2026 at 6pm PT.
 
 ## Tooling (all macOS)
 
@@ -179,11 +186,24 @@ YouTube upload:
 
 ## Pre-flight checklist before recording
 
+- [ ] **Vinh's Phase 1 backend is live** — confirm `handleActivity` is wired, `runRule` evaluates against a real wiki config, and at least one action handler (e.g. `comment`) actually posts to Reddit on a test trigger. **Do not record if this isn't true** — fall back to synthetic-data path below.
 - [ ] r/cm_devvit_test has the latest ContextMod install
-- [ ] Wiki page `r/cm_devvit_test/wiki/contextmod` has a clean starter config
-- [ ] Observatory dashboard pinned and has demo data (or runs with `?demo=1` query param for seeded data)
+- [ ] Wiki page `r/cm_devvit_test/wiki/contextmod` has a clean starter config that fires on the "free crypto giveaway scam" test post
+- [ ] Observatory dashboard pinned and renders a real action chip when a test post triggers a rule
 - [ ] FoxxMD's Discord permission screenshot saved as PNG (no shoulder-surfable info)
 - [ ] OBS scene transitions tested without recording
 - [ ] Audacity output device set to mic (not the wrong AirPods)
 - [ ] Captions written in advance, not improvised after
 - [ ] Stephen rehearsed the full 60s VO twice
+
+## Fallback if Phase 1 slips
+
+If Phase 1 isn't live by **May 22, 2026**, accept that the demo can't show a real end-to-end trigger and adapt:
+
+1. **Use `?demo=1` synthetic data on the Observatory dashboard.** Load the dashboard URL with the demo query param so the stat cards, sparkline, and event stream all populate with seeded values.
+2. **Caption the fallback transparently.** Add a single line of text near the end of the demo (5–7s before close): *"Dashboard rendered with demo data; Phase 1 backend ships post-hackathon."* This protects integrity vs. judges spotting unrealistic numbers later.
+3. **Re-record narration to match.** Drop the "real-time trigger" line from the VO; replace with "rule engine ports the upstream concept model faithfully — wiring to live triggers is the final integration step."
+4. **Add a static frame at the end.** "v0.1.0: rule engine + dashboard + idempotency layer + config publish — shipping. Phase 1 wiring + Phase 2 actions land 2 weeks post-submission. Open source from day one."
+5. **Document the fallback in the writeup.** Update `docs/submission/writeup-draft.md` Section 3 "Gaps vs upstream (deferred)" to make Phase 1 status explicit.
+
+The fallback isn't ideal but is honest. Judges see through faked dashboards faster than they see through stated gaps.
