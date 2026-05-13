@@ -23,7 +23,7 @@ related:
 - **One-line elevator (200 char):** FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, live action dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck.
 - **Audience:** Reddit subreddit moderators. Secondary: judges + Reddit dev reviewers.
 - **Positioning:** *Not* a replacement for AutoMod. AutoMod handles regex; ContextMod handles context (author history, sub-distribution, image-hash, rule composition). The two coexist on the same sub.
-- **Personality:** Technical, scrappy, honest. Mission-control aesthetic. No marketing prose. No AI-tone words (see `scripts/check-ai-tone.sh` blocklist).
+- **Personality:** Technical, scrappy, honest. Dark warm-charcoal surface with thin white hairlines + single terminal-green accent dot — reads like a telemetry console, not a marketing page. No marketing prose. No AI-tone words (see `scripts/check-ai-tone.sh` blocklist).
 
 ## Voice
 
@@ -171,17 +171,18 @@ Redis-only per Devvit constraints. Strings + hashes + sorted sets — no Lists, 
 - `cm:proc:{thingId}` 24h NX — trigger-level idempotency
 - `cm:action:pending:{hash}` 5m NX — action reservation
 - `cm:action:done:{hash}` 7d — action completion marker
+- `cm:lock:{task}` 60s NX with ownership token — cron single-flight guard (`acquireLock` in `src/lib/idem.ts`)
 - `cfg:current_rev` string — pointer to active config revision
 - `cfg:rev:{n}` immutable JSON snapshot
 - `events:recent` ZSET — 50-deep ring buffer for dashboard, score=ts member=event-json
 
 ## How AI agents should use this file
 
-1. Generating a new image asset (Banana / Magic / Stitch): pull from "Color tokens" + "Asset palette" sections. Maintain concentric-rings-and-green-dot consistency.
+1. Generating a new image asset (Banana / Magic / Stitch): pull from "Color tokens" + "Asset palette" sections. Keep the concentric rings + central green dot motif — that's the brand mark.
 2. Writing UI code (React + Tailwind): reference `tailwind.config.ts` for tokens; don't hardcode hex.
 3. Producing copy (writeup / outreach / video script): apply "Voice" rules + run `./scripts/check-ai-tone.sh --strict` before pasting.
-4. Building diagrams (Mermaid / FigJam): use the 4-color classDef palette from "Asset palette" — Reddit orange / Devvit blue / dashboard green / external gray.
-5. Onboarding a new contributor: read this file + `tailwind.config.ts` + `src/client/App.tsx` to internalize the visual system in <10 minutes.
+4. Building diagrams (Mermaid / FigJam): use the 4-color classDef palette from "Diagram classDef palette" — Reddit orange / Devvit blue / dashboard green / external gray.
+5. Onboarding a new contributor: read this file + `tailwind.config.ts` + `src/client/App.tsx`.
 
 ## Provenance
 
