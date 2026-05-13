@@ -32,7 +32,7 @@
 - Screenshot of FoxxMD's Discord message granting permission
 
 **Caption / VO:**
-> "ContextMod is one of the most sophisticated PRAW-era mod bots ever shipped — used by r/mealtimevideos at 60K weekly visitors, r/piercing at 600K, and 15+ other subs. Last release was 2022. We got written permission from FoxxMD to port it to Devvit."
+> "ContextMod is the rule-engine mod bot 15+ communities run — including r/mealtimevideos at 60K weekly visitors and r/piercing at 600K. Last release was 2022. I got written permission from FoxxMD to port it to Devvit."
 
 ---
 
