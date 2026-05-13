@@ -4,6 +4,7 @@ import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
 import { EventRow } from './components/EventRow';
 import { ActionBar } from './components/ActionBar';
+import { ErrorBanner } from './components/ErrorBanner';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -88,6 +89,10 @@ export default function App() {
 
       <div className="relative z-10 flex flex-col h-full">
         <Header subreddit={subreddit} refreshedAt={refreshedAt} />
+
+        {apiError && (
+          <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
+        )}
 
         {stats && <StatsRow stats={stats} />}
 
