@@ -98,7 +98,7 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 ### Gaps vs upstream (explicitly cut)
 
 - `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube — explicitly cut. Sentiment needs NLP libs that don't bundle in Devvit; YouTube API exceeds scope.
-- `DispatchAction` (defer-and-replay) — cut as low-leverage.
+- `DispatchAction` (defer-and-replay) — cut; not load-bearing for MVP, defer to v2 if operators ask.
 - Multi-bot orchestration (CM's "shared streams" pattern) — Devvit's per-sub install model replaces this architecturally.
 - Full Express dashboard with Monaco editor — replaced with the lighter Observatory custom post + wiki editing.
 
