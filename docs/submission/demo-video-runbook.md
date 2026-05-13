@@ -4,9 +4,9 @@
 
 > **CRITICAL DEPENDENCY:** demo recording is gated on **Vinh's Phase 1 backend** being live enough to demo a real trigger end-to-end. That means `handleActivity` → config load → `runRun` → `runCheck` → `runRule` → action handler → `events:recent` ZSET push must all execute on a real `r/cm_devvit_test` post submission, with the new event chip surfacing on the Observatory dashboard in real time.
 >
-> If Phase 1 isn't ready by **May 22, 2026** (5 days before submission), execute the fallback in [Fallback section](#fallback-if-phase-1-slips).
+> If Phase 1 isn't ready by **May 22, 2026** (5 calendar days before the May 27 deadline), execute the fallback in [Fallback section](#fallback-if-phase-1-slips).
 >
-> **Realistic recording window:** May 22 — May 26, 2026.
+> **Realistic 4-day recording window:** May 22 — May 26, 2026 (gives one full day's buffer for upload + Devpost paste).
 > **Hard cutoff for upload + paste into Devpost:** May 27, 2026 at 6pm PT.
 
 ## Tooling (all macOS)
