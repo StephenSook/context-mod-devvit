@@ -222,7 +222,7 @@ If you're already running [FoxxMD/context-mod](https://github.com/FoxxMD/context
 **What's deferred (Phase 4 stretch, not yet shipped):**
 - `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants), `mhs` rules — landing in Phase 4
 - `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube — explicitly **cut** (NLP libs don't bundle in Devvit; YouTube API exceeds scope)
-- `DispatchAction` — explicitly **cut** (defer-and-replay was low-leverage for hackathon scope)
+- `DispatchAction` — explicitly **cut** (defer-and-replay isn't load-bearing for MVP; defer to v2 if operators ask)
 
 **What's different from upstream:**
 - **No central server.** Every mod team installs their own instance — no shared rate limits, no central API token to manage.
