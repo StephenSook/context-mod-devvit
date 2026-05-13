@@ -259,6 +259,37 @@ This is hackathon-era MVP code with the trigger pipeline still being wired (Phas
 **Why a separate slug, not `context-mod`?**
 Reddit's Devvit App Directory has a 16-character app-name limit. `cm-devvit` is the working slug — leaving `context-mod` open if FoxxMD eventually publishes his own official port.
 
+**Which Phase is this work in?**
+Active scope tracked on the [FoxxMD/ContextMod Devvit project board](https://github.com/users/FoxxMD/projects/6). Cards tagged `[P1]`-`[P6]`:
+- **P1** — Core engine (`handleActivity`, `runRule`, etc.) — Vinh, Day 5-8
+- **P2** — Action handlers + trigger routes — Vinh, Day 5-8
+- **P3** — Dashboard wire-up to live data — Stephen, Day 9-11
+- **P4** — Stretch rules (`history` / `attribution` / `recentActivity` / `repost`) — Phase 4 stretch
+- **P5** — Demo + Devpost submission — Stephen, Day 13-15
+- **P6** — Post-hackathon ship + open to upstream operators
+
+The `mhs` rule was cut after `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider list to OpenAI + Gemini only.
+
+## Install troubleshooting
+
+**The custom post shows a blank white screen.**
+Vite's `base` must be `'./'` for the Devvit webview iframe. Verify in `vite.config.ts`. Also confirm `post.dir` in `devvit.json` points at `dist/client` (build output), not `src/client` (source).
+
+**`devvit playtest` says "Unable to authenticate."**
+Run `devvit login` and complete the browser flow. Token's cached in your home dir.
+
+**Wiki config fails to validate after editing.**
+The AJV schema at `src/server/schema/app.schema.json` is strict. If the cron's `refresh-config` rejects your JSON5, the previous `cfg:current_rev` stays active and the error is logged. Common gotchas: trailing commas (OK in JSON5), unquoted keys (OK in JSON5), but type mismatches (e.g., `age: "1d"` instead of `age: 86400`) get rejected.
+
+**Devvit upload fails with "name does not meet maximum length of 16".**
+`devvit.json:name` must be ≤16 chars. Our slug is `cm-devvit`.
+
+**App icon upload rejected on the Developer Portal.**
+The file must be a real PNG, not JPEG bytes inside a `.png` filename. Verify with `file assets/icon.png` — it must report `PNG image data`. If JPEG, re-encode via PIL (see `DESIGN.md` "Assets" section).
+
+**`devvit publish --public` says my domain isn't approved.**
+The 4 Reddit hosts (`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `external-i.redd.it`) are in the global allowlist. Only third-party domains need explicit approval, which takes up to 4 business days per [Devvit FAQ](https://developers.reddit.com/docs/faq).
+
 ## Changelog
 
 ### v0.1.0 — Hackathon Day 1-2 (2026-05-12 – 2026-05-13)
