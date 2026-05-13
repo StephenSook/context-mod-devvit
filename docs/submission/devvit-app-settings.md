@@ -125,7 +125,7 @@ Before clicking "Publish" in the portal:
 - [ ] Demo video URL filled in (unlisted YouTube)
 - [ ] `api.moderatehatespeech.com` approval status decided — ship MHS or document as gap
 - [ ] FoxxMD has confirmed which bot username goes in "Original bot" field
-- [ ] About description scanned for AI-tone words (`powerful`, `sophisticated`, `revolutionary`, `seamless`, `leverage`, `robust`, `cutting-edge`, `intuitive`)
+- [ ] About description scanned for AI-tone words (`powerful`, `sophisticated`, `revolutionary`, `seamless`, `leverage`, `robust`, `cutting-edge`, `intuitive`) <!-- AITONE_IGNORE -->
 - [ ] README.md final pass — this is the App Directory's "long description"
 
 ---

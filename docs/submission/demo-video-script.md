@@ -108,7 +108,7 @@ developers.reddit.com/apps/cm-devvit
 - Read 1 beat at a time, then move on. Don't try to nail the whole thing in one take.
 - Read **slower than feels natural** — the script is dense. ~150 words for 60s = ~2.5 words/sec.
 - Don't read the captions verbatim. Captions = key claims. VO = paraphrase + transitions.
-- Don't say "amazing" / "revolutionary" / "powerful" / "sophisticated." Trips the AI-tone radar that burned us on the Watchful1 thread.
+- Don't say "amazing" / "revolutionary" / "powerful" / "sophisticated." Trips the AI-tone radar that burned us on the Watchful1 thread. <!-- AITONE_IGNORE -->
 - Sound like you're telling a fellow dev about a project, not pitching a VC.
 
 ## Deliverable
