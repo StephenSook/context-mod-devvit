@@ -27,9 +27,9 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 ## Quick start (for moderators)
 
 1. **Install** — Visit [developers.reddit.com/apps/cm-devvit](https://developers.reddit.com/apps/cm-devvit) and click **Add to community**, then pick your subreddit (you must be a mod with `posts` + `wiki` permissions).
-2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows live mod-action telemetry. Stickying it is optional but recommended.
+2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows mod-action telemetry (demo data until Phase 3 wires live events). Stickying it is optional but recommended.
 3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; edit it to taste. See [Config schema](#config-schema) for the full surface.
-4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). The Observatory dashboard shows the rule count + actions taken in near-real-time.
+4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). The Observatory dashboard shows the rule count + actions taken once Phase 1-3 wiring lands.
 5. **Test a rule** — Right-click any post or comment, choose **ContextMod: Test rules on this item**. A dry-run shows which rules would fire without taking action.
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
@@ -231,7 +231,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 **What's different from upstream:**
 - **No central server.** Every mod team installs their own instance — no shared rate limits, no central API token to manage.
 - **Per-subreddit Redis isolation.** Your data never leaves your sub. Mod-action history, image hashes, author cache — all scoped per-install by Devvit.
-- **Observatory dashboard.** Inline custom post showing live action telemetry (last 50 events + 24h sparkline + stat cards).
+- **Observatory dashboard.** Inline custom post showing mod-action telemetry (last 50 events + 24h sparkline + stat cards). Currently renders with `?demo=1` synthetic data; live wiring lands at Phase 3 after Vinh's Phase 1+2 backend ships.
 - **No `wikiLocation` config fragment hydration.** v1 reads one wiki page; `wiki:` + `url:` includes were dropped to simplify the threat model.
 
 **The grandfather case:** if you're FoxxMD or running CM in production with subscribers depending on it, [open an issue](https://github.com/StephenSook/context-mod-devvit/issues) — we'd love to talk about a graceful cutover.
