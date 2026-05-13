@@ -193,10 +193,10 @@ Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), ev
 | Domain | Status | Why we need it | What data we send | What data we store |
 |---|---|---|---|---|
 | `api.moderatehatespeech.com` | declared | Toxicity classification (`MHSRule`, port of CM's classifier rule). Only triggered when a mod enables the rule in their config. | Comment/post text, no PII. | Boolean `flagged` + numeric `confidence` (~kb-sized JSON). Never the original text. |
-| `i.redd.it` | pending approval | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 64-bit blockhash + post ID. Never the image bytes. |
-| `preview.redd.it` | pending approval | Same as above for preview-sized Reddit images. | None. | Same. |
-| `external-preview.redd.it` | pending approval | Same for cross-posted previews. | None. | Same. |
-| `external-i.redd.it` | pending approval | Same for cross-posted full-size images. | None. | Same. |
+| `i.redd.it` | global allowlist (no approval needed) | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 64-bit blockhash + post ID. Never the image bytes. |
+| `preview.redd.it` | global allowlist | Same as above for preview-sized Reddit images. | None. | Same. |
+| `external-preview.redd.it` | global allowlist | Same for cross-posted previews. | None. | Same. |
+| `external-i.redd.it` | global allowlist | Same for cross-posted full-size images. | None. | Same. |
 
 **Privacy commitments:**
 - No PII ever transmitted. No usernames, no IPs, no profile data.
