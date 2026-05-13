@@ -4,9 +4,10 @@
 
 ## 1. Reddit moderator labor scale
 
-- **466 hours/day of moderation labor performed across Reddit.** At UpWork median ($20/hr), that's **$3.4M/year of unpaid volunteer labor**. ([Li, Hecht, Chancellor — "You Are an Expert!" ICWSM 2022](https://arxiv.org/abs/2205.14529))
+- **466 hours/day of moderation labor measured across 21,500 active moderators in 126 subreddits.** At UpWork median ($20/hr) the measured population's labor is worth **$3.4M/year unpaid**. ([Li, Hecht, Chancellor — "You Are an Expert!" ICWSM 2022](https://arxiv.org/abs/2205.14529))
+- **Linear scaling to Reddit's current 60K active mods**: ~$9.5M/yr in volunteer-labor-equivalent value (Reddit Inc statistic, 2.8× the measured population). Flag this as scaling math, not measured — judges should hear both numbers.
 - **73% of mod actions on Reddit are performed by bots** (sample of 25,812 daily actions across 126 subreddits). Same paper.
-- **9–94% of mod labor is "invisible work"** — context-gathering, behavioral checks, rule-interpretation. Median 43%. Comment removal alone is as little as 2% of human labor.
+- **9–94% of mod labor is "invisible work"** — context-gathering, behavioral checks, rule-interpretation. Median 43%. Comment removal alone is as little as 2% of human labor. This is exactly the gap ContextMod fills — AutoMod handles regex, ContextMod handles context.
 
 ## 2. Reddit platform scale (FY24 — Q1 2026)
 
