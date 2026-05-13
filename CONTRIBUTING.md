@@ -81,7 +81,7 @@ Keep commits atomic — one logical change per commit. Per the project's green-d
 
 The Devvit platform is opinionated. Things that have bitten us:
 
-- **Redis primitives are constrained** — strings, hashes, sorted sets only. No Lists, no Sets. Design ring buffers as ZSETs (`events:recent` pattern).
+- **Redis primitives are constrained** — no Lists, no Sets. Use strings, hashes, sorted sets, plus the supported transactions + bitfield primitives where needed. Design ring buffers as ZSETs (`events:recent` pattern).
 - **At-least-once trigger delivery** — every trigger handler must be idempotent. We use `cm:proc:{thingId}` 24h NX SETNX for trigger-level + `cm:action:pending:{hash}` 5m + `cm:action:done:{hash}` 7d for per-action.
 - **CSP blocks runtime code-string evaluation** — libraries that use it (e.g., older Framer Motion) won't work. Stick to CSS keyframes.
 - **HTTP fetch policy** — outbound HTTP needs domain allowlisting. Reddit-owned hosts (`i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `external-i.redd.it`) are in the global allowlist. Other domains need explicit Reddit approval (up to 4 business days). AI provider domains are locked to OpenAI + Gemini as of `reddit/devvit-docs` PR #96 (2026-05-08).
