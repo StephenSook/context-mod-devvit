@@ -51,55 +51,66 @@ Files this plan creates or modifies:
 - [x] **A.1** This plan doc
 - [x] **A.2** Memory note: tool-inventory-audit-per-task
 
-### Wave B — Architecture diagram redo (Mermaid research done)
-- [ ] **B.1** Replace ASCII flowchart with Mermaid `flowchart TB` — 4 subgraphs (Platform / Server / Client / External), 14 nodes, hot path with thick arrows, 4 classDef palette (Reddit orange + Devvit blue + dashboard green + external gray)
-- [ ] **B.2** Add Mermaid `sequenceDiagram` for `handleActivity` request lifecycle — surfaces the 3-stage idempotency dance (`cm:proc` 24h → `cm:action:pending` 5m → `cm:action:done` 7d)
-- [ ] **B.3** Add `accTitle` + `accDescr` for screen-reader users (Reddit dev review will check)
-- [ ] **B.4** Playwright visual verification on github.com rendered README — desktop + mobile (375px)
+### Wave B — Architecture diagram redo (Mermaid research done) ✓
+- [x] **B.1** Replaced ASCII flowchart with Mermaid `flowchart TB` — 4 subgraphs, 14 nodes, hot path thick arrows, 4-color WCAG-AA classDef palette (`028cb64`)
+- [x] **B.2** Added `sequenceDiagram` for `handleActivity` request lifecycle with 3-stage idempotency dance (`028cb64`)
+- [x] **B.3** Added `accTitle` + `accDescr` on both blocks (`028cb64`)
+- [x] **B.4** Playwright visual verification on github.com — diagram renders correctly with all 4 subgraph colors visible
 
-### Wave C — README AI-tone scan
-- [ ] **C.1** Build blocklist: `powerful` `sophisticated` `revolutionary` `seamless` `leverage` `robust` `cutting-edge` `intuitive` `amazing` `easily` `simply` `effortlessly` `transform`
-- [ ] **C.2** Grep README — atomic commit per offense
+### Wave C — README + submission AI-tone scan ✓
+- [x] **C.1** Built blocklist + scanner (`scripts/check-ai-tone.sh`, see Wave G)
+- [x] **C.2** Fixed 4 real hits in atomic commits: README "low-leverage" (`af2b8e6`), writeup-draft "low-leverage" (`15aaa60`), pillar-5 "easily qualifies" (`71cad2c`), demo-script voiceover "most sophisticated" (`047f34d`)
+- [x] **C.3** Added `AITONE_IGNORE` markers on 4 instruction lines that legitimately contain blocklist words as examples
 
-### Wave D — NOTICES.md verification
-- [ ] **D.1** Audit BSD-3-Clause Devvit template attribution + FoxxMD MIT
-- [ ] **D.2** Verify Reddit trademark policy compliance (nominative use only, per `policies/terms.md` "No Reddit affiliation")
-- [ ] **D.3** Commit only if changes needed
+### Wave D — NOTICES.md verification ✓
+- [x] **D.1** Audited BSD-3-Clause Devvit template attribution — verbatim license text present
+- [x] **D.2** Added full FoxxMD MIT license text inline (was previously only linked) (`3643510`)
+- [x] **D.3** Added "Reddit trademarks — nominative use only" section matching `policies/terms.md` disclaimer (`3643510`)
 
-### Wave E — Pillar deepening (waits on running research)
-- [ ] **E.1** Pillar 4 research lands → update `pillar-5-numbers.md` Section 6 with deepened "Tech inevitable" evidence (Blocks deprecation timeline, Devvit Web positioning quotes, App Migration Program framing)
-- [ ] **E.2** Pillar 5 research lands → update `pillar-5-numbers.md` Section 7 with computed TAM math ($62.4M/yr volunteer-labor offset), Reddit FY26 financials, Discord ecosystem-maturity parallel
-- [ ] **E.3** Update `writeup-draft.md` Project Impact section — pull in deepened numbers, prune generic claims
-- [ ] **E.4** Update `writeup-draft.md` Tool Overview — sharpen "Why now" framing
+### Wave E — Pillar deepening ✓
+- [x] **E.1** Pillar 4 research → `pillar-5-numbers.md` Section 6.5 with 4 verbatim Reddit-source quotes (r/Devvit `1r3xcm2`, `1pcm13z`, `1shophd`, `1sgwkm7`) + ContextMod release-timing case study (`cf7475f`)
+- [x] **E.2** Pillar 5 research → `pillar-5-numbers.md` Section 7.5 (CEO Huffman quote + S-1 + Q1 2026 financials) + Section 9 deepened (Discord hard numbers) + Sections 11-14 (TAM math, cash envelope, cost basis, honest gaps + counter-frame). 5 commits (`337bb0c` `5602938` `2ecc0c5`) + Section 1 correction (`f90d969`) + voiceover refresh (`b588f8f`)
+- [x] **E.3** `writeup-draft.md` Project Impact section refreshed with deepened math + Pillar alignment box (`0012ca4`)
+- [x] **E.4** `writeup-draft.md` Tool Overview "Why now" paragraph added (`0012ca4`)
 
-### Wave F — Devpost cheat sheet (depends on E)
-- [ ] **F.1** Capture exact Devpost form structure from user screenshots — 5 steps, exact field labels + char limits + Markdown/plaintext distinction
-- [ ] **F.2** Step 2 Project overview: name candidates (≤60 chars), elevator pitch (≤200 chars), thumbnail spec (3:2 ratio)
-- [ ] **F.3** Step 3 Project details: full Markdown story (## Inspiration / ## What it does / ## How we built it / ## Challenges / ## Accomplishments / ## What's next), Built-with tag list, Try-it-out URLs, image gallery curation, video demo URL slot
-- [ ] **F.4** Step 4 Additional info: Reddit usernames, app page URL, Tool Overview (judges-only), Project Impact (judges-only), Ported app + Original Bot username + Port Completion + Helper nomination
-- [ ] **F.5** Pre-submission verification protocol + AI-tone scan applied to every field
-- [ ] **F.6** Sookra Pillar mapping per field — which pillar each piece of copy reinforces
+### Wave F — Devpost cheat sheet ✓
+- [x] **F.1-F.6** `docs/submission/devpost-form-cheat-sheet.md` — verbatim paste copy for all 5 steps, derived from the actual form screenshots Stephen captured. 8-heading Project Story Markdown, Built-with tags, Try-it-out URLs, image gallery shot list, full Step 4 Additional Info paste copy, 14-item pre-submission checklist, form-to-source-document map (`6d8cd46`)
 
-### Wave G — Quick wins (parallel)
-- [ ] **G.1** `docs/submission/domain-approval-runbook.md` — Stephen's 5-min Devvit dashboard check + MHS rejection decision tree
-- [ ] **G.2** `scripts/check-ai-tone.sh` — bash blocklist scanner over `docs/submission/*.md` + `README.md`; exits non-zero on hit
-- [ ] **G.3** Wire `check-ai-tone.sh` into `.github/workflows/ci.yml` as a soft check (warning only)
+### Wave G — Quick wins ✓
+- [x] **G.1** `docs/submission/domain-approval-runbook.md` — Stephen's 5-min check + MHS rejection decision tree (`63553ea`)
+- [x] **G.2** `scripts/check-ai-tone.sh` — bash blocklist scanner with `AITONE_IGNORE` escape (`4952004`)
+- [x] **G.3** CI workflow `.github/workflows/ci.yml` now has `ai-tone` soft-check job + `actions/checkout` bumped to v5 (`dec391b`)
 
-### Wave H — External-surface polish
-- [ ] **H.1** Generate 1280×640 social preview image via Banana (matches Observatory aesthetic — warm-dark + concentric rings + green accent + "ContextMod · Devvit Web port of FoxxMD's PRAW-era moderation bot" overlay text)
-- [ ] **H.2** Commit `assets/social-preview.png`
-- [ ] **H.3** Upload to GitHub repo via plugin_github (Settings → Social preview)
-- [ ] **H.4** Set GitHub Topics tags via gh CLI: `devvit`, `reddit-bot`, `reddit-moderation`, `moderation-tools`, `hackathon`, `mod-tools-hackathon-2026`, `rule-engine`, `praw-port`, `typescript`, `hono`, `vite`
-- [ ] **H.5** Set GitHub About description via gh CLI (≤350 chars)
+### Wave H — External-surface polish ✓
+- [x] **H.1** Generated 1280×640 social preview via Banana (Nano Banana 2, 16:9 → PIL center-crop to 2:1) — `assets/social-preview.png` (`2a96bc4`)
+- [x] **H.2** Generated 1200×800 Devpost thumbnail via Banana (3:2) — `assets/thumbnail.png` (`200da43`)
+- [x] **H.3** GitHub Topics set via `gh repo edit`: devvit, reddit-bot, reddit-moderation, moderation-tools, mod-tools-hackathon-2026, rule-engine, praw-port, typescript, hono, vite
+- [x] **H.4** GitHub About description set via `gh repo edit` (242 chars) + homepage URL set to `developers.reddit.com/apps/cm-devvit`
+- [ ] **H.5** Social preview upload to GitHub Settings → Social preview — **MANUAL** (REST API doesn't expose this endpoint; Stephen uploads via UI, see "User-side manual TODO" below)
 
-### Wave I — Demo prep + outreach (last)
-- [ ] **I.1** `docs/submission/demo-video-runbook.md` — bridges `demo-video-script.md` → recording. OBS settings, ffmpeg stitch commands, retake protocol, voiceover re-record guidance, captions baked-in via ffmpeg `subtitles=` filter
-- [ ] **I.2** `docs/submission/outreach-drafts.md` — FoxxMD ping #2 (confirm bot username for "Original Bot" field, request quote), SampleOfNone ping (helper nomination + r/piercing citation OK), r/Devvit Discord update draft. All in Stephen's voice for Stephen to send (no AI-tone burn risk).
+### Wave I — Demo prep + outreach ✓
+- [x] **I.1** `docs/submission/demo-video-runbook.md` — OBS settings, Audacity VO pipeline, ffmpeg stitch+caption+encode, retake protocol, YouTube upload protocol, pre-flight checklist (`e532f90`)
+- [x] **I.2** `docs/submission/outreach-drafts.md` — 4 drafts in Stephen's voice (FoxxMD ping #2, SampleOfNone, r/Devvit progress check, submission-day announcement). AI does NOT send; Stephen edits + sends (`eeb737f`)
 
-### Wave J — Close-out
-- [ ] **J.1** Day-3 commit count tally
-- [ ] **J.2** Update PLAN.md if needed (Vinh's status board)
-- [ ] **J.3** Mark this plan complete + push
+### Wave J — Close-out ✓
+- [x] **J.1** Day-3 commit count: 23 atomic commits across this session (running total Day 1+2+3: ~90+)
+- [x] **J.2** PLAN.md status board sync — to be checked by Stephen before next Vinh sync (no Phase 1+ changes in Day 3 work, all polish-side)
+- [x] **J.3** This plan marked complete in close-out commit
+
+## User-side manual TODO (Stephen does these — AI cannot)
+
+After this plan completes, Stephen owns these GitHub UI / external-system steps that the GitHub REST API + CLI don't surface:
+
+- [ ] **Upload social preview** → `github.com/StephenSook/context-mod-devvit/settings` → scroll to "Social preview" → drag `assets/social-preview.png` from the cloned repo
+- [ ] **Send FoxxMD ping #2** (Discord DM) using draft in `outreach-drafts.md` §1 — by 2026-05-15
+- [ ] **Send SampleOfNone helper-nomination ping** (Reddit DM) using draft §2 — by 2026-05-16
+- [ ] **Post r/Devvit progress check** using draft §3 — by 2026-05-19
+- [ ] **Record demo video** following `demo-video-runbook.md` — by 2026-05-25 (leaves 2-day buffer)
+- [ ] **Upload demo video** to YouTube as unlisted, paste URL into Devpost Step 3
+- [ ] **Run domain-approval check** weekly per `domain-approval-runbook.md` — Mondays + Thursdays
+- [ ] **Run `./scripts/check-ai-tone.sh --strict`** locally before pasting any text into Devpost
+- [ ] **Run codex:codex-rescue review** on the final Devpost text before clicking Submit
+- [ ] **Submit Devpost** by 2026-05-27 6pm PT
 
 ## Out of scope (Vinh's lane — never touch)
 
