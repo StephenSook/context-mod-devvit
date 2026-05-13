@@ -151,13 +151,14 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 
 ## 10. Citations for the headline voiceover (60s demo)
 
-1. "Reddit's volunteer mods do 466 hours of unpaid work every day — $3.4M/year." → Li et al. 2022
+1. "Reddit's volunteer mods do 466 hours of unpaid work every day across 21,500 measured moderators — $3.4M/year." → Li et al. ICWSM 2022
 2. "73% of mod actions are already performed by bots." → Same paper
-3. "Reddit Q1 2026 revenue: $663M, +69% YoY, 127M daily users." → Reddit Q1 2026 earnings
-4. "5.3B pieces of content posted in 6 months of 2024." → Reddit Transparency Report H1 2024
-5. "60K active moderators, zero paid." → Reddit 10-K + Statista
-6. "ContextMod's port qualifies for the $1,000 Migration bounty + up to $75K Developer Funds." → Reddit Help official terms
-7. "Discord's Carl-bot has 14.2M server installs. Reddit's Devvit ecosystem is at the same inflection point." → top.gg
+3. "On the Q1 2026 earnings call, Reddit's CEO said: 'we're porting good bots over to our developer platform.'" → Huffman, Q1 2026 transcript
+4. "Reddit Q1 2026: $663M revenue, +69% YoY, $311M free cash flow." → BusinessWire Q1 2026 release
+5. "60K active mods, zero paid. Linear scaling puts the addressable volunteer-labor TAM at $9.5M/year." → Reddit 10-K + Statista, scaled from Li et al.
+6. "Reddit is paying $1,000 per qualifying PRAW→Devvit migration. ContextMod is the textbook target." → App Migration Program 2026 Terms
+7. "Devvit Blocks is being deprecated. Reddit's recommendation: Devvit Web for all new apps. ContextMod's last release was November 2022 — exactly the pre-blackout boundary." → r/Devvit posts 1r3xcm2, 1pcm13z; github.com/FoxxMD/context-mod releases
+8. "Discord launched 2015, Carl-bot launched 2016, now 3.4M servers and 96% bot-driven moderation. Devvit Web hit GA in 2026. Reddit's mod-bot economy is at Year 1 of where Discord was at Year 3." → top.gg, SQ Magazine 2026 stats
 
 ## 11. Computed addressable market (TAM)
 
