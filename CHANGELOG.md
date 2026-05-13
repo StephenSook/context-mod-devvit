@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - Phase 3 (Day 9-11): wire `/api/recent` + `/api/stats` to real `events:recent` ZSET, dashboard live data, mod-menu dry-run.
 - Phase 4 stretch (gated): `history` / `attribution` / `recentActivity` / `repost` rules + image-hash repost detection (blockhash in pure JS within Devvit's 30s window).
 
-## [0.1.0] - 2026-05-27
+## [0.1.0] - TBD (target: May 20, 2026 / hard deadline: May 27, 2026)
 
 Initial Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot, submitted to the Reddit Mod Tools and Migrated Apps Hackathon. Port permission granted via [FoxxMD/context-mod#152](https://github.com/FoxxMD/context-mod/issues/152).
 
