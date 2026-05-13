@@ -42,3 +42,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Architectural concepts, rule/check/action data model, filter system, named-rule expansion, Mustache action templating, and AJV JSON Schema for subreddit config are derived from context-mod (https://github.com/FoxxMD/context-mod). Used with explicit written permission from FoxxMD (Discord, May 2026; github.com/FoxxMD/context-mod/issues/152).
 
 context-mod is MIT-licensed: https://github.com/FoxxMD/context-mod/blob/master/LICENSE
+
+```
+MIT License
+
+Copyright (c) 2019 FoxxMD
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Reddit trademarks — nominative use only
+
+References to Reddit trademarks (REDDIT, the alien mascot/SNOO, "Reddit", "subreddit") in this project's documentation, README, source comments, and policy pages are nominative-use only — i.e., they identify Reddit Inc's products and services without implying endorsement, affiliation, or sponsorship. This complies with Reddit's [Brand Guidelines](https://www.redditinc.com/brand) and Trademark Use Policy. This app is not an official Reddit product. See `policies/terms.md` for the full disclaimer.
