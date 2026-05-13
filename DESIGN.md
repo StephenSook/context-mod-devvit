@@ -34,7 +34,7 @@ related:
 - Honest gating ("Phase 4 gated on Day-0 spike," "MHS rule depends on domain approval")
 
 ### Never say
-- AI-tone words: `amazing`, `cutting-edge`, `delve`, `effortlessly`, `elevate`, `empower`, `easily`, `intuitive`, `leverage`, `powerful`, `revolutionary`, `robust`, `seamless`, `simply`, `sophisticated`, `streamline`, `transform`. <!-- AITONE_IGNORE -->
+- AI-tone words — canonical list lives in [`scripts/check-ai-tone.sh`](./scripts/check-ai-tone.sh) `BLOCKLIST` array (do not duplicate here; the script is the source of truth).
 - Marketing absolutes: "always," "never," "guaranteed," "100%"
 - Vague abstractions: "ecosystem," "platform-native," "first-class," "battle-tested"
 - "We" when describing solo work (this is Stephen's solo build with Vinh on backend)
@@ -68,7 +68,14 @@ Single source of truth: `tailwind.config.ts`. Hex values mirrored here for AI as
 - `lineStrong` `rgba(255,255,255,0.12)` — emphasized divider
 
 ### Asset palette (for Banana / external image gen)
-Concentric rings + green dot motif. White hairlines on warm-charcoal. Single green accent. No additional colors. WCAG-AA on both light + dark GitHub themes via the four-color classDef palette: Reddit `#FF4500` for platform, Devvit `#0079D3` for server, dashboard `#10B981` for client, gray `#6B7280` for external.
+Concentric rings + green dot motif. White hairlines on warm-charcoal. Single green accent. No additional colors. Use the in-app tokens above (ink + bone + signal).
+
+### Diagram classDef palette (Mermaid / FigJam only — NOT in-app tokens)
+The architecture flowchart in `README.md` uses four colors that are not Tailwind tokens — they are diagram-only conventions chosen for WCAG-AA on both light + dark GitHub themes:
+- `#FF4500` (Reddit orange) — Devvit platform nodes
+- `#0079D3` (Devvit blue) — server nodes
+- `#10B981` (dashboard green) — client nodes
+- `#6B7280` (gray) — external nodes
 
 ## Typography
 
@@ -97,13 +104,13 @@ Two named keyframes in `tailwind.config.ts`:
 - **pulse-dot** (2s ease-in-out infinite): green signal dot indicating "live." Used on Observatory dashboard "Live" indicator + map markers.
 - **shimmer** (8s linear infinite): loading shimmer on stat cards before data lands.
 
-CSS-only animations. **Never** use libraries that depend on runtime code-string evaluation (Framer Motion's older versions break Devvit's CSP — confirmed Day 1).
+CSS-only animations. **Never** use libraries that depend on runtime code-string evaluation — Devvit's CSP blocks them. (Framer Motion's older versions were the specific case that surfaced this constraint.)
 
 Custom hand-rolled keyframes for hero animation (in client CSS): `cmFadeUp`, `cmFadeLeft`, `cmFadeIn`, `cmDrawLine`. ~600–1000ms ease-out durations.
 
 ## Iconography
 
-[Lucide React](https://lucide.dev/) only. 1.5-stroke. Default 16px in dense UI, 20px in cards, 24px in hero areas. Matches Geist's stroke weight aesthetic.
+[Lucide React](https://lucide.dev/) only. Stroke width 1.5–1.6 (see `EventRow.tsx` for the canonical 1.6 application). Default 13px in dense event rows, 16px in mod-menu, 20px in cards, 24px in hero areas. Matches Geist's stroke weight aesthetic.
 
 ## Components
 
@@ -114,16 +121,26 @@ Custom hand-rolled keyframes for hero animation (in client CSS): `cmFadeUp`, `cm
 - Optional `signal.ok` accent dot for "live" state
 
 ### Event row
-- 12px height, `ink.900` background
-- Action chip on left (color-coded by action kind: remove=`signal.err`, comment=`signal.info`, ban=`signal.warn`, approve=`signal.ok`, lock=`bone.300`, report=`signal.warn`, flair=`signal.info`)
-- Rule name (Geist Mono 13px) in middle
-- Timestamp (Geist 11px, `bone.300`) on right
+- ~36px row height (`py-2.5`), `ink.900` background with hairline border
+- Status dot on left (1.5×1.5 rounded): `signal.ok` if all actions succeeded, `signal.err` if any failed
+- 13px Lucide icon next to status dot — colored per action kind
+- Action chip color mapping (canonical in `src/client/components/EventRow.tsx`):
+  - `remove` = `signal.err` (#FB7185)
+  - `approve` = `signal.ok` (#4ADE80)
+  - `lock` = `signal.warn` (#FBBF24)
+  - `comment` = `signal.info` (#60A5FA)
+  - `report` = `signal.warn` (#FBBF24)
+  - `ban` = `signal.err` (#FB7185)
+  - `userFlair` = `#A78BFA` (violet — note: outside the `ink/bone/signal` token set; consider promoting to a `signal.author` token if it sticks)
+- Rule name (Geist 12px medium) in middle column
+- Activity ID (Geist Mono 10.5px) muted next to rule name
+- Timestamp (Geist Mono 11px, `bone.300`, tabular-nums) on right
 
 ### Sparkline
 - 24h volume, hourly bins
-- `signal.ok` line, 1.5px stroke
+- `signal.ok` line, **1.25px stroke** (see `src/client/components/Sparkline.tsx`)
 - `ink.800` background, no axis labels
-- Math: `reduce()` not `Math.max(...arr)` (spread blows up on large arrays — Day 2 bug)
+- Math: `reduce()` not `Math.max(...arr)` — spread on large arrays throws (call-stack overflow). The rationale lives in the code comment.
 
 ### Error banner
 - `signal.err` left-border (3px), `ink.900` background
@@ -138,12 +155,12 @@ Custom hand-rolled keyframes for hero animation (in client CSS): `cmFadeUp`, `cm
 | Social preview | `assets/social-preview.png` | 1280×640 RGBA PNG | GitHub OG card, Twitter / Discord link previews |
 | Devpost thumbnail | `assets/thumbnail.png` | 1200×800 RGBA PNG (3:2) | Devpost Step 2 thumbnail slot |
 
-All Banana-generated (Gemini 3.1 Flash Image / Nano Banana 2), re-encoded via PIL to real PNG (RGBA, optimized). **Never** ship JPEG bytes in a `.png` file — Devvit upload validation fails, caught Day 2.
+All Banana-generated (Gemini 3.1 Flash Image / Nano Banana 2), re-encoded via PIL to real PNG (RGBA, optimized). **Never** ship JPEG bytes in a `.png` file — Devvit upload validation fails on magic-byte check (`file` reports JPEG even when extension is `.png`). Always verify with `file assets/*.png` after PIL re-encode.
 
 ## Surface configuration
 
 `devvit.json` post entrypoint:
-- `height: "tall"` (set May 13, 2026 — Observatory needs vertical room for stream + cards + sparkline)
+- `height: "tall"` — Observatory needs vertical room for stream + cards + sparkline
 - `entry: "index.html"` (Devvit Web bundle output at `dist/client/`)
 - `textFallback` provided (mobile / no-JS path)
 
@@ -168,4 +185,8 @@ Redis-only per Devvit constraints. Strings + hashes + sorted sets — no Lists, 
 
 ## Provenance
 
-This DESIGN.md was created May 13, 2026 after Stitch's design-systems team announced their open-source DESIGN.md spec. Stephen's email surfaced the spec; this file was authored by Claude (with Stephen's voice rules applied) using the tokens already extracted in `tailwind.config.ts`.
+Format inspired by Stitch's open-source DESIGN.md spec. Authored using the tokens already extracted in `tailwind.config.ts` + components in `src/client/components/`. Canonical-source pointers throughout so this doc points at the code instead of duplicating it — when in doubt, the code wins.
+
+## Drift mitigation
+
+This doc duplicates information from `tailwind.config.ts`, `src/client/components/*.tsx`, `devvit.json`, and `scripts/check-ai-tone.sh`. If any of those change, manually update the relevant section here OR add a check in `scripts/` that diffs the two. **The canonical source is always the code; this doc is the human-readable mirror.**
