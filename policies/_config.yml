@@ -1,8 +1,7 @@
 title: ContextMod Devvit Policies
 description: Privacy Policy and Terms of Service for the cm-devvit Reddit app.
+theme: jekyll-theme-minimal
 markdown: kramdown
 kramdown:
   input: GFM
   syntax_highlighter: rouge
-exclude:
-  - _config.yml
