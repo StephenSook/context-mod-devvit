@@ -13,7 +13,7 @@ description: Terms of Service for the cm-devvit Reddit Devvit app.
 
 context-mod-devvit is a free, open-source moderation tool for Reddit subreddits, distributed under the MIT License. It is built on Reddit's Developer Platform (Devvit) and installed by subreddit moderators to assist with community moderation.
 
-By installing or using this app you agree to these Terms, Reddit's User Agreement, Reddit's Developer Terms, the [Privacy Policy](./privacy.md), and the project's [LICENSE](../LICENSE) and [NOTICES](../NOTICES.md).
+By installing or using this app you agree to these Terms, Reddit's User Agreement, Reddit's Developer Terms, the [Privacy Policy](../privacy/), and the project's [LICENSE](https://github.com/StephenSook/context-mod-devvit/blob/main/LICENSE) and [NOTICES](https://github.com/StephenSook/context-mod-devvit/blob/main/NOTICES.md).
 
 ## License
 
