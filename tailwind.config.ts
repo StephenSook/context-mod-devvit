@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { SIGNAL } from './src/client/lib/design-tokens';
 
 export default {
   content: ['./src/client/**/*.{ts,tsx,html}'],
@@ -23,13 +24,10 @@ export default {
           200: '#A8A29E',
           300: '#71717A',
         },
-        signal: {
-          ok: '#4ADE80',
-          warn: '#FBBF24',
-          err: '#FB7185',
-          info: '#60A5FA',
-          author: '#A78BFA',
-        },
+        // Imported from src/client/lib/design-tokens.ts so EventRow's
+        // inline-style usage + Tailwind utility class generation
+        // (text-signal-ok / bg-signal-ok / etc) share one source of truth.
+        signal: SIGNAL,
         line: 'rgba(255,255,255,0.06)',
         lineStrong: 'rgba(255,255,255,0.12)',
       },
