@@ -1,3 +1,9 @@
+---
+permalink: /terms/
+title: Terms of Service
+description: Terms of Service for the cm-devvit Reddit Devvit app.
+---
+
 # Terms of Service — context-mod-devvit
 
 **Last updated:** May 12, 2026
