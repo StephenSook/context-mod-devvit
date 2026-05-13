@@ -35,9 +35,9 @@
 - [ ] **G.4** Tool overview section
 - [ ] **G.5** Project impact section
 
-### Wave 6 — App icon (Track B, ~1 commit)
-- [ ] **B.1** Generate 256×256 PNG via Banana matching Observatory aesthetic (warm-dark + concentric rings + green accent)
-- [ ] **B.2** Commit to `assets/icon.png`, reference in devvit config
+### Wave 6 — App icon (Track B, ~2 commits) ✓
+- [x] **B.1** Generated 256×256 PNG via Banana (Nano Banana 2, 1K → sips downscale) matching Observatory aesthetic — `assets/icon.png` committed
+- [x] **B.2** Referenced in README hero (right-aligned, 96px). Note: Devvit `config-file.v1.json` schema has no icon field — upload happens via Developer Portal (covered in Wave 8 cheat sheet).
 
 ### Wave 7 — Public flip + GH Pages (Track E1, ~2 commits)
 > Requires explicit user OK — irreversible-ish (repo becomes world-readable).
@@ -45,8 +45,8 @@
 - [ ] **E1.2** Flip repo private → public via `gh repo edit`
 - [ ] **E1.3** Update README + policies links to point at hosted URLs
 
-### Wave 8 — Devvit developer-settings form (Track E)
-> User-side action, not code. Provide screenshot guide in plan handoff.
+### Wave 8 — Devvit developer-settings form (Track E) ✓
+- [x] **E.1** Cheat sheet at `docs/submission/devvit-app-settings.md` — verbatim copy for every field, AI-tone blocklist, pre-submission checklist, post-submission protocol. Stephen pastes the values when filling the form at developers.reddit.com/apps/cm-devvit/settings.
 
 ## Out of scope (Vinh's lane — never touch)
 - `src/lib/idem.ts` — Vinh extends with new gates as needed
