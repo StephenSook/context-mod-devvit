@@ -34,7 +34,53 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 ## Status
 
-**Hackathon-era MVP.** Active development; expect rough edges. See [implementation plan](../docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) for what's in scope.
+**Hackathon-era MVP.** Active development; expect rough edges. See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) for what's in scope.
+
+## Architecture
+
+```
+                  Reddit subreddit
+                         │
+   ┌─────────────────────┼─────────────────────┐
+   │                     │                     │
+   ▼                     ▼                     ▼
+onPostSubmit       onCommentSubmit       onModAction
+   │                     │                     │
+   └──────────┬──────────┴──────────────┬──────┘
+              ▼                         ▼
+        Hono server                 ┌────────────────┐
+        (Node.js,                   │  Mod menu:     │
+         CommonJS)                  │  /reload-config│
+              │                     │  /test-rules   │
+              ▼                     │  /recent-actions
+        firstSeen                   └────────┬───────┘
+        (24h Redis SETNX,                    ▼
+         fail-closed)              Observatory dashboard
+              │                    (Vite + React, custom
+              ▼                     post webview)
+   Load cfg:current_rev → cfg:rev:{n} from Redis
+              │
+              ▼
+       Run → Check → Rule → Action pipeline
+        │
+        ├─ filters (authorIs, itemIs)
+        ├─ named rules + composition
+        ├─ Mustache action templating
+        └─ per-action idempotency (reserve → side-effect → commit)
+              │
+              ▼
+        reddit.{remove, approve, lock, comment, report, ban, setUserFlair}
+              │
+              ▼
+        Push compact event → events:recent ZSET (50-deep ring buffer)
+              │
+              ▼
+        Dashboard polls /api/recent every 10s → renders timeline
+```
+
+**Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB, no Lists, no Sets — strings + hashes + sorted sets only.
+
+**Atomic config publish:** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every handleActivity reads the pointer ONCE at event start so the entire pipeline runs against a consistent config snapshot.
 
 ## Credits
 
