@@ -49,7 +49,7 @@ seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you
 
 statuses are all set to default; you or i can flip them in the UI as work moves. happy to add custom fields (Status / Owner / Phase) for more granular tracking if useful.
 
-source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update. fyi i refreshed my gh CLI scopes with `gh auth refresh -s project,read:project` for the GraphQL bulk-add — i'll downgrade back to read:project once the board is stable so i'm not carrying broader write permissions than needed.
+source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update. fyi i temporarily added `project` scope to my gh CLI token for the GraphQL bulk-add — once the board is stable i'll drop it back via `gh auth refresh --remove-scopes project` so i'm not carrying broader write permissions than needed.
 ```
 
 > Card count current as of seeding (May 13, 2026, 42 items). Verify with `gh project item-list 6 --owner FoxxMD --format json --limit 100` before sending if delayed.
