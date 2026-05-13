@@ -174,4 +174,41 @@ If you're already running [FoxxMD/context-mod](https://github.com/FoxxMD/context
 
 **The grandfather case:** if you're FoxxMD or running CM in production with subscribers depending on it, [open an issue](https://github.com/StephenSook/context-mod-devvit/issues) — we'd love to talk about a graceful cutover.
 
+## FAQ
+
+**Do I need to host anything?**
+No. Devvit runs the server. You install via the Reddit App Directory, write your rules in your sub's wiki, and that's it.
+
+**Can other mods edit the config?**
+Yes — anyone with `wiki` permissions in your sub can edit `/wiki/contextmod`. Standard Reddit wiki access control applies.
+
+**What happens if I edit the wiki and break the config?**
+The 5-minute refresh cron validates new config against an AJV JSON Schema. If it fails to parse or validate, the previous `cfg:current_rev` stays active and the error is logged. Your sub stays moderated by the last good config until you fix the wiki page.
+
+**How do I see what ContextMod actually did?**
+Open the Observatory dashboard. From the sub overflow menu: **ContextMod: View recent actions**. Shows last 50 events with action chips (REMOVE / APPROVE / COMMENT etc), color-coded by status, with a 24h sparkline of action volume.
+
+**Does it work on iOS / Android?**
+The dashboard is mobile-responsive. Devvit custom posts render natively in the Reddit app's webview. Mod menu actions work on web only (per Devvit platform limits today).
+
+**Is this safe to install on my big sub?**
+This is hackathon-era MVP code with the trigger pipeline still being wired (Phase 1+2). Stable enough for a private test sub, not yet recommended for high-volume production. Watch the [App Versions page](https://developers.reddit.com/apps/cm-devvit/app-versions) for the v1.0 release.
+
+**Why a separate slug, not `context-mod`?**
+Reddit's Devvit App Directory has a 16-character app-name limit. `cm-devvit` is the working slug — leaving `context-mod` open if FoxxMD eventually publishes his own official port.
+
+## Changelog
+
+### v0.1.0 — Hackathon Day 1-2 (2026-05-12 – 2026-05-13)
+- Initial Devvit Web scaffold + custom-post Observatory dashboard
+- Per-effect idempotency (5min pending / 7d done) + atomic config publish (`cfg:rev:{n}` + `cfg:current_rev`)
+- BigInt FNV-1a for action keys (canonical test vectors verified)
+- Liquid-glass UI (Geist + Geist Mono + Instrument Serif italic accents)
+- Mod menu wired: View recent actions, Reload config, Test rules
+- Privacy Policy + Terms of Service + Fetch Domains table
+- CI on every push (type-check + lint + test + build)
+- 60+ atomic commits
+
 ## License
+
+MIT. See [`LICENSE`](./LICENSE). Citations + third-party attribution in [`NOTICES.md`](./NOTICES.md).
