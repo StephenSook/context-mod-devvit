@@ -68,8 +68,8 @@ flowchart TB
   end
 
   subgraph External["External HTTP (allowlist)"]
-    MHS{{"api.moderatehatespeech.com<br/>⚠ pending review"}}
-    RIMG{{"i.redd.it · preview.redd.it<br/>✓ global allowlist"}}
+    MHS{{"api.moderatehatespeech.com<br/>⚠ pending review (Phase 4)"}}
+    RIMG{{"i.redd.it · preview.redd.it<br/>· external-{preview,i}.redd.it<br/>✓ global allowlist (no approval needed)"}}
   end
 
   TRIG ==>|"POST /internal/triggers/*"| HA
