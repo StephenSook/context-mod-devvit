@@ -1,3 +1,5 @@
+<img src="assets/icon.png" alt="ContextMod Observatory" width="96" align="right" />
+
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
