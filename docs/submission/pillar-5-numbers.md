@@ -139,8 +139,8 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 | Bot | Active servers (top.gg current) | Cumulative installs | Premium | Notes |
 |-----|------------------------------|---------------------|---------|-------|
 | **Carl-bot** | ~3.4M | 10–14M lifetime | $7.99/mo | Launched 2016 ([top.gg](https://top.gg/bot/235148962103951360)) |
-| **MEE6** | (paused at GA) | ~21M lifetime | $11.95/mo | ([mee6.xyz](https://mee6.xyz/)) |
-| **Dyno** | ~3M | ~10M lifetime | $4.99–9.99/mo | ([dyno.gg/premium](https://dyno.gg/premium)) |
+| **MEE6** | (paused at GA) | ~21M lifetime | $11.99/mo | ([mee6.xyz/en/premium](https://mee6.xyz/en/premium)) |
+| **Dyno** | ~3M | ~10M lifetime | $5.99–$12.99/mo (Standard / Premium / Custom) | ([dyno.gg/premium](https://dyno.gg/premium)) |
 
 **Discord ecosystem scale** ([SQ Magazine Discord stats 2026](https://sqmagazine.co.uk/discord-statistics/)):
 - **55,000+ bots** in Discord's bot marketplace
