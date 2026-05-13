@@ -39,16 +39,18 @@
 - [x] **B.1** Generated 256×256 PNG via Banana (Nano Banana 2, 1K → sips downscale) matching Observatory aesthetic — `assets/icon.png` committed
 - [x] **B.2** Referenced in README hero (right-aligned, 96px). Note: Devvit `config-file.v1.json` schema has no icon field — upload happens via Developer Portal (covered in Wave 8 cheat sheet).
 
-### Wave 7 — Public flip + GH Pages (Track E1)
-> Requires explicit user OK — irreversible-ish (repo becomes world-readable).
-- [x] **E1.1** Added `.github/workflows/pages.yml` — publish `policies/` to GH Pages via jekyll-build-pages
+### Wave 7 — Public flip + GH Pages (Track E1) ✓
+- [x] **E1.1** `.github/workflows/pages.yml` — jekyll-build-pages from `policies/`
 - [x] **E1.1a** `policies/_config.yml` — kramdown GFM
-- [x] **E1.1b** `policies/index.md` — landing page with /privacy/ + /terms/ links
-- [x] **E1.1c** Jekyll frontmatter on `privacy.md` + `terms.md` — permalinks set
-- [ ] **E1.2** Flip repo private → public via `gh repo edit StephenSook/context-mod-devvit --visibility public` ⚠️ **NEEDS USER OK**
-- [ ] **E1.3** Enable Pages in repo settings (Source: GitHub Actions) — only works after E1.2 on free tier
-- [ ] **E1.4** Verify `https://stephensook.github.io/context-mod-devvit/privacy` returns 200
-- [ ] **E1.5** Update README link rendering if Pages URL needs tweak
+- [x] **E1.1b** `policies/index.md` — landing page
+- [x] **E1.1c** Jekyll frontmatter on `privacy.md` + `terms.md`
+- [x] **E1.2** Pre-flip audit: no .env, no API keys, no PATs, no AWS, no Devvit tokens in history. Sanitized 3 absolute local paths in `2026-05-12-contextmod-devvit-port.md`.
+- [x] **E1.3** Flipped `StephenSook/context-mod-devvit` private → public
+- [x] **E1.4** Enabled Pages (Source: GitHub Actions) via API
+- [x] **E1.5** Verified URLs return 200:
+  - https://stephensook.github.io/context-mod-devvit/
+  - https://stephensook.github.io/context-mod-devvit/privacy/
+  - https://stephensook.github.io/context-mod-devvit/terms/
 
 ### Wave 8 — Devvit developer-settings form (Track E) ✓
 - [x] **E.1** Cheat sheet at `docs/submission/devvit-app-settings.md` — verbatim copy for every field, AI-tone blocklist, pre-submission checklist, post-submission protocol. Stephen pastes the values when filling the form at developers.reddit.com/apps/cm-devvit/settings.
