@@ -146,6 +146,32 @@ Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), ev
 - Image bytes are decoded → hashed → discarded in-process. Only the 64-bit hash is persisted.
 - All cached data is per-installation isolated (Devvit Redis) and TTL'd: hashes auto-expire after 30 days, author profile cache 1h, idempotency keys 24h.
 
-## License
+## Migration guide for existing ContextMod operators
 
-MIT. See `LICENSE`.
+If you're already running [FoxxMD/context-mod](https://github.com/FoxxMD/context-mod) (Docker/Heroku) you can keep your existing config and migrate progressively.
+
+**Config compatibility:** YAML/JSON5 → JSON5 only. Convert with [`yaml-to-json`](https://www.npmjs.com/package/yaml-to-json) or any online converter. The schema is a strict subset of upstream — see `What's ported vs deferred` below.
+
+**What's ported (works today):**
+- `Run` / `Check` / `Rule` / `Action` concept model + `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:`)
+- Filters: `authorIs` / `itemIs` with the canonical criteria set (name, age, karma, flair, isMod, isContributor, verified, shadowBanned, removed, approved, locked, score, age, title, isSelf, over18, depth, op)
+- Rules: `regex` (with multi-field `testOn` + threshold), `author`, `ruleSet` (AND/OR composition)
+- Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — all support Mustache templates over `{{item, author, manager, rules, actions}}` context
+- Named rules + composition by name reference
+- Wiki-based config + 5-min refresh cron + manual `Reload config` menu action
+- Per-action idempotency (pending/done split — never double-applies the same action even on Devvit's at-least-once trigger delivery)
+
+**What's deferred (Phase 4 stretch, not yet shipped):**
+- `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants), `mhs` rules — landing in Phase 4
+- `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube — explicitly **cut** (NLP libs don't bundle in Devvit; YouTube API exceeds scope)
+- `DispatchAction` — explicitly **cut** (defer-and-replay was low-leverage for hackathon scope)
+
+**What's different from upstream:**
+- **No central server.** Every mod team installs their own instance — no shared rate limits, no central API token to manage.
+- **Per-subreddit Redis isolation.** Your data never leaves your sub. Mod-action history, image hashes, author cache — all scoped per-install by Devvit.
+- **Observatory dashboard.** Inline custom post showing live action telemetry (last 50 events + 24h sparkline + stat cards).
+- **No `wikiLocation` config fragment hydration.** v1 reads one wiki page; `wiki:` + `url:` includes were dropped to simplify the threat model.
+
+**The grandfather case:** if you're FoxxMD or running CM in production with subscribers depending on it, [open an issue](https://github.com/StephenSook/context-mod-devvit/issues) — we'd love to talk about a graceful cutover.
+
+## License
