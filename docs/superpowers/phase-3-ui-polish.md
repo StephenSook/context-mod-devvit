@@ -4,8 +4,8 @@
 
 ## Audit summary
 
-Current Observatory dashboard (149 lines in `App.tsx` + 6 components) reads as **well-designed and intentional** when scanned against the `frontend-design` skill principles:
-- Distinctive typography blend (Geist + Geist Mono + Instrument Serif italic accents)
+Current Observatory dashboard (149 lines in `App.tsx` + 6 components) holds up against the `frontend-design` skill principles:
+- Mixed-medium typography (Geist + Geist Mono + Instrument Serif italic accents)
 - Staggered fade-up animations (`animationDelay: 0s, 0.05s, 0.12s, 0.19s, 0.26s, 0.35s`)
 - Radial-gradient atmospherics (top-center green tint + bottom-right blue)
 - Hairline-only dividers, no shadows
@@ -53,7 +53,7 @@ What surfaced from the audit that's worth doing later (NOT now, 14 days from dea
 - `frontend-design` skill principles applied as audit rubric
 - `pr-review-toolkit:comment-analyzer` sub-agent found 3 factual errors in `DESIGN.md` vs actual code (fixed in commit 92946fe)
 - `codex:codex-rescue` sub-agent surfaced the scanner here-string false-negative (fixed in commit faed48f) + phase framing contradictions (fixed in commit cebe3dc)
-- `mcp__magic__21st_magic_component_inspiration` returned 84KB of component data; sampled for dashboard-card patterns
+- `mcp__magic__21st_magic_component_inspiration` returned a large response (saved to the session's tool-results dir for inspection); sampled for dashboard-card patterns
 - `mcp__stitch__list_projects` confirmed existing Stitch projects (deferred generation pending Phase 3)
 
 ## Decision
