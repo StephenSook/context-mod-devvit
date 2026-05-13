@@ -132,7 +132,7 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 - **Eligibility:** PRAW app existed before 2026-03-25 AND serves a subreddit with ≥1,000 weekly active users.
 - **Program window:** 2026-03-31 → 2026-12-31.
 - **One bounty per developer.**
-- **ContextMod easily qualifies** — r/mealtimevideos alone is 60× the WAU threshold.
+- **ContextMod clears the threshold by 60×** — r/mealtimevideos alone is at 60K weekly visitors versus the 1K WAU requirement.
 
 ## 9. Discord mod-bot ecosystem (latent demand framing)
 
