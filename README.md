@@ -178,7 +178,7 @@ Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable exa
 - **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
 - **Named rules** — declare a rule once with `name:`, reference by string elsewhere — DRY composition.
 
-See [`src/server/schema/app.schema.json`](./src/server/schema/app.schema.json) for the canonical AJV schema, or the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) for an exhaustive reference (concepts identical, surface trimmed).
+The canonical AJV schema lands at `src/server/schema/app.schema.json` in Phase 1 (Vinh's lane, finishing Day 5-8). Until then, the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) are the reference — concepts identical, surface trimmed per [migration guide](#migration-guide-for-existing-contextmod-operators).
 
 ## Credits
 
@@ -279,7 +279,7 @@ Vite's `base` must be `'./'` for the Devvit webview iframe. Verify in `vite.conf
 Run `devvit login` and complete the browser flow. Token's cached in your home dir.
 
 **Wiki config fails to validate after editing.**
-The AJV schema at `src/server/schema/app.schema.json` is strict. If the cron's `refresh-config` rejects your JSON5, the previous `cfg:current_rev` stays active and the error is logged. Common gotchas: trailing commas (OK in JSON5), unquoted keys (OK in JSON5), but type mismatches (e.g., `age: "1d"` instead of `age: 86400`) get rejected.
+The AJV schema (lands at `src/server/schema/app.schema.json` in Phase 1) is strict. If the cron's `refresh-config` rejects your JSON5, the previous `cfg:current_rev` stays active and the error is logged. Common gotchas: trailing commas (OK in JSON5), unquoted keys (OK in JSON5), but type mismatches (e.g., `age: "1d"` instead of `age: 86400`) get rejected.
 
 **Devvit upload fails with "name does not meet maximum length of 16".**
 `devvit.json:name` must be ≤16 chars. Our slug is `cm-devvit`.
