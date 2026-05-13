@@ -123,9 +123,17 @@ export default function App() {
 
           <div className="flex-1 min-h-0 overflow-y-auto border-t border-line">
             {events.length === 0 ? (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-bone-300 text-[12px] font-serif italic">
-                  No actions yet — make sure your config is loaded.
+              <div className="flex flex-col items-center justify-center h-full text-center px-8 gap-2">
+                <p className="text-bone-200 text-[13px]">Nothing has fired yet.</p>
+                <p className="text-bone-300/80 text-[11px] font-serif italic leading-relaxed max-w-xs">
+                  Define rules in{' '}
+                  <span className="not-italic font-sans text-bone-200">
+                    r/{subreddit}/wiki/contextmod
+                  </span>{' '}
+                  to start moderating.
+                </p>
+                <p className="text-bone-300/50 text-[10px] tracking-wide uppercase mt-1">
+                  events refresh every 10s
                 </p>
               </div>
             ) : (
