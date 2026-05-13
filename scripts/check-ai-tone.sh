@@ -87,12 +87,14 @@ hits=0
 for p in "${SCAN_PATHS[@]}"; do
   while IFS= read -r line; do
     # line format: filename:N:content
-    if echo "$line" | grep -q 'AITONE_IGNORE'; then
+    # Tighten: only the literal HTML-comment marker form counts as an escape.
+    # Substring "AITONE_IGNORE" in documentation/instruction prose does NOT bypass.
+    if echo "$line" | grep -qF '<!-- AITONE_IGNORE -->'; then
       continue
     fi
     echo "$line"
     hits=$((hits + 1))
-  done < <(grep -niE "$pattern" "$p" || true)
+  done < <(grep -niE "$pattern" "$p" 2>/dev/null || true)
 done
 
 echo ""
