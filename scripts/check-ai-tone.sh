@@ -111,6 +111,9 @@ for p in "${SCAN_PATHS[@]}"; do
       continue
       ;;
   esac
+  # Process substitution (avoids `<<<` here-string temp-file dependency
+  # that silently false-negatives in sandboxed environments where /tmp
+  # is unwritable — Codex caught this Day 3).
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     # Only the literal HTML-comment marker counts as an escape.
@@ -120,7 +123,7 @@ for p in "${SCAN_PATHS[@]}"; do
     fi
     echo "$line"
     hits=$((hits + 1))
-  done <<<"$out"
+  done < <(printf '%s\n' "$out")
 done
 
 echo ""
