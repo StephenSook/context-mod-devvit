@@ -47,10 +47,12 @@ vinh has access too, so once we kick off phase 1 he picks up backend tasks direc
 ```
 seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you can group by phase. vinh's tagged on phase 1+2+4 (backend), i'm on phase 3+5+6 (dashboard wire / demo / submission). a few cards have blocked dependencies noted in the body — phase 3 dashboard wire-up depends on phase 1 + 2 shipping, phase 4 image-hash depends on a day-0 spike, mhs rule depends on api.moderatehatespeech.com fetch approval (which is high-risk per reddit's personal-domain policy, decision tree documented).
 
-statuses are all set to default; you or i can flip them in the UI as work moves. happy to add custom fields (Status / Owner / Phase) if you want a richer view than what i seeded.
+statuses are all set to default; you or i can flip them in the UI as work moves. happy to add custom fields (Status / Owner / Phase) for more granular tracking if useful.
 
-source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update.
+source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update. fyi i refreshed my gh CLI scopes with `gh auth refresh -s project,read:project` for the GraphQL bulk-add — i'll downgrade back to read:project once the board is stable so i'm not carrying broader write permissions than needed.
 ```
+
+> Card count current as of seeding (May 13, 2026, 42 items). Verify with `gh project item-list 6 --owner FoxxMD --format json --limit 100` before sending if delayed.
 
 **AI-tone scan:** clear.
 
