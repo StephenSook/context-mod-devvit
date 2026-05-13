@@ -176,9 +176,9 @@ Two stacked claims, separated so judges can attack the assumption-laden one with
 
 in labor-equivalent value unlocked. Even at a conservative **10% capture rate**, that's **$6M+/year of unlocked ecosystem value** — multiples larger than the entire Developer Funds program budget per app.
 
-## 12. Realistic 12-month cash envelope (for this port)
+## 12. Realistic direct-cash envelope (program-window scoped)
 
-Stacking the actual programs ContextMod-on-Devvit qualifies for:
+Stacking the actual programs ContextMod-on-Devvit qualifies for, **with the Developer Funds program currently running through June 2026**:
 
 | Source | Math | Tier reached | Payout |
 |--------|------|------|--------|
@@ -186,9 +186,11 @@ Stacking the actual programs ContextMod-on-Devvit qualifies for:
 | Hackathon Best Ported App | grand prize | win condition | $10,000 |
 | Developer Funds — Install side | 10% of 60K mods × installs threshold = 6K (well past Tier 3 cap) | Tier 3 cap | $3,500 |
 | Developer Funds — DQE side | ~10K daily distinct mods at maturity | Tier 3-4 ladder | $5,000-$10,500 |
-| **Total envelope** | | | **$19,500–$25,000** |
+| **Total envelope (one-time, before program close)** | | | **$19,500–$25,000** |
 
-**Tail upside** if DQE compounds toward Tier 5+: up to **$42K cumulative** on the funds side alone, plus the $1K + $10K base. Stretch-but-credible target: **$50K+ over 12 months against zero hosting/infra cost.**
+**Tail upside** if DQE compounds toward Tier 5+ before the program closes: up to **$42K cumulative** on the funds side alone, plus the $1K + $10K base. Stretch-but-credible target: **$50K+ against zero hosting/infra cost.**
+
+⚠ **Honesty caveat:** Developer Funds 2026 program window is approximately Apr 2025 → Jun 2026 per Reddit's published terms. From a May 27, 2026 hackathon submission, the realistic capture window for the *current* program is one to two months — payouts past that depend on Reddit renewing the program. Treat all ladder figures as one-time and probabilistic, not recurring ARR.
 
 Sources: [Developer Funds 2026 Terms](https://support.reddithelp.com/hc/en-us/articles/27958169342996-Reddit-Developer-Funds-2026-Terms), [Migration Program 2026 Terms](https://support.reddithelp.com/hc/en-us/articles/47822311698452-Reddit-Developer-Platform-App-Migration-Program-2026-Terms), [hackathon rules](https://mod-tools-migration.devpost.com/).
 
