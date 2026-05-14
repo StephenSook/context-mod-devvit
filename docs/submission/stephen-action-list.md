@@ -101,11 +101,14 @@ Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this fi
 - **Time:** 60s if you choose to send
 
 ### Action 3 — Run pre-submission gates locally
+
+From the repo root (`~/Reddiit\ Hacks/context-mod-devvit/`):
+
 ```bash
-cd /Users/stephensookra/Reddiit\ Hacks/context-mod-devvit
 npm run type-check && npm run lint && npm test && npm run build
 ./scripts/check-ai-tone.sh --strict
 ```
+
 Verify all pass. If anything fails, ping Claude.
 
 ---
