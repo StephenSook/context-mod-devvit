@@ -45,7 +45,6 @@ The app does **not** store:
 
 The app makes outbound HTTP requests to these allow-listed domains only:
 
-- **api.moderatehatespeech.com** — toxicity classification, used by MHSRule if a moderator enables it. Post/comment text is sent for classification; the response (`flagged` boolean + `confidence` float) is returned. Subject to that service's own privacy policy.
 - **i.redd.it, preview.redd.it, external-preview.redd.it, external-i.redd.it** — Reddit's own image CDNs, fetched to compute perceptual hashes for repost detection. Image bytes are decoded and hashed locally; the bytes themselves are not stored or transmitted further.
 
 The app does not transmit data to any other third party.
@@ -74,7 +73,7 @@ Users who want their data removed before TTL expiry can: (1) delete the post/com
 
 ## Third-party services
 
-- **api.moderatehatespeech.com** — see https://moderatehatespeech.com/privacy
+The app does not call any third-party APIs. All outbound HTTP traffic stays within Reddit's image CDN domains listed in "External data transmission" above.
 
 ## Changes to this policy
 
