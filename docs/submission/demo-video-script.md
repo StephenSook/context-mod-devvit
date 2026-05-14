@@ -82,7 +82,7 @@
 **Visual:** Title card "Migration ready" — text only, dark background.
 
 **Caption / VO:**
-> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program — realistic 12-month capture for a mod tool is $5K-$10.5K, $75K is the theoretical ceiling."
+> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program — realistic 12-month direct-cash envelope is $19.5K–$25K (bounty + Install-side cap + DQE Tier 3–4). The $75K figure is the Developer Funds Tier-8 DQE ceiling, not expected capture."
 
 ---
 

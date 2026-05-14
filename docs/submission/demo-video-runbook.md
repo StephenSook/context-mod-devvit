@@ -56,7 +56,7 @@ Pre-position the cursor before each scene begins recording so you don't waste se
 | Live demo: wiki | 29.0 – 36.0s | Subreddit + Wiki scene | open `r/cm_devvit_test/wiki/contextmod`, paste JSON5 config, click save |
 | Live demo: trigger | 36.0 – 43.0s | Subreddit + Wiki scene | submit a test post titled "free crypto giveaway scam" |
 | Live demo: dashboard | 43.0 – 50.0s | Observatory + Mod Menu scene | cut to dashboard; event row appears at top; pan over stat cards; mention dry-run mod menu |
-| Wedge | 50.0 – 58.0s | title card (static, generate via ffmpeg `drawtext`) | "Migration ready — eligible for Reddit's $1,000 Migration Bounty + up to $75K Developer Funds" |
+| Wedge | 50.0 – 58.0s | title card (static, generate via ffmpeg `drawtext`) | "Migration ready — eligible for Reddit's $1,000 Migration Bounty + Developer Funds (realistic 12-mo direct-cash envelope $19.5K–$25K per `pillar-5-numbers.md` §8)" |
 | Close | 58.0 – 60.0s | three lines fade-up | `context-mod-devvit` / `github.com/StephenSook/context-mod-devvit` / `developers.reddit.com/apps/cm-devvit` |
 
 ## Voiceover record (Audacity)
