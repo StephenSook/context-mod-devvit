@@ -193,7 +193,7 @@ Two stacked claims, separated so judges can attack the assumption-laden one with
 
 **B — Linear scaling to Reddit's stated ~60K active mods.** $3.4M × (60K / 21.5K) = **~$9.5M/year volunteer-labor-equivalent value** across Reddit's full mod base. Honestly flag this as scaling math, not measured.
 
-**Incremental capture available to ContextMod-class tools.** AutoMod is regex-only — handles 82% review / 8% action per Reddit's data, mostly anti-spam. The *context-gathering* tier (5–10 minutes of manual user-history check per ambiguous post, multi-attribute author criteria, composable rules) is what humans currently do and what CM-class bots automate. If a CM-class bot offloads **1 additional hour per mod per week** beyond AutoMod's reach, that's:
+**Incremental capture available to ContextMod-class tools.** AutoMod is regex-with-light-filters — it handles the majority of automated review per Wright 2022 + Jhaver 2019, mostly anti-spam pattern-matching. The *context-gathering* tier (5–10 minutes of manual user-history check per ambiguous post, multi-attribute author criteria, composable rules) is what humans currently do and what CM-class bots automate. If a CM-class bot offloads **1 additional hour per mod per week** beyond AutoMod's reach, that's:
 
 ```
 60,000 mods × 52 weeks × 1 hr × $20/hr = $62.4M/year
@@ -233,7 +233,7 @@ Devvit-native gives every operator zero marginal hosting + zero API cost + per-s
 Per Codex's mandate not to overclaim:
 
 - **"60K mods" is Reddit's public statistic** (Statista + Reddit press), not a peer-reviewed measurement. The academic measured value is 21.5K (Li et al.). TAM math compounds the gap. Flag both numbers and let judges pick which to attack.
-- **AutoMod 82%/8%** lacks a clean primary citation — restate as "per Reddit's published data" with a hedge.
+- **AutoMod precise-percentage claims** ("82% reviewed / 8% acted") lack a clean primary citation. Dropped from §4 and §11 (2026-05-14 audit-2). Cite Wright 2022 + Jhaver 2019 for "AutoMod handles the majority of automated review" and avoid precise percentages in Q&A.
 - **DQE Tier 5+ ($25K+)** requires ~50K daily distinct mods which is near-implausible for a moderation tool. Cap honest projections at Tier 4 ($10.5K cumulative).
 - **Developer Funds renewal isn't guaranteed.** Program runs Apr 2025 → Jun 2026. Treat all ladder payouts as one-time and probabilistic, not recurring ARR.
 - **Devvit kill risk.** Reddit has killed monetization products before (Community Points, 2023). Mitigation: this port stands as utility regardless of monetization.
@@ -241,7 +241,7 @@ Per Codex's mandate not to overclaim:
 
 ## Open verification flags (revisit before submission)
 
-- **"AutoMod 82%/8%"** — cite as "per Reddit's own published data" with hedge until primary source located.
+- ~~**"AutoMod 82%/8%"**~~ — RESOLVED 2026-05-14: dropped from prose. Wright 2022 + Jhaver 2019 substantiate "majority of automated review" only.
 - **Live App Directory install counts** (Spotlight 1664, etc.) — pull from `developers.reddit.com/apps` browser before submission (Firecrawl blocked from scraping).
 - **r/ContextMod subscriber count** — pull live; reddit.com blocked from scrapers.
 - **Specific ContextMod testimonials** — ask FoxxMD + SampleOfNone for 1-2 named-sub quotes for the writeup.
