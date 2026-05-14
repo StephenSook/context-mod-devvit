@@ -44,9 +44,10 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
     >
       <div className="flex items-center gap-1.5">
         <span
+          role="img"
           className="w-1.5 h-1.5 rounded-full shrink-0"
           style={{ background: allOk ? SIGNAL.ok : SIGNAL.err }}
-          aria-label={allOk ? 'ok' : 'failed'}
+          aria-label={allOk ? 'action succeeded' : 'action failed'}
         />
         {event.actions[0] && <FirstIcon size={13} strokeWidth={1.6} color={firstColor} />}
       </div>
