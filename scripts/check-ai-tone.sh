@@ -27,8 +27,10 @@ set -u
 # Blocklist — alphabetical
 BLOCKLIST=(
   amazing
+  comprehensive
   cutting-edge
   delve
+  ecosystem
   effortlessly
   elevate
   empower
@@ -43,6 +45,7 @@ BLOCKLIST=(
   sophisticated
   streamline
   transform
+  unlocked
 )
 
 # Build alternation. We use BSD-compatible word-edge anchors instead of \b

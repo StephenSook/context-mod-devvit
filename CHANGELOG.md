@@ -159,7 +159,7 @@ Initial Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot, submitte
 - README polished across 8 atomic commits: hero with badges, Quick Start mod walkthrough, Architecture (Mermaid), Config schema, Fetch Domains table, Migration guide, FAQ, Changelog.
 - Day-by-day implementation plans in `docs/superpowers/plans/` with tool-inventory audit tables.
 - Phase-3 UI polish list capturing deferred frontend-design audit findings.
-- Research-deltas doc (`docs/superpowers/2026-05-13-research-deltas.md`) capturing last-30-days Devvit ecosystem updates + strategic adjustments.
+- Research-deltas doc (`docs/superpowers/2026-05-13-research-deltas.md`) capturing last-30-days Devvit policy/release updates + strategic adjustments.
 
 ## Notes on Phase scope
 

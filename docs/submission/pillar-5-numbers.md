@@ -134,7 +134,7 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 - **One bounty per developer.**
 - **ContextMod clears the Bounty's 1K WAU bar by ~60×** — r/mealtimevideos alone is at ~60K weekly visitors. (Note: the Reddit Mod Tools Hackathon's Ported-track requires only 500 WAU, also satisfied — see FoxxMD's Discord confirmation in [`outreach-drafts.md`](./outreach-drafts.md). The two thresholds belong to different Reddit programs and are sometimes conflated.)
 
-## 9. Discord mod-bot ecosystem (latent demand framing)
+## 9. Discord mod-bot scene (latent demand framing)
 
 | Bot | Active servers (top.gg current) | Cumulative installs | Premium | Notes |
 |-----|------------------------------|---------------------|---------|-------|
@@ -142,7 +142,7 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 | **MEE6** | (paused at GA) | ~21M lifetime | $11.99/mo | ([mee6.xyz/en/premium](https://mee6.xyz/en/premium)) |
 | **Dyno** | ~3M | ~10M lifetime | $5.99–$12.99/mo (Standard / Premium / Custom) | ([dyno.gg/premium](https://dyno.gg/premium)) |
 
-**Discord ecosystem scale** ([SQ Magazine Discord stats 2026](https://sqmagazine.co.uk/discord-statistics/)):
+**Discord platform scale** ([SQ Magazine Discord stats 2026](https://sqmagazine.co.uk/discord-statistics/)):
 - **55,000+ bots** in Discord's bot marketplace
 - **680,000 monthly active developers**
 - **96% of Discord moderation actions are bot-driven** (2025 data)
@@ -174,7 +174,7 @@ Two stacked claims, separated so judges can attack the assumption-laden one with
 60,000 mods × 52 weeks × 1 hr × $20/hr = $62.4M/year
 ```
 
-in labor-equivalent value unlocked. Even at a conservative **10% capture rate**, that's **$6M+/year of unlocked ecosystem value** — multiples larger than the entire Developer Funds program budget per app.
+in labor-equivalent value offloadable. Even at a conservative **10% capture rate**, that's **$6M+/year of mod-labor value offloaded** — multiples larger than the entire Developer Funds program budget per app.
 
 ## 12. Realistic direct-cash envelope (program-window scoped)
 

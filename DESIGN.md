@@ -36,7 +36,7 @@ related:
 ### Never say
 - AI-tone words — canonical list lives in [`scripts/check-ai-tone.sh`](./scripts/check-ai-tone.sh) `BLOCKLIST` array (do not duplicate here; the script is the source of truth).
 - Marketing absolutes: "always," "never," "guaranteed," "100%"
-- Vague abstractions: "ecosystem," "platform-native," "first-class," "battle-tested"
+- Vague abstractions: "ecosystem," "platform-native," "first-class," "battle-tested" <!-- AITONE_IGNORE -->
 - "We" when describing solo work (this is Stephen's solo build with Vinh on backend)
 
 The CI workflow runs `./scripts/check-ai-tone.sh` on every push as a soft check. Strict mode (`--strict`) blocks the pre-submission gate.

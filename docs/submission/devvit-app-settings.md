@@ -56,7 +56,8 @@ These were in the previous draft and are wrong — Reddit's Developer Portal has
 
 Per `docs/guides/launch/launch-guide.md`:
 
-> "Publicly listed apps must include a detailed `README.md` with a comprehensive app overview, installer-facing instructions, and changelogs."
+<!-- The line below is a verbatim quote from reddit/devvit-docs launch-guide.md; AI-tone word "comprehensive" is theirs, not Stephen's. -->
+> "Publicly listed apps must include a detailed `README.md` with a comprehensive app overview, installer-facing instructions, and changelogs." <!-- AITONE_IGNORE -->
 
 The README is the *real* "long description" surface for the App Directory. Reddit's listing page shows the README inline. Our README is already polished as of Day 2 Track A (hero, quick-start, architecture, config schema, fetch domains, migration guide, FAQ, changelog).
 
