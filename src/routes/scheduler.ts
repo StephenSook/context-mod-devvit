@@ -8,7 +8,6 @@
  *   - /refresh-config: Phase 3 Task 28 (every 5min)
  *   - /stats-rollup:   Phase 4 Task 41 (hourly)
  *   - /image-hash-worker: Phase 4 Task 36 (run-on-demand)
- *   - /delayed-eval:   CUT per Codex+ultraplan (was DispatchAction)
  */
 
 import { Hono } from 'hono';
@@ -61,10 +60,3 @@ scheduler.post('/image-hash-worker', async (c) => {
   return c.json<TaskResponse>({ status: 'success' }, 200);
 });
 
-scheduler.post('/delayed-eval', async (c) => {
-  // CUT per Codex + ultraplan synthesis. Returning success for completeness
-  // while we leave the cron-task declaration in devvit.json — will remove
-  // the task declaration in the plan-v2 rewrite.
-  console.log('[cm/cron/delayed-eval] CUT — endpoint kept as no-op');
-  return c.json<TaskResponse>({ status: 'success' }, 200);
-});

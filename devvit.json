@@ -48,9 +48,6 @@
       },
       "image-hash-worker": {
         "endpoint": "/internal/cron/image-hash-worker"
-      },
-      "delayed-eval": {
-        "endpoint": "/internal/cron/delayed-eval"
       }
     }
   },
