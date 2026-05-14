@@ -195,6 +195,20 @@ Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable exa
 
 The canonical AJV schema lands at `src/server/schema/app.schema.json` in Phase 1 (Vinh's lane, finishing Day 5-8). Until then, the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) are the reference — concepts identical, surface trimmed per [migration guide](#migration-guide-for-existing-contextmod-operators).
 
+### Validation behavior + safety story
+
+Every config load runs the JSON5 source through AJV against the schema. Three outcomes:
+
+| Outcome | Behavior | What mods see |
+|---------|----------|---------------|
+| **Valid JSON5 + schema match** | New revision (`cfg:rev:{n+1}`) is written immutably, then the `cfg:current_rev` pointer is atomically bumped. Every subsequent `handleActivity` reads the new revision. | Observatory event chip: `config loaded · revision N+1`. Mod-menu **Reload config** toast: *"Loaded N+1, X rules active."* |
+| **Invalid JSON5 (parser error)** | New revision **NOT** written. `cfg:current_rev` stays pointed at the prior known-good revision. The sub keeps moderating against the prior config. | Observatory event chip: `config rejected · JSON5 parse error at line L col C`. Mod-menu **Reload config** toast: *"Parse failed at L:C — last revision N still active."* |
+| **Valid JSON5 + schema violation** | New revision **NOT** written. Same fallback to prior revision. | Observatory event chip: `config rejected · schema: <AJV instance path>: <human reason>` (e.g., `/runs/0/checks/1/rules/0/threshold must be integer, got "1"`). Mod-menu **Reload config** toast carries the same. |
+
+**Safety property:** the sub *never* runs against a broken config. A typo or syntax error in the wiki halts the swap, not moderation — the last known-good revision keeps firing rules until you fix the wiki. No "broken window" between bad save + fix.
+
+This is one of the two reasons the port uses an immutable-revision + atomic-pointer pattern (the other reason is mid-event consistency — `handleActivity` reads the pointer once at event start so the whole pipeline runs against a single revision snapshot, even if a concurrent reload fires).
+
 ## Comparison — AutoMod vs original CM vs CM-Devvit
 
 Why does Reddit need a port of CM when AutoMod already exists? Because AutoMod handles a different problem.
