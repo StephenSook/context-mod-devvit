@@ -55,6 +55,12 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
+### Observatory dashboard preview
+
+![Observatory dashboard rendered against `?demo=1` synthetic data: stat cards showing 47 actions today, 3h 8m mod time saved, 12 active rules, spam-filter as top rule; 24-hour hourly-actions sparkline; recent moderation events list with action chips (remove, comment, approve, lock); Reload config + Wiki + Docs links at the bottom.](./docs/screenshots/dashboard-desktop.png)
+
+> Captured 2026-05-14 via Playwright against the mock-server-backed `?demo=1` build. Production renders with the same chrome over real `events:recent` ZSET data once Phase 1+2+3 wire-up lands (see Status table above).
+
 ## Architecture
 
 ```mermaid
