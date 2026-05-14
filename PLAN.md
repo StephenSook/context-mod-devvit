@@ -39,10 +39,10 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 1.1 | Redis key schema (central) | `src/state/keys.ts` | **Vinh** | ⬜ | 0.5 | Strings + hashes + sorted-sets ONLY per D3 |
 | 1.2 | Config loader: JSON5 + AJV + named-rule expand | `src/core/{config,namedRules}.ts` | **Vinh** | ⬜ | 1.1 | Trim CM schema to MVP rules |
 | 1.3 | Atomic config publish via revision pointer | `src/state/configStore.ts` | **Vinh** | ⬜ | 1.2 | `cfg:rev:{n}` + `cfg:current_rev` per D5 |
-| 1.4 | Filter eval (authorIs + itemIs) | `src/core/filters.ts` | **Vinh** | ⬜ | — | Port from CM RunnableBase |
+| 1.4 | Filter eval (authorIs + itemIs) | `src/core/filters.ts` | **Vinh** | ⬜ | — | Port from CM `Filter` base — `authorIs` evaluates against `Author` shape (name/age/karma/flair/verified/contributor/mod/shadowBanned per `src/shared/types.ts`); `itemIs` against `Item` shape (title/body/url/age/score/isSelf/over18/removed/approved/locked/depth/op). Criteria operators: `equals`/`contains`/`matches` (regex)/`lessThan`/`greaterThan` for scalars; `in`/`includes` for arrays. Return boolean; check-level filter short-circuits before rule eval. Upstream reference: `github.com/FoxxMD/context-mod/src/Filter` |
 | 1.5 | Mustache renderer | `src/core/template.ts` | **Vinh** | ⬜ | — | No-escape mode (Reddit comments are plaintext) |
 | 1.6 | Rule dispatcher + Regex + Author + RuleSet | `src/core/runRule.ts`, `src/rules/*` | **Vinh** | ⬜ | 1.4 | 3 MVP rule kinds |
-| 1.7 | Check eval (AND/OR aggregation) | `src/core/runCheck.ts` | **Vinh** | ⬜ | 1.6 | |
+| 1.7 | Check eval (AND/OR aggregation) | `src/core/runCheck.ts` | **Vinh** | ⬜ | 1.6 | `condition: 'AND'` → all rules pass for actions to fire; `'OR'` → any rule passing. Short-circuit on first failed AND / first passed OR. Edge cases: empty `rules:[]` → check NEVER fires (treat as `triggered: false`); single rule → return that rule's result; ruleSet reference returns nested boolean — flatten via named-rule resolver before this stage. Return shape: `{triggered: boolean, matchedRule: string \| null, evalTrace: Array<{ruleName, kind, passed, ms}>}` — evalTrace feeds dashboard event chips + dry-run output. |
 | 1.8 | Run state machine (postBehavior + goto) | `src/core/runRun.ts` | **Vinh** | ⬜ | 1.7 | 100-iter safety break |
 
 ### Phase 2 — Actions + handleActivity (Day 5–8, ~20h)
@@ -50,7 +50,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
 | 2.1 | Action dispatcher + per-action idempotency wrap | `src/core/runAction.ts` | **Vinh** | ⬜ | 0.6, 1.5 | reserveAction BEFORE side-effect per D4 |
-| 2.2 | 7 MVP actions — remove/approve/lock/comment/report/ban/userFlair | `src/actions/*.ts` | **Vinh** | ⬜ | 2.1 | Each ~5–15 LOC over `reddit.*` client |
+| 2.2 | 7 MVP actions — remove/approve/lock/comment/report/ban/userFlair | `src/actions/*.ts` | **Vinh** | ⬜ | 2.1 | Each ~5–15 LOC over Devvit `reddit.*` client. Method contracts: `remove({thingId, spam: boolean})` → `reddit.remove(thingId, spam)`; `approve({thingId})` → `reddit.approve(thingId)`; `lock({thingId})` → `reddit.lock(thingId)`; `comment({thingId, body, distinguish?, sticky?, lock?})` → `reddit.submitComment(...)` + optional distinguish/sticky/lock follow-ups; `report({thingId, reason})` → `reddit.report(thingId, reason)`; `ban({username, reason?, duration?})` → `reddit.banUser(...)`; `userFlair({username, text, cssClass?})` → `reddit.setUserFlair(...)`. Error policy: ALL action calls wrapped by `runAction.ts` reserve/commit/release idempotency (per 2.1). On Reddit-API throw → release reservation, log `[cm/action/{kind}/error]`, return `{ok: false, error: msg}`. Caller (handleActivity) records `{kind, ok: false}` in event log so dashboard chip shows red. |
 | 2.3 | handleActivity orchestrator | `src/core/handleActivity.ts` | **Vinh** | ⬜ | 1.8, 2.1 | Single-revision read at event start |
 | 2.4 | onPostSubmit handler wire-up | `src/routes/triggers.ts` | **Vinh** | ⬜ | 2.3 | Replace stub |
 | 2.5 | onCommentSubmit handler wire-up | `src/routes/triggers.ts` | **Vinh** | ⬜ | 2.3 | Replace stub |
@@ -59,13 +59,13 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 3.1 | onAppInstall seeds default config | `src/routes/triggers.ts` | **Vinh** | ⬜ | 1.3 | SETNX-guarded against retry |
+| 3.1 | onAppInstall seeds default config | `src/routes/triggers.ts` | **Vinh** | ⬜ | 1.3 | Source for default config: read `examples/starter-config.json5` text content (build-time inline via Vite raw import OR copy into `src/core/defaults.ts` as a string export). On install: `SET cm:proc:install:{subreddit} '1' NX EX 86400` to dedup retries; if NX wins, write `cfg:rev:1 = <starter content>` + `SET cfg:current_rev '1'` (no NX — first writer wins, retries see existing rev). Also write the wiki page at `r/<sub>/wiki/contextmod` with the starter content via `reddit.updateWikiPage(...)`. Idempotent: re-installs no-op if `cfg:current_rev` exists. |
 | 3.2 | Wiki config loader + refresh-config cron | `src/core/configSource.ts`, `src/routes/scheduler.ts` | **Vinh** | ⬜ | 1.3 | Atomic revision swap |
 | 3.3 | Reload-config mod menu action | `src/routes/menu.ts` | **Vinh** | ⬜ | 3.2 | Toast w/ rule count |
 | 3.4 | Recent events ZSET + /api/recent | `src/state/recentEvents.ts`, `src/routes/api.ts` | **Vinh** | ⬜ | 2.3 | ZADD score=ts, ZREMRANGEBYRANK trim |
 | 3.5 | Dashboard custom post (Vite + React) | `src/client/*` | **Stephen** | 🟡 Umay 12 5pm | 3.4 | Mobile-first Tailwind, Lighthouse>80 |
-| 3.6 | Dry-run rule tester menu + form | `src/routes/{menu,forms}.ts` | **Stephen** | ⬜ | 2.3 | UiResponse.showForm |
-| 3.7 | onAppUpgrade migrations | `src/state/migrations.ts` | **Vinh** | ⬜ | 1.1 | Version table |
+| 3.6 | Dry-run rule tester menu + form | `src/routes/{menu,forms}.ts` | **Stephen** | ⬜ | 2.3 | Menu entry "Test rules on this item" → `UiResponse.showForm({name: 'cm-dry-run', title: 'Dry-run', fields: [{name: 'thingId', type: 'string', defaultValue: <selected.id>, disabled: true}]})`. Form submit handler in `routes/forms.ts:onFormSubmit` runs `handleActivity({thingId, dryRun: true})` — same pipeline but `runAction` checks `dryRun` flag + records `{kind, ok: true, dryRun: true}` w/o side-effect. Output shape: `{ok: true, eval: Array<{ruleName, kind, passed, matched?, reason?}>, wouldAct: Array<{kind, args}>}`. Render in toast as bullet list. See `assets/gallery-dryrun.png` for the 4-card mockup. |
+| 3.7 | onAppUpgrade migrations | `src/state/migrations.ts` | **Vinh** | ⬜ | 1.1 | Version table schema: `cm:app:version` string key holding the currently-installed app version (semver). On upgrade trigger, compare to `process.env.npm_package_version`. Each migration is a `{from: string, to: string, run: async (sub: string) => void}` object exported from `migrations.ts`. Run all migrations where `from === currentVersion` in topological order until `to === targetVersion`. After all run, `SET cm:app:version` to new version. Idempotent: never re-runs a migration. v0.1.0 → v0.1.1 starter migration = no-op (placeholder so the table exists). |
 
 ### Phase 4 — Stretch (Day 11–13, ~14h) — image hashing gated by 0.10
 
@@ -73,11 +73,11 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 |---|---|---|---|---|---|---|
 | 4.1 | URL-dedupe Repost rule | `src/rules/repost.ts` | **Vinh** | ⬜ | 1.6 | Cheap: sha256(url) + Redis SET w/ 30d TTL |
 | ~~4.2~~ | ~~MHSRule (HTTP fetch toxicity)~~ | ~~`src/rules/mhs.ts`~~ | — | ✂️ CUT | — | **CUT 2026-05-13 per Reddit PR #96** — HTTP fetch policy AI-provider allowlist locked to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside. See `docs/submission/devvit-app-settings.md` + `policies/privacy.md`. |
-| 4.3 | History infrastructure (author cache) | `src/state/authorHistory.ts` | **Vinh** | ⬜ | 1.1 | Shared by 4.4–4.6 — build once |
-| 4.4 | HistoryRule | `src/rules/history.ts` | **Vinh** | ⬜ | 4.3 | Submission/comment count + karma |
-| 4.5 | AttributionRule | `src/rules/attribution.ts` | **Vinh** | ⬜ | 4.3 | Domain/YouTube frequency |
-| 4.6 | RecentActivityRule | `src/rules/recentActivity.ts` | **Vinh** | ⬜ | 4.3 | Per-target-sub thresholds |
-| 4.7 | Image-hash port + worker + multi-index LSH | `src/image/*`, `src/rules/imageRepost.ts` | **Vinh** | ⬜ | 0.10 | ⚠️ GATED on 0.10 spike GO |
+| 4.3 | History infrastructure (author cache) | `src/state/authorHistory.ts` | **Vinh** | ⬜ | 1.1 | Cache shape: hash `cm:author:{name}` w/ fields `lastFetched` (epoch ms), `submissionCount`, `commentCount`, `linkKarma`, `commentKarma`, `accountAge` (epoch ms), `verified` (bool), `subs` (JSON array of recent active sub names). TTL 1h (3600s). Fetch via `reddit.getUser(name)` + `reddit.getUserSubmissions({username, limit: 100})` lazily on first rule access. Shared by 4.4–4.6 — build once, all three rules read from same cache key. |
+| 4.4 | HistoryRule | `src/rules/history.ts` | **Vinh** | ⬜ | 4.3 | Criteria: `{submissionCount: {greaterThan, lessThan}, commentCount: {...}, linkKarma: {...}, commentKarma: {...}, accountAge: {olderThan, youngerThan} }` — durations parsed via `parseDuration('1d' \| '30d' \| '1y')` → seconds. Threshold = AND across all configured criteria (any unconfigured criterion = pass). |
+| 4.5 | AttributionRule | `src/rules/attribution.ts` | **Vinh** | ⬜ | 4.3 | For each url submission in author's recent history (cached `subs` field) count domain frequency. Criteria: `{domain: string \| string[], threshold: number, window: '7d' \| '30d' \| 'all'}`. Fires when ≥ threshold submissions to specified domain in window. Useful for "spammer hitting r/X 5 times this week" detection. |
+| 4.6 | RecentActivityRule | `src/rules/recentActivity.ts` | **Vinh** | ⬜ | 4.3 | Criteria: `{subs: string[], threshold: number, window: '7d' \| '30d'}`. Fires when author has ≥ threshold posts/comments to any sub in `subs` list within window. Use case: "this user posted to r/banned-list-sub" auto-action. |
+| 4.7 | Image-hash port + worker + multi-index LSH | `src/image/*`, `src/rules/imageRepost.ts` | **Vinh** | ⬜ | 0.10 | ⚠️ GATED on 0.10 spike GO. If GO: blockhash 16x16 perceptual hash (256-bit BigInt); LSH = split into 4×64-bit bands, index each band → Redis hash `cm:repost:img:band{n}:{hexBand}` member-set. On new image: compute hash, query each band, intersect candidates, Hamming-distance ≤ threshold (default 10) → repost. Worker queue: cron `image-hash-worker` runs every 5min, dequeues `cm:image:pending` ZSET. Spike result (GO/NO-GO) ships at `experiments/image-spike/RESULT.md`. |
 | 4.8 | DispatchAction | — | — | ✂️ | — | Cut per Codex+ultraplan synthesis |
 | 4.9 | SentimentRule | — | — | ✂️ | — | Cut — NLP libs won't bundle in Devvit runtime |
 | 4.10 | Full RepostRule w/ YouTube | — | — | ✂️ | — | Cut — 4.1+4.7 cover MVP |
@@ -110,7 +110,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | Contract | Owner | Consumers | Definition |
 |---|---|---|---|
 | Redis key schema | Vinh | Both | `src/state/keys.ts` const K namespace |
-| AJV config schema | Vinh | Both | `src/schema/app.schema.json` (trimmed from CM `Schema/App.json`) |
+| AJV config schema | Vinh | Both | `src/server/schema/app.schema.json` (trimmed from CM `Schema/App.json` — see `docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md:110` for the trim list) |
 | Internal `Item` shape | Vinh | Both | `src/shared/types.ts` — id, title, body, url, author, age, score, isSelf, over18, removed, approved, locked, stickied, linkFlairText, depth?, op? |
 | Internal `Author` shape | Vinh | Both | `src/shared/types.ts` — name, id, age, linkKarma, commentKarma, flairText, isMod, isContributor, verified, shadowBanned |
 | Trigger event normalizer | Vinh | Both | Maps PostV2/CommentV2/UserV2 → `Item`/`Author` |
