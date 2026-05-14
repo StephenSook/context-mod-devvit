@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 + CC BY 4.0 attribution) + `SECURITY.md` (GitHub PVR + 90-day disclosure).
 - `.github/ISSUE_TEMPLATE/{bug_report,feature_request,config}.yml` + `.github/PULL_REQUEST_TEMPLATE.md` with Phase 1-6 scope checklist.
 - `src/client/lib/design-tokens.ts` — shared `SIGNAL` palette imported by both `tailwind.config.ts` + `EventRow.tsx` (single source of truth).
-- 3 Devpost gallery candidates (`assets/gallery-{dashboard,modmenu,wiki}.png`, 1200×800 3:2 Banana-generated mockups).
+- 5 Devpost gallery mockups (`assets/gallery-{dashboard,modmenu,wiki,install,trigger}.png`, 1200×800 3:2 Banana-generated). Matches the upload order in `docs/submission/devpost-form-cheat-sheet.md` Step 3 → dashboard / modmenu / wiki / install / trigger.
 - `docs/superpowers/2026-05-13-research-deltas.md` — last-30-days Devvit + OSS-polish + Devpost-galleries intel capture from 3 parallel research agents.
 - `docs/superpowers/phase-3-ui-polish.md` — deferred frontend-design audit findings.
 - `docs/superpowers/foxxmd-kanban-seed.md` — 42-card seed plan for FoxxMD's Projects v2 board (added via GraphQL bulk).
@@ -105,7 +105,7 @@ Initial Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot, submitte
 **Visual assets**
 - 256×256 app icon (`assets/icon.png`) — concentric rings + green telemetry dot.
 - 1280×640 social preview (`assets/social-preview.png`) — GitHub OG card.
-- 1200×800 Devpost thumbnail + 3 image-gallery mockups (dashboard hero + mod menu + wiki config) at 3:2 ratio.
+- 1200×800 Devpost thumbnail + 5 image-gallery mockups (dashboard / modmenu / wiki / install / trigger) at 3:2 ratio.
 - All generated via Gemini 3.1 Flash Image (Nano Banana 2), re-encoded via PIL to true PNG.
 
 **CI + tooling**

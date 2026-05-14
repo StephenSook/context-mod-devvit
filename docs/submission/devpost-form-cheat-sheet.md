@@ -137,13 +137,15 @@ TypeScript, React, Hono, Vite, Tailwind, Lucide, Redis, Devvit, Devvit Web, Redd
 
 ### Image gallery (3:2 ratio, ≤5MB each)
 
-Capture from the running app + repo at submission day:
-1. **Observatory dashboard hero** — full dashboard rendered with real (or convincing demo) action data
-2. **Mod menu screenshot** — "ContextMod: Reload config from wiki" / "View recent actions" / "Test rules on this item" visible
-3. **Wiki config example** — actual JSON5 rule config rendered in subreddit wiki
-4. **Architecture diagram** — Mermaid flowchart from README, screenshotted at high resolution
-5. **Event stream close-up** — action chips, sparkline, stat cards in detail
-6. **Install screen** — App Directory "Add to community" flow
+5 mockups already live in `assets/` (Banana-generated, 1200×800 RGBA PNG). Upload in this order (judges land on the first image):
+
+1. `assets/gallery-dashboard.png` — Observatory dashboard hero (stat cards + sparkline + event stream)
+2. `assets/gallery-modmenu.png` — mod overflow menu showing the 3 ContextMod items
+3. `assets/gallery-wiki.png` — JSON5 rule config rendered in subreddit wiki
+4. `assets/gallery-install.png` — App Directory "Add to community" flow
+5. `assets/gallery-trigger.png` — event stream close-up showing action chips on a fresh trigger
+
+Plus the thumbnail (separate slot, see Step 2): `assets/thumbnail.png`. Total = 5 gallery + 1 thumbnail = 6 assets uploaded; this matches the on-disk reality (`ls assets/gallery-*.png` returns exactly 5). Dashboard / event chip captures get a `(rendered with ?demo=1 synthetic data)` caption suffix in the synthetic-data fallback path.
 
 ### Video demo link
 
