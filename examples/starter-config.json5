@@ -1,0 +1,51 @@
+// ContextMod Devvit — starter config (seeded on install).
+//
+// Mods edit this at r/<your-sub>/wiki/contextmod after install.
+// The app polls the wiki every 5 minutes; "Reload config" from the
+// mod overflow menu triggers an immediate refresh.
+//
+// Reference: ../README.md "Config schema" + AJV schema at
+// (Phase 1 deliverable) src/server/schema/app.schema.json.
+{
+  schema_version: 1,
+  runs: [
+    {
+      name: 'safety',
+      checks: [
+        {
+          name: 'block-obvious-spam',
+          // Logical AND: ALL rules must pass for actions to fire.
+          condition: 'AND',
+          rules: [
+            {
+              kind: 'regex',
+              testOn: ['title', 'body'],
+              patterns: [
+                '(?i)\\bfree\\s+(crypto|bitcoin|nft|airdrop)\\b',
+                '(?i)\\b(onlyfans|premium\\s+account)\\b',
+                '(?i)visit\\s+my\\s+(bio|profile|telegram)',
+              ],
+              // Fire if any pattern matches at least once.
+              threshold: 1,
+            },
+          ],
+          actions: [
+            {
+              kind: 'remove',
+              reason: 'AutoMod-style spam regex',
+              spam: true,
+            },
+            {
+              kind: 'comment',
+              // Mustache templating — see ../README.md "Templating".
+              body: 'Hi {{author}}, your post was removed because it matched our spam-pattern filter. If this was a mistake, please modmail r/{{subreddit}}.',
+              distinguish: true,
+              lock: true,
+              sticky: true,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}

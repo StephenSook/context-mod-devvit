@@ -1,0 +1,50 @@
+// ContextMod Devvit — example: auto-approve posts from trusted contributors.
+//
+// Names a `trusted-mods-and-contributors` author allowlist and uses
+// it from a check. Demonstrates `ruleSet` composition + named-rule
+// reuse — declare once, reference many checks.
+{
+  schema_version: 1,
+  // Named rules are defined here and referenced by name in checks below.
+  named_rules: {
+    'trusted-mods-and-contributors': {
+      kind: 'author',
+      criteria: {
+        // Subreddit's mods always pass.
+        isMod: true,
+      },
+    },
+    'verified-old-account': {
+      kind: 'author',
+      criteria: {
+        verified: true,
+        age: { greaterThan: '365d' },
+        karma: { greaterThan: 5000 },
+      },
+    },
+  },
+  runs: [
+    {
+      name: 'fast-track-trusted',
+      checks: [
+        {
+          name: 'approve-on-trusted-author',
+          // ruleSet composition: ANY of these named rules must pass.
+          condition: 'OR',
+          rules: [
+            { kind: 'ruleSet', name: 'trusted-mods-and-contributors' },
+            { kind: 'ruleSet', name: 'verified-old-account' },
+          ],
+          actions: [
+            {
+              kind: 'approve',
+            },
+          ],
+          // Tell the run-pipeline to skip remaining checks for this thing.
+          // (Phase 1 postBehavior — see runRun spec in master plan.)
+          postBehavior: 'stop',
+        },
+      ],
+    },
+  ],
+}

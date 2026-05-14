@@ -1,0 +1,56 @@
+// ContextMod Devvit — example: catch low-effort spam from fresh accounts.
+//
+// Combines an `author` filter (account age + karma signals) with a
+// `regex` rule (typical spam phrasings). Both must trip for the
+// remove action to fire — reduces false positives on legitimate
+// new users posting genuine content.
+{
+  schema_version: 1,
+  runs: [
+    {
+      name: 'fresh-account-spam',
+      checks: [
+        {
+          name: 'new-low-karma-spam-regex',
+          condition: 'AND',
+          rules: [
+            {
+              kind: 'author',
+              criteria: {
+                // Account younger than 14 days.
+                age: { lessThan: '14d' },
+                // Combined karma under 50.
+                karma: { lessThan: 50 },
+                // Account is not verified-email.
+                verified: false,
+              },
+            },
+            {
+              kind: 'regex',
+              testOn: ['title', 'body'],
+              patterns: [
+                '(?i)check\\s+out\\s+my\\s+(channel|stream|link)',
+                '(?i)dm\\s+me\\s+for',
+                '(?i)\\b(discount|promo)\\s+code\\s*[:=]',
+              ],
+              threshold: 1,
+            },
+          ],
+          actions: [
+            {
+              kind: 'remove',
+              reason: 'fresh-account spam pattern',
+              spam: true,
+            },
+            {
+              kind: 'comment',
+              body: 'Hey {{author}}, this was caught by our new-account spam filter (account age + karma + spam-phrase combo). Real new users get false-positive sometimes — modmail r/{{subreddit}} if so.',
+              distinguish: true,
+              sticky: true,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
