@@ -45,7 +45,7 @@ vinh has access too, so once we kick off phase 1 he picks up backend tasks direc
 **Send:** Discord same thread (within 24h of seeding — May 13, 2026).
 
 ```
-seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you can group by phase. vinh's tagged on phase 1+2+4 (backend), i'm on phase 3+5+6 (dashboard wire / demo / submission). a few cards have blocked dependencies noted in the body — phase 3 dashboard wire-up depends on phase 1 + 2 shipping, phase 4 image-hash depends on a day-0 spike, mhs rule depends on api.moderatehatespeech.com fetch approval (which is high-risk per reddit's personal-domain policy, decision tree documented).
+seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you can group by phase. vinh's tagged on phase 1+2+4 (backend), i'm on phase 3+5+6 (dashboard wire / demo / submission). a few cards have blocked dependencies noted in the body — phase 3 dashboard wire-up depends on phase 1 + 2 shipping, phase 4 image-hash depends on a day-0 spike. mhs rule was cut from the port since reddit's PR #96 (2026-05-08) locked the http fetch policy's ai-provider allowlist to openai + gemini only; api.moderatehatespeech.com falls outside that, so the rule stays in upstream PRAW build only.
 
 statuses are all set to default; you or i can flip them in the UI as work moves. happy to add custom fields (Status / Owner / Phase) for more granular tracking if useful.
 
@@ -65,7 +65,7 @@ source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in th
 **Send:** Discord same thread (drafted May 13, 2026 — send within 24h of drafting to keep "thanks for the X today" framing accurate).
 
 ```
-yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (regex / author / ruleSet) + 7 actions use the same JSON5 schema, so existing CM operators can copy their config across with minimal cleanup. Phase 4 rules (history / attribution / recentActivity / repost / mhs) land later and might need a syntax tweak depending on which upstream edge cases we keep — i'm holding the upstream AJV schema as source of truth except where Devvit's runtime can't support a primitive.
+yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (regex / author / ruleSet) + 7 actions use the same JSON5 schema, so existing CM operators can copy their config across with minimal cleanup. Phase 4 rules (history / attribution / recentActivity / repost) land later and might need a syntax tweak depending on which upstream edge cases we keep — i'm holding the upstream AJV schema as source of truth except where Devvit's runtime can't support a primitive. mhs rule was cut per reddit's PR #96 ai-provider fetch policy lock — subs using CM for hate-speech filtering keep running upstream PRAW.
 
 install flow: App Directory one-click → seed wiki contents → reload-config from the mod menu. no token migration, no central server.
 ```
@@ -114,7 +114,7 @@ what's working in v0.1.0 — verify current state at send time, update bullets t
 
 what's still in-flight:
 - phase 1 (handleActivity wired to live triggers) — Vinh's working on it
-- phase 4 stretch: image-hash repost detection (perceptual hash in pure JS, blocked on a 30s-limit spike) + MHS toxicity rule (blocked on api.moderatehatespeech.com fetch approval — might get rejected per personal-domain policy, fine if so)
+- phase 4 stretch: image-hash repost detection (perceptual hash in pure JS, blocked on a 30s-limit spike). mhs toxicity rule was cut per reddit's PR #96 ai-provider fetch policy — documented in CHANGELOG + writeup.
 
 repo: github.com/StephenSook/context-mod-devvit (MIT, public, CI green)
 permission: github.com/FoxxMD/context-mod/issues/152
