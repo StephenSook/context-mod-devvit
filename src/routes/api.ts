@@ -18,6 +18,7 @@ export const api = new Hono();
 
 api.get('/recent', async (c) => {
   if (c.req.query('demo') === '1') {
+    console.log('[cm/api/recent] demo=1 — serving synthetic fixtures (not real ZSET)');
     return c.json({ events: demoEvents() });
   }
   // TODO Phase 3 Task 29: ZRANGE events:recent 0 49 REV, return parsed JSON list
@@ -26,6 +27,7 @@ api.get('/recent', async (c) => {
 
 api.get('/stats', async (c) => {
   if (c.req.query('demo') === '1') {
+    console.log('[cm/api/stats] demo=1 — serving synthetic fixtures (not real rollup)');
     return c.json({ counters: DEMO_STATS });
   }
   // TODO Phase 4 Task 41: return aggregated stats:rollup:7d hash
