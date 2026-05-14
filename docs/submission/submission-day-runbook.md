@@ -1,6 +1,8 @@
 # Submission Day Runbook
 
 > Single source of truth for the May 20, 2026 target submission (May 27 hard deadline at 6pm PT). Stephen runs this top-to-bottom, no improvising. Every step has a verification gate.
+>
+> **User-only subset:** if you only want the actions Stephen has to physically do (Discord DM, Devpost paste, YouTube upload, publish click), read [`stephen-action-list.md`](./stephen-action-list.md) instead — same sequence, Claude-handled steps stripped out.
 
 ## Why May 20 (not May 27)
 
