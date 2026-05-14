@@ -42,7 +42,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.5.0",
     "devvit": "0.12.23",
-    "eslint": "9.39.2",
+    "eslint": "10.3.0",
     "globals": "17.2.0",
     "postcss": "^8.5.14",
     "prettier": "3.8.1",
