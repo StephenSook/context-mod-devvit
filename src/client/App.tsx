@@ -5,6 +5,7 @@ import { Sparkline } from './components/Sparkline';
 import { EventRow } from './components/EventRow';
 import { ActionBar } from './components/ActionBar';
 import { ErrorBanner } from './components/ErrorBanner';
+import { RuleCountChips } from './components/RuleCountChips';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -127,6 +128,7 @@ export default function App() {
             </h2>
             <span className="telemetry text-[10px] text-bone-300/70">{events.length} events</span>
           </div>
+          <RuleCountChips events={events} />
 
           <div className="flex-1 min-h-0 overflow-y-auto border-t border-line">
             {events.length === 0 ? (
