@@ -1,6 +1,8 @@
 # HTTP Fetch Domain Approval — Runbook
 
-> 5-minute Stephen-side check + decision tree for `api.moderatehatespeech.com`. Run this once per week and on submission day.
+> **Status update 2026-05-13:** `api.moderatehatespeech.com` was proactively dropped from `devvit.json` permissions (commit `c2d2865`) after `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only. The `mhs` rule is cut from the Devvit port per CHANGELOG + writeup-draft. **No outstanding domain-approval request remains for ContextMod.** This runbook is kept as a general-purpose reference for any future domain additions.
+
+> Original framing (kept for reference): 5-minute Stephen-side check + decision tree for `api.moderatehatespeech.com`. Run this once per week and on submission day.
 
 ## Background
 

@@ -86,16 +86,11 @@ The previous draft listed 5 domains as "Pending review." Per `docs/capabilities/
 | `preview.redd.it` | Reddit-controlled | ✅ Global allowlist — no approval needed | none |
 | `external-preview.redd.it` | Reddit-controlled | ✅ Global allowlist — no approval needed | none |
 | `external-i.redd.it` | Reddit-controlled | ✅ Global allowlist — no approval needed | none |
-| `api.moderatehatespeech.com` | **Personal domain** | ⚠️ "Will not be approved" without strong justification | ⚠️ **High risk** — see below |
+| ~~`api.moderatehatespeech.com`~~ | **Cut from devvit.json** | n/a — proactively removed per PR #96 | ✅ no outstanding request |
 
 **The four Reddit-owned domains don't need approval at all.** They can come out of the "submitted Day 0" mental model.
 
-**The `api.moderatehatespeech.com` domain is at high risk of rejection.** Reddit's policy on "personal" or hobbyist endpoints is strict — only well-known third-party APIs get through. If it's rejected, the `mhs` rule (Phase 4 stretch) cannot ship on Devvit and must be marked as not-yet-available in the submission writeup. The decision tree:
-
-1. Domain approved → MHS rule ships in Phase 4
-2. Domain rejected → MHS rule documented as "out of scope for the Devvit port; available in upstream CM" in `docs/submission/writeup-draft.md` Section 3 "Gaps vs upstream"
-
-Either outcome is honest. Do not invent a workaround.
+**The `api.moderatehatespeech.com` domain was proactively cut on 2026-05-13.** `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; MHS falls outside that carve-out. Submitting the domain for approval would have been a near-certain rejection. Cut decision is in `devvit.json` (commit `c2d2865`) + writeup-draft Section 3 (explicitly cut) + CHANGELOG + outreach drafts. `mhs` rule is upstream-PRAW-only; subs that need hate-speech filtering keep running upstream CM.
 
 Approved-domain status is visible in the Developer Settings page (display-only list — not editable from the UI). Approval timeline per docs: up to 4 business days, independent of the app review timeline.
 
@@ -109,7 +104,7 @@ These are surfaced on the install screen so mods see what they're granting:
 |------------|-------|-----|
 | `reddit` | `moderator` | Take mod actions (remove, ban, comment, flair) |
 | `redis` | full | Per-sub state: config snapshots, idempotency markers, action log, stats rollups |
-| `http` | allowlist (5 domains) | Image-hash repost detection + MHS rule (Phase 4) |
+| `http` | allowlist (4 Reddit hosts) | Image-hash repost detection (Phase 4) |
 
 No edits needed in the portal — these come from `devvit.json` at publish time.
 
@@ -123,7 +118,7 @@ Before clicking "Publish" in the portal:
 - [ ] Privacy + ToS URLs both return HTTP 200 (verified 2026-05-13: ✅)
 - [ ] Repo is public (verified 2026-05-13: ✅)
 - [ ] Demo video URL filled in (unlisted YouTube)
-- [ ] `api.moderatehatespeech.com` approval status decided — ship MHS or document as gap
+- [x] `mhs` rule cut per PR #96 — documented in writeup-draft Section 3 (explicitly cut) + CHANGELOG
 - [ ] FoxxMD has confirmed which bot username goes in "Original bot" field
 - [ ] About description scanned for AI-tone words (`powerful`, `sophisticated`, `revolutionary`, `seamless`, `leverage`, `robust`, `cutting-edge`, `intuitive`) <!-- AITONE_IGNORE -->
 - [ ] README.md final pass — this is the App Directory's "long description"
