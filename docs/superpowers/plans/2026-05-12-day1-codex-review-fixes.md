@@ -1,5 +1,7 @@
 # Day 1 Codex Review — Fix Plan
 
+> **STATUS: COMPLETE** — executed before 2026-05-14; preserved for audit trail. See `git log --oneline` for the commit sequence implementing this plan.
+
 > Lock 2026-05-12 post-review. Codex + silent-failure-hunter both ran against the 19-commit Day 1 build. Real bugs found, not aesthetic.
 
 ## Verdict
