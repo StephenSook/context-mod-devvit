@@ -2,6 +2,19 @@
 
 > Companion to [`submission-day-runbook.md`](./submission-day-runbook.md). The runbook is the full sequence; this file is the **subset Claude can't do for you** — surfaces that require Stephen's authenticated session, voice, or judgment.
 
+## Labeling note (cross-ref with `submission-day-runbook.md`)
+
+The runbook uses `T-7 → Submission day` labels (T-7 = May 13, when pre-flight prep finished). This file uses `T-6 → T-0` labels (T-6 = May 14, today; T-0 = May 20 submission day). Same dates, different countdown labels — pre-flight prep is already done, so this file starts at T-6 (the first day with *user-only* work pending). When you read this file alongside the runbook, line up by **date** not label.
+
+| This file | runbook | Date |
+|-----------|---------|------|
+| T-6 | (between T-7 and T-5) | 2026-05-14 |
+| T-5 | T-5 | 2026-05-15 |
+| T-3 | T-3 | 2026-05-17 |
+| T-2 | T-2 | 2026-05-18 |
+| T-1 | T-1 | 2026-05-19 |
+| T-0 | Submission day | 2026-05-20 |
+
 ## Why this list exists
 
 Three reasons Claude doesn't touch these:
