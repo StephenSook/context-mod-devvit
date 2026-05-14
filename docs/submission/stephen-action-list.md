@@ -116,18 +116,30 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ## T-1 — 2026-05-19
 
-### Action 1 — Post r/Devvit progress check
+### Action 1 — Ping SampleOfNone for Helper Nomination permission (30s)
+- **Channel:** Discord same thread (the May 12-14 conversation)
+- **Source:** [`devpost-form-cheat-sheet.md`](./devpost-form-cheat-sheet.md) Step 4 "Nominate a most helpful user"
+- **Ask:** "would you be cool if I nominated you on my Devpost helper-nomination field + cited r/piercing as a named community in the writeup?"
+- **Fallback:** if she declines or doesn't reply by T-0 morning (5/20), nominate FoxxMD per the alternate text in the cheat-sheet (he's already engaged via collab access + kanban; safe ask)
+- **Why:** $500 Devvit Helper Award (×6 winners) goes to the user, not Stephen — but their visible engagement strengthens our Community Impact rubric score
+
+### Action 2 — Submit Reddit developer satisfaction survey (5 min)
+- **URL:** [forms.gle/d9jY3szEzRzmKPwL8](https://forms.gle/d9jY3szEzRzmKPwL8)
+- **Why:** independent of the project Devpost form; free entry to the $200 Feedback Award pool (×10 winners) per Devpost overview
+- **Source draft:** [`devpost-form-cheat-sheet.md`](./devpost-form-cheat-sheet.md) Step 4 "[Optional] Developer Platform feedback" — 6 specific topics to cover (Redis primitive limits, vite plugin gotcha, PR #96 MHS impact, Blocks deprecation timing, App Migration Program docs gaps, OG-crawler surface)
+
+### Action 3 — Post r/Devvit progress check
 - **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §4 (r/Devvit subreddit + Discord update)
 - **Gating condition:** only post if you have something concrete to show — Phase 1+2 partially live OR synthetic-data demo recorded
 - **Verify:** post visible at reddit.com/r/Devvit
 - **Time:** 60s
 
-### Action 2 — Optional FoxxMD quote ask
+### Action 4 — Optional FoxxMD quote ask
 - **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §3 (FoxxMD — optional quote ask)
 - **Skip if:** would read as last-minute. Honesty over hustle.
 - **Time:** 60s if you choose to send
 
-### Action 3 — Run pre-submission gates locally
+### Action 5 — Run pre-submission gates locally
 
 From the repo root (`~/Reddiit\ Hacks/context-mod-devvit/`):
 

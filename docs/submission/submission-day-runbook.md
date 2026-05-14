@@ -50,6 +50,8 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 
 ## T-1 day (May 19)
 
+- [ ] **Ping SampleOfNone for Helper Nomination permission** (Discord, 30s) — "would you be cool if I nominated you on my Devpost helper-nomination field + cited r/piercing as a named community in the writeup?" 24h window. If she declines or doesn't reply by T-0 morning, fall back to FoxxMD per `devpost-form-cheat-sheet.md` alternate text.
+- [ ] **Submit Reddit developer satisfaction survey** at [forms.gle/d9jY3szEzRzmKPwL8](https://forms.gle/d9jY3szEzRzmKPwL8) — free entry to the $200 Feedback Award pool (×10 winners). Topics drafted in `devpost-form-cheat-sheet.md` Step 4. Independent of the project Devpost form.
 - [ ] **Post r/Devvit progress check** — draft in `outreach-drafts.md §4`. Gated on having something concrete to show (Phase 1+2 partially live OR synthetic-data demo recorded).
 - [ ] **Optional: FoxxMD quote ask** — draft `§3` if natural; skip if it'd read as last-minute.
 - [ ] **Run pre-submission gates locally:**
