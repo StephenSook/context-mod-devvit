@@ -110,7 +110,14 @@ export default function App() {
               </span>
             )}
           </div>
-          {stats && <Sparkline data={stats.hourlyActions24h} />}
+          {stats &&
+            (stats.hourlyActions24h.length >= 2 ? (
+              <Sparkline data={stats.hourlyActions24h} />
+            ) : (
+              <div className="telemetry text-[10px] text-bone-300/60 px-5 pb-2">
+                not enough data yet — the sparkline needs at least 2 hours of activity
+              </div>
+            ))}
         </div>
 
         <div className="flex-1 min-h-0 mt-2 flex flex-col">
