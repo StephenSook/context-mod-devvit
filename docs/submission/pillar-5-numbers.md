@@ -149,6 +149,31 @@ Source: [support.reddithelp.com — App Migration Program 2026 Terms](https://su
 
 **The timing parallel:** Discord launched 2015. Carl-bot launched 2016. By 2018–2019 Discord's mod-bot economy was a multi-million-dollar premium-tier industry. Devvit Web hit general availability in 2026. Mirror-timing puts Reddit's mod-bot economy on a 5-year trajectory toward Carl-bot-class premium ARR. **First-mover ports (ContextMod) capture the equivalent slot** — there is no Carl-bot-of-Reddit yet, but there will be.
 
+## 9.5. r/modnews "Mod Monthly" 2026-05 top-comment dossier
+
+The most direct first-party signal of what mods want from Reddit *right now* lives in a single comment thread, captured below in dossier form so judges can replicate the sampling.
+
+| Field | Value |
+|-------|-------|
+| Source thread | [r/modnews/comments/1t6jggp](https://www.reddit.com/r/modnews/comments/1t6jggp/) — May 2026 "Mod Monthly" announcement |
+| Sampled date | 2026-05-13 (post age: 6 days at sampling) |
+| Sampled comment rank | Top 6 by upvote at time of sampling |
+| Sampled by | Stephen, manual scroll + screenshot (no API scrape) |
+
+**Top-1 comment — anchors the anti-AI-tooling framing:**
+- Author: `u/Aeroncastle`
+- Upvotes: 94
+- Text (verbatim): *"I want stronger tools to fight AI, not in person events"*
+
+**Top-2 / Top-3 / Top-4 comments — same axis, different angle:**
+- `u/critacle` (34 upvotes) — *"Stop the AI bot spam. It's dominating /r/all. This is killing Reddit"*
+- `u/GamingYouTube14` (21 upvotes) — *"can you guys look into these new ai bots that adapt to the conversation? they're pretty much undetectable by any kind of algorithm"*
+- `u/OMGWTFBBQUE` (15 upvotes) — *"If I have to remove another AI post I'm going to lose my shit. Fucking do something about it."*
+
+**Drift caveat:** comment ranking + upvote counts evolve. The 94/34/21/15 snapshot is a point-in-time read on 2026-05-13. By May 27 (submission day) ordering may shift; the *direction* (anti-AI-tooling) is the load-bearing claim, not the specific counts. If judges re-sample post-submission and find a different #1, the framing still holds — anti-AI-tooling is the dominant axis across the top 6.
+
+**Why this matters for ContextMod scoring (Pillar 1 — Real Problem):** the loudest mod ask of the month is anti-AI-bot tooling; ContextMod is *anti-AI-bot tooling by construction* — `regex` rule catches generic AI phrasings, `author` rule flags new-account / low-karma / no-verified-email signatures AI bot farms produce, and Phase 4's `history` rule detects cross-sub posting cadence no human author would maintain. The writeup §1 paragraph cites this dossier; this page is the audit trail behind that citation.
+
 ## 10. Citations for the headline voiceover (60s demo)
 
 1. "Reddit's volunteer mods do 466 hours of unpaid work every day across 21,500 measured moderators — $3.4M/year." → Li et al. ICWSM 2022
