@@ -140,10 +140,15 @@ TypeScript, React, Hono, Vite, Tailwind, Lucide, Redis, Devvit, Devvit Web, Redd
 5 mockups already live in `assets/` (Banana-generated, 1200×800 RGBA PNG). Upload in this order (judges land on the first image):
 
 1. `assets/gallery-dashboard.png` — Observatory dashboard hero (stat cards + sparkline + event stream)
+   - **Devpost caption + alt-text:** *"Observatory dashboard: 4 stat cards (Actions today, Mod time saved, Active rules, Top rule), 24-hour hourly-actions sparkline, and the most recent moderation events with action chips."*
 2. `assets/gallery-modmenu.png` — mod overflow menu showing the 3 ContextMod items
+   - **Devpost caption + alt-text:** *"Reddit mod overflow menu with three ContextMod entries: Reload config from wiki, View recent actions, Test rules on this item."*
 3. `assets/gallery-wiki.png` — JSON5 rule config rendered in subreddit wiki
+   - **Devpost caption + alt-text:** *"Subreddit wiki at r/<sub>/wiki/contextmod showing a JSON5 ContextMod config with named rules, filters, and Mustache-templated action messages."*
 4. `assets/gallery-install.png` — App Directory "Add to community" flow
+   - **Devpost caption + alt-text:** *"Reddit App Directory page for ContextMod with the Add to community button highlighted — per-subreddit install, no hosting required."*
 5. `assets/gallery-trigger.png` — event stream close-up showing action chips on a fresh trigger
+   - **Devpost caption + alt-text:** *"Close-up of the Observatory event stream showing a freshly-fired spam-filter rule with REMOVE and COMMENT action chips, activity ID, and elapsed time."*
 
 Plus the thumbnail (separate slot, see Step 2): `assets/thumbnail.png`. Total = 5 gallery + 1 thumbnail = 6 assets uploaded; this matches the on-disk reality (`ls assets/gallery-*.png` returns exactly 5). Dashboard / event chip captures get a `(rendered with ?demo=1 synthetic data)` caption suffix in the synthetic-data fallback path.
 
