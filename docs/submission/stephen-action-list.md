@@ -27,7 +27,36 @@ Three reasons Claude doesn't touch these:
 
 ## T-6 — 2026-05-14 (today)
 
-Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this file + outreach audit) on the docs side. You read this file and confirm the May 15 outreach is what you want sent.
+### Action 1 — Ping Vinh on Phase 0.10 image-blockhash spike status (30s)
+
+**Why now:** spike was GO/NO-GO Day 0–2 per `PLAN.md`. We're past that. Phase 4 image-hash repost detection in the demo storyline depends on the answer. No pressure on Vinh — just need to know whether to keep it in the 5/18 demo or cut.
+
+**Channel:** Discord DM or PLAN.md notes column on Phase 0.10 card.
+
+**Three draft variants — pick the tone:**
+
+```
+[discord-casual]
+hey, quick check on phase 0.10 image-blockhash spike — still in scope or should I cut phase 4 image-hash from the demo storyline? trying to plan by 5/18, no rush on the answer
+```
+
+```
+[plan-md-formal]
+@vinh — phase 0.10 image-blockhash spike status? need to know by 5/18 whether to keep phase 4 image-hash in demo or cut. no rush, just want to plan the storyline.
+```
+
+```
+[super-short]
+phase 0.10 spike status? deciding demo storyline 5/18
+```
+
+Selection guidance: if you've already been chatting easily in Discord, use casual. If communication has been sparse, super-short reads as respectful-of-time. PLAN.md-formal stays in the kanban audit trail.
+
+**Verify:** Vinh replies within 24h with one of (a) "still working on it," (b) "feasible, will land," (c) "blocked, cut it." Any of the three unblocks the demo plan.
+
+### Other admin
+
+Beyond the Vinh ping, today is a Claude-side workday — solo artifacts (MEMORY.md, captions.srt pre-bake, ffmpeg stitch script). You read this file + confirm the May 15 outreach is what you want sent.
 
 ---
 
