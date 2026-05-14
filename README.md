@@ -305,6 +305,13 @@ The 5-minute refresh cron validates new config against an AJV JSON Schema. If it
 **How do I see what ContextMod actually did?**
 Open the Observatory dashboard. From the sub overflow menu: **ContextMod: View recent actions**. Shows last 50 events with action chips (REMOVE / APPROVE / COMMENT etc), color-coded by status, with a 24h sparkline of action volume.
 
+**How do I test a config rule without it firing for real?**
+Use the **ContextMod: Test rules on this item** mod menu entry on any post or comment. The dry-run pipeline evaluates every rule against the selected thing + shows you which rules matched, which filter clauses passed/failed, which actions *would* fire — without any real Reddit-API side-effects.
+
+![Mockup of the Test-rules-on-this-item dry-run result: 4 cards showing per-rule evaluation. (1) spam-filter: MATCHED, regex on title body, would fire REMOVE + COMMENT, dry-run skipped. (2) age-gate: MATCHED, authorIs filter passed, would fire REMOVE, dry-run skipped. (3) warn-rule: SKIPPED, authorIs karma > 100 failed, rule not evaluated. (4) mod-approve: NO MATCH, ruleSet trusted-mods-and-contributors returned false.](./assets/gallery-dryrun.png)
+
+Dry-run results live in `routes/forms.ts` — handler lands Phase 3.
+
 **Does it work on iOS / Android?**
 The dashboard is mobile-responsive. Devvit custom posts render natively in the Reddit app's webview. Mod menu actions work on web only (per Devvit platform limits today).
 
