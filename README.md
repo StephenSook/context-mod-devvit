@@ -30,11 +30,28 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 1. **Install** — Visit [developers.reddit.com/apps/cm-devvit](https://developers.reddit.com/apps/cm-devvit) and click **Add to community**, then pick your subreddit (you must be a mod with `posts` + `wiki` permissions).
 2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows mod-action telemetry (demo data until Phase 3 wires live events). Stickying it is optional but recommended.
-3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; edit it to taste. See [Config schema](#config-schema) for the full surface.
+3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; the [`examples/`](./examples) directory carries 3 working configs (starter + spam-fresh-account + approve-trusted-mod) you can paste and edit. See [Config schema](#config-schema) for the full surface.
 4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). The Observatory dashboard shows the rule count + actions taken once Phase 1-3 wiring lands.
 5. **Test a rule** — Right-click any post or comment, choose **ContextMod: Test rules on this item**. A dry-run shows which rules would fire without taking action.
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
+
+## Run the dashboard locally (for judges + devs)
+
+To see the Observatory dashboard without installing the app or having Devvit credentials:
+
+```bash
+git clone https://github.com/StephenSook/context-mod-devvit
+cd context-mod-devvit
+npm install
+npm run dev:web
+```
+
+Then open [`http://localhost:5173/?demo=1`](http://localhost:5173/?demo=1). The `?demo=1` query parameter seeds the dashboard with synthetic events (per the production-safety pattern — fabricated data never auto-shows). Remove the flag to see the empty-state zero-state with a copy-to-clipboard starter config.
+
+The `dev:web` script chains `vite build` → `node scripts/dev/mock-server.cjs`. The mock server is pure Node stdlib (no Express, no extra deps) and binds 127.0.0.1 only — local loopback, no LAN exposure.
+
+To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
 ## Status — what's production vs scaffolded vs Phase-N pending
 
