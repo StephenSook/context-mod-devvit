@@ -80,11 +80,13 @@ Notable paraphrase deltas:
 
 ---
 
-## 2. Reply to SampleOfNone — "wiki pages for existing CM subs?"
+## 2. Reply to SampleOfNone — "wiki pages for existing CM subs?" ✅ SENT 2026-05-13 2:41 PM ET
 
-**Context:** SampleOfNone asked on May 12: *"For subs that already run CM, you plan on using their existing wiki pages?"* — a real technical question about the port's compatibility with existing CM operator workflows. Stephen owes a direct answer + this is the natural place to weave in the helper-nomination ask later (separate followup once the Devpost form is filled out).
+**Context:** SampleOfNone asked on May 12: *"For subs that already run CM, you plan on using their existing wiki pages?"* — a real technical question about the port's compatibility with existing CM operator workflows. Stephen owed a direct answer + this is the natural place to weave in the helper-nomination ask later (separate followup once the Devpost form is filled out).
 
-**Send:** Discord same thread (drafted May 13, 2026 — send within 24h of drafting to keep "thanks for the X today" framing accurate).
+**Status:** SENT in own voice (paraphrased — Stephen cut the named Phase 4 rule list, the AJV-schema-source-of-truth note, and the MHS-cut explanation; preserved the wiki-path + json5-compat + install-flow core).
+
+**Original draft (preserved for audit):**
 
 ```
 yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (regex / author / ruleSet) + 7 actions use the same JSON5 schema, so existing CM operators can copy their config across with minimal cleanup. Phase 4 rules (history / attribution / recentActivity / repost) land later and might need a syntax tweak depending on which upstream edge cases we keep — i'm holding the upstream AJV schema as source of truth except where Devvit's runtime can't support a primitive. mhs rule was cut per reddit's PR #96 ai-provider fetch policy lock — subs using CM for hate-speech filtering keep running upstream PRAW.
@@ -92,7 +94,20 @@ yeah same wiki path as upstream — r/<sub>/wiki/contextmod. MVP rule kinds (reg
 install flow: App Directory one-click → seed wiki contents → reload-config from the mod menu. no token migration, no central server.
 ```
 
-**AI-tone scan:** clear.
+**Actual sent text (Discord, May 13 2:41 PM ET, paraphrased from draft):**
+
+```
+yeah same upstream wiki path: r/<sub>/wiki/contextmod, and the MVP keeps the json5 schema for regex / author / ruleSet + 7 actions so configs can copy over pretty cleanly. Later rule types might need small Devvit-specific tweaks, but install should just be App Directory to seed wiki config to reload from mod menu, with no token migration or central server
+```
+
+Notable paraphrase deltas:
+- Dropped the explicit Phase 4 rule list (`history / attribution / recentActivity / repost`).
+- Dropped the AJV-schema-source-of-truth detail.
+- Dropped the MHS-cut explanation (SampleOfNone's question wasn't about toxicity rules).
+- Compressed install flow into one sentence.
+- Sample's reply at 2:42 PM: *"Very Nice!"* + 2:43 PM: *"Looking forward to it!"* — confirms the cut content wasn't missed.
+
+**AI-tone scan:** clear (both draft + sent text).
 
 **Followup (separate ping closer to submission day, ~May 24, 2026 if she hasn't asked anything else):** ask permission to nominate her as "most helpful user" on Devpost + cite r/piercing's 600K visitors / 12K contributors as a named "communities served" example in the writeup. Keep that ask separate from this technical reply.
 
