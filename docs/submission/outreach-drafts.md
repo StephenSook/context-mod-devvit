@@ -48,11 +48,13 @@ Notable paraphrase deltas: dropped the "agree on indexability" beat, swapped "lm
 
 ---
 
-## 1b. Reply to FoxxMD — kanban board seeded
+## 1b. Reply to FoxxMD — kanban board seeded ✅ SENT 2026-05-13 3:30 PM ET
 
-**Context:** After Stephen's reply offering to seed the board, FoxxMD shared the Projects v2 link (https://github.com/users/FoxxMD/projects/6, "ContextMod Devvit") on May 13, 2026 at 2:50 PM. Stephen confirmed scopes via `gh auth refresh -s project,read:project` and 42 cards were bulk-added via the GraphQL API — full Phase 1-6 mirror of the master plan, tagged `[P1]` through `[P6]` for phase grouping. Stephen owes a heads-up that the seeding is done.
+**Context:** After Stephen's reply offering to seed the board, FoxxMD shared the Projects v2 link (https://github.com/users/FoxxMD/projects/6, "ContextMod Devvit") on May 13, 2026 at 2:50 PM. Stephen confirmed scopes via `gh auth refresh -s project,read:project` and 42 cards were bulk-added via the GraphQL API — full Phase 1-6 mirror of the master plan, tagged `[P1]` through `[P6]` for phase grouping. Stephen owed a heads-up that the seeding was done.
 
-**Send:** Discord same thread (within 24h of seeding — May 13, 2026).
+**Status:** SENT in own voice (paraphrased substantially — Stephen cut the MHS-cut explanation, the `gh auth refresh --remove-scopes` security note, and the per-phase task breakdown by person; left a tighter "here's what landed" summary).
+
+**Original draft (preserved for audit):**
 
 ```
 seeded 42 cards across phases 1-6 on the board — all tagged [P1]–[P6] so you can group by phase. vinh's tagged on phase 1+2+4 (backend), i'm on phase 3+5+6 (dashboard wire / demo / submission). a few cards have blocked dependencies noted in the body — phase 3 dashboard wire-up depends on phase 1 + 2 shipping, phase 4 image-hash depends on a day-0 spike. mhs rule was cut from the port since reddit's PR #96 (2026-05-08) locked the http fetch policy's ai-provider allowlist to openai + gemini only; api.moderatehatespeech.com falls outside that, so the rule stays in upstream PRAW build only.
@@ -62,9 +64,19 @@ statuses are all set to default; you or i can flip them in the UI as work moves.
 source-of-truth for the cards is at docs/superpowers/foxxmd-kanban-seed.md in the repo, so if anything drifts we know which doc to update. fyi i temporarily added `project` scope to my gh CLI token for the GraphQL bulk-add — once the board is stable i'll drop it back via `gh auth refresh --remove-scopes project` so i'm not carrying broader write permissions than needed.
 ```
 
-> Card count current as of seeding (May 13, 2026, 42 items). Verify with `gh project item-list 6 --owner FoxxMD --format json --limit 100` before sending if delayed.
+**Actual sent text (Discord, May 13 3:30 PM ET, paraphrased from draft):**
 
-**AI-tone scan:** clear.
+```
+seeded 42 cards across phases 1–6, all tagged P1–P6. Vinh is on the backend-heavy phases, and I'm covering dashboard/demo/submission stuff. i noted the blocked dependencies in the card bodies, and the source-of-truth is docs/superpowers/foxxmd-kanban-seed.md if anything needs to change later.
+```
+
+Notable paraphrase deltas:
+- Dropped MHS-cut explanation entirely (kept in repo docs, not pasted in Discord).
+- Dropped scope-rotation security note (kept as a self-todo).
+- Compressed the per-phase ownership breakdown to "Vinh = backend, me = dashboard/demo/submission."
+- Tighter, less explanatory. Reads like a teammate update, not a status report.
+
+**AI-tone scan:** clear (both draft + sent text).
 
 ---
 
