@@ -47,18 +47,29 @@ export async function firstSeen(thingId: string): Promise<boolean> {
  * Fail-CLOSED on Redis error (treats as already done → skip).
  *
  * Caller MUST follow up with commitAction() on success OR releaseAction() on failure.
+ *
+ * TOCTOU note: Devvit's Redis surface lacks Lua / transactions, so the
+ * reservation pattern is lock-then-check (not check-then-lock). Set the
+ * pending NX lock FIRST (atomic), then re-read done inside the lock window.
+ * If done is set after we acquired the lock, release + skip — a concurrent
+ * caller completed during the lock attempt. The lock guarantees only one
+ * caller proceeds into the side-effect for a given actionId at a time.
  */
 export async function reserveAction(actionId: string): Promise<boolean> {
   const doneKey = `cm:action:done:${actionId}`;
   const pendingKey = `cm:action:pending:${actionId}`;
   try {
-    const done = await redis.get(doneKey);
-    if (done) return false;
     const reserved = await redis.set(pendingKey, '1', {
       nx: true,
       expiration: new Date(Date.now() + PENDING_TTL_SEC * 1000),
     });
-    return reserved === 'OK';
+    if (reserved !== 'OK') return false;
+    const done = await redis.get(doneKey);
+    if (done) {
+      await redis.del(pendingKey);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error('[cm/idem/reserveAction] redis err — fail-closed (skip):', actionId, err);
     return false;
