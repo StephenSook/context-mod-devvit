@@ -60,9 +60,9 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
       </div>
 
       <div className="flex items-center gap-1.5">
-        {event.actions.map((a) => (
+        {event.actions.map((a, i) => (
           <span
-            key={a.kind}
+            key={`${a.kind}-${i}`}
             className="telemetry text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm"
             style={{
               color: a.ok ? KIND_COLOR[a.kind] : SIGNAL.err,
