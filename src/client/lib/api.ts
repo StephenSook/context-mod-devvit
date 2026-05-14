@@ -6,19 +6,22 @@ import type { ApiResult, EventRecord, StatsRollup } from './types';
  *
  * Replaces the prior `return []` / `return null` swallow pattern that made an
  * API outage indistinguishable from "no events yet" (Codex review HIGH F5).
+ *
+ * ?demo=1 in window.location propagates to the fetch URL so the server returns
+ * seeded fixtures from src/lib/demo-fixtures.ts. Read inside each call so
+ * runtime URL changes (history.pushState) take effect on the next poll.
  */
 
-// Propagate ?demo=1 from window.location to the fetch URL so the server-side
-// gate in src/routes/api.ts returns seeded fixtures instead of the empty stub.
-const demoSuffix =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('demo') === '1'
+function demoSuffix(): string {
+  if (typeof window === 'undefined') return '';
+  return new URLSearchParams(window.location.search).get('demo') === '1'
     ? '?demo=1'
     : '';
+}
 
 export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
   try {
-    const res = await fetch(`/api/recent${demoSuffix}`);
+    const res = await fetch(`/api/recent${demoSuffix()}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     const events = Array.isArray(data?.events) ? (data.events as EventRecord[]) : [];
@@ -32,7 +35,7 @@ export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
 
 export async function fetchStatsSafe(): Promise<ApiResult<StatsRollup>> {
   try {
-    const res = await fetch(`/api/stats${demoSuffix}`);
+    const res = await fetch(`/api/stats${demoSuffix()}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     const c = data?.counters;
@@ -60,21 +63,10 @@ export const ZERO_STATS: StatsRollup = {
 };
 
 /**
- * Demo fixtures. Opt-in only via ?demo=1 in URL — never auto-shown in production.
- * Helps capture screenshots + verify dashboard chrome before Phase 2 backend lands.
+ * Demo fixtures live in src/lib/demo-fixtures.ts now (single source of truth
+ * shared with src/routes/api.ts server-side branch). Re-export here so existing
+ * client imports (App.tsx) keep working without a deeper import path change.
  */
-export const DEMO_EVENTS: EventRecord[] = [
-  { ts: Date.now() - 1000 * 60 * 2, activityId: 't3_demo_a', runName: 'main', checkName: 'spam-filter', triggered: true, actions: [{ kind: 'remove', ok: true }, { kind: 'comment', ok: true }] },
-  { ts: Date.now() - 1000 * 60 * 7, activityId: 't1_demo_b', runName: 'main', checkName: 'age-gate', triggered: true, actions: [{ kind: 'remove', ok: true }] },
-  { ts: Date.now() - 1000 * 60 * 15, activityId: 't3_demo_c', runName: 'main', checkName: 'mod-approve', triggered: true, actions: [{ kind: 'approve', ok: true }] },
-  { ts: Date.now() - 1000 * 60 * 23, activityId: 't1_demo_d', runName: 'main', checkName: 'warn-rule', triggered: true, actions: [{ kind: 'comment', ok: true }, { kind: 'lock', ok: true }] },
-  { ts: Date.now() - 1000 * 60 * 41, activityId: 't3_demo_e', runName: 'main', checkName: 'spam-filter', triggered: true, actions: [{ kind: 'remove', ok: false }] },
-];
-
-export const DEMO_STATS: StatsRollup = {
-  actionsToday: 47,
-  timeSavedMin: 188,
-  activeRules: 12,
-  topRule: 'spam-filter',
-  hourlyActions24h: [1, 0, 0, 2, 0, 1, 3, 5, 7, 9, 12, 10, 8, 6, 4, 3, 5, 7, 11, 9, 6, 4, 2, 1],
-};
+import { demoEvents, DEMO_STATS as SHARED_DEMO_STATS } from '../../lib/demo-fixtures';
+export const DEMO_EVENTS: EventRecord[] = demoEvents() as EventRecord[];
+export const DEMO_STATS: StatsRollup = SHARED_DEMO_STATS as StatsRollup;
