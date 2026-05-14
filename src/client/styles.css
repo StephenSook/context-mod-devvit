@@ -152,3 +152,17 @@
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
 }
+
+/* WCAG 2.3.3 — respect the OS-level reduced-motion preference. Collapse
+   durations to ~0 (not zero — some animation libraries break on
+   `animation: none`) so vestibular-sensitive users get a static UI. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
