@@ -62,7 +62,7 @@ I got written permission from FoxxMD to port it (GitHub issue [FoxxMD/context-mo
 
 Mods install ContextMod on their sub with one click — no Heroku, no API tokens, no shared rate limits. They write rules in JSON5 inside `r/<sub>/wiki/contextmod`. ContextMod evaluates every new post and comment against those rules and takes the configured action: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. A custom-post Observatory dashboard surfaces live action telemetry — stat cards, 24h sparkline, last 50 events with color-coded chips. A dry-run mod-menu lets you test rules against a specific post before committing.
 
-The rule engine ports the original ContextMod concept model faithfully: **Run → Check → Rule → Action** with `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:<run>.<check>`), filters (`authorIs` / `itemIs`), named rule composition, Mustache action templating with `{{item.*}}` / `{{author.*}}` / `{{rules.<name>.data.*}}` context. v0.1.0 ships 3 MVP rule kinds (`regex`, `author`, `ruleSet`) and 7 actions; Phase 4 adds `history`, `attribution`, `recentActivity`, `repost`, `mhs`.
+The rule engine ports the original ContextMod concept model faithfully: **Run → Check → Rule → Action** with `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:<run>.<check>`), filters (`authorIs` / `itemIs`), named rule composition, Mustache action templating with `{{item.*}}` / `{{author.*}}` / `{{rules.<name>.data.*}}` context. v0.1.0 ships 3 MVP rule kinds (`regex`, `author`, `ruleSet`) and 7 actions; Phase 4 adds `history`, `attribution`, `recentActivity`, `repost`. Upstream `mhs` toxicity classifier was cut per PR #96.
 
 ## How I built it
 
@@ -103,7 +103,7 @@ TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architectu
 
 - **Phase 1 (Vinh):** core engine completion — `handleActivity`, `runRun`, `runCheck`, `runRule` wired to real config + live triggers.
 - **Phase 2 (Vinh):** 7 action handlers + 4 trigger routes.
-- **Phase 4 stretch:** perceptual-hash repost detection (image blockhash in pure JS within Devvit's 30s/no-native-deps env), MHS toxicity classifier (gated on `api.moderatehatespeech.com` approval — high-risk per Reddit's personal-domain policy; if rejected the MHS rule is documented as upstream-only).
+- **Phase 4 stretch:** perceptual-hash repost detection (image blockhash in pure JS within Devvit's 30s/no-native-deps env). `mhs` toxicity rule was cut per `reddit/devvit-docs` PR #96 (2026-05-08) — Reddit locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out.
 - **Post-hackathon:** open the app to all 15+ ContextMod operators FoxxMD identified; pursue Reddit Developer Funds DQE ladder ($5K-$10.5K realistic 12-mo capture).
 
 ## Built with
@@ -202,14 +202,14 @@ u/ContextModBot
 
 Paste from [`writeup-draft.md`](./writeup-draft.md) Section 3. Key honest claims to preserve:
 
-- **Can the app be installed today and serve the original function?** Yes for MVP scope (regex spam, mod-flair gating, author-criteria filtering, named-rule composition). Phase 4 (`history`, `attribution`, `recentActivity`, `repost`, `mhs`) is in active development and explicitly flagged.
+- **Can the app be installed today and serve the original function?** Yes for MVP scope (regex spam, mod-flair gating, author-criteria filtering, named-rule composition). Phase 4 (`history`, `attribution`, `recentActivity`, `repost`) is in active development and explicitly flagged. `mhs` rule is cut per PR #96 — subs using CM for hate-speech filtering keep running the upstream PRAW build.
 - **Improvements over upstream:** per-sub Redis isolation, native custom-post Observatory dashboard, one-click install, mod-menu dry-run tester, no central rate-limit bottleneck, per-effect idempotency (upstream lacks).
 - **Explicit cuts:** `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube, `DispatchAction`, multi-bot orchestration, Express dashboard w/ Monaco — all explicitly cut with rationale.
 
 ### Nominate a most helpful user (optional)
 
 ```
-u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "the hard part on Devvit" while I was scoping Phase 4. That informed my decision to gate the image-hash repost rule on a Day-0 spike before committing to it, and to mark MHS toxicity classification as conditional on Reddit's HTTP-fetch domain review. Direct impact on scope honesty.
+u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "the hard part on Devvit" while I was scoping Phase 4. That informed my decision to gate the image-hash repost rule on a Day-0 spike before committing to it. Direct impact on scope honesty.
 ```
 
 ---
