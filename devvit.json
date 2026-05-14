@@ -23,7 +23,6 @@
     "http": {
       "enable": true,
       "domains": [
-        "api.moderatehatespeech.com",
         "i.redd.it",
         "preview.redd.it",
         "external-preview.redd.it",
