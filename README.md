@@ -73,7 +73,7 @@ flowchart TB
   subgraph Platform["Reddit Devvit Platform"]
     direction LR
     TRIG[/"Triggers<br/>onPostSubmit · onCommentSubmit<br/>onAppInstall · onAppUpgrade"/]
-    SCHED[/"Scheduler (cron)<br/>refresh-config · stats-rollup<br/>image-hash · delayed-eval"/]
+    SCHED[/"Scheduler (cron)<br/>refresh-config · stats-rollup · image-hash-worker"/]
     WIKI[("Wiki API<br/>r/&lt;sub&gt;/wiki/contextmod")]
     REDIS[("Per-sub Redis<br/>strings · hashes · zsets")]
     RAPI{{"Reddit API<br/>remove · approve · ban · flair<br/>comment · lock · report"}}
@@ -205,7 +205,7 @@ The canonical AJV schema lands at `src/server/schema/app.schema.json` in Phase 1
 
 ### Validation behavior + safety story
 
-Every config load runs the JSON5 source through AJV against the schema. Three outcomes:
+**Designed behavior (lands Phase 1 — `src/server/schema/app.schema.json` + `routes/scheduler.ts:refresh-config`):** every config load runs the JSON5 source through AJV against the schema. Three outcomes:
 
 | Outcome | Behavior | What mods see |
 |---------|----------|---------------|
@@ -224,8 +224,8 @@ Why does Reddit need a port of CM when AutoMod already exists? Because AutoMod h
 | Dimension | AutoModerator | Original CM (PRAW) | **ContextMod-Devvit (this port)** |
 |-----------|---------------|--------------------|------------------------------------|
 | Hosting | Built into Reddit — no setup | Self-hosted server + Snoowrap + API tokens | Per-subreddit Devvit install, one click |
-| Rule composition | Single-pass YAML matchers (regex + simple filters) | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control |
-| Author-history rules | Age + karma threshold only | Full `author` rule: age, karma, flair, verified, contributor, mod, shadowban, history-window | Full `author` rule + filter system (`authorIs`/`itemIs`) at check level |
+| Rule composition | YAML rules with regex + simple filters + `priority` ordering; no named-rule or ruleSet composition | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control |
+| Author-history rules | Limited author/account checks (age, karma, flair, post/comment counters); no history-window queries across other subs | Full `author` rule: age, karma, flair, verified, contributor, mod, shadowban, history-window | Full `author` rule + filter system (`authorIs`/`itemIs`) at check level |
 | Image-hash repost detection | ❌ | ✅ (perceptual hash via Python image libs) | 🚧 Phase 4 stretch (pure-JS blockhash in Devvit's 30s window — feasibility spike pending) |
 | Per-sub data isolation | Shared infrastructure | Operator runs their own instance, isolation depends on hosting | Hard-isolated: each install gets its own Redis namespace, no cross-sub leak |
 | Mobile dashboard | ❌ (modmail only) | ❌ (terminal logs / Discord webhooks) | ✅ Observatory custom post — stat cards + sparkline + event stream, renders on mobile webview |
