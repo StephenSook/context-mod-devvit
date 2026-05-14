@@ -51,7 +51,7 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 - 6 Codex audit cycles + 3 parallel research-agent dispatches + Firecrawl-verified Reddit citations + Playwright-verified rendered surfaces.
 - Memory protocols locked: tool-inventory-audit-per-task + playwright-verification-protocol + commits-atomic-for-activity.
 
-## [0.1.0] - TBD (target: May 20, 2026 / hard deadline: May 27, 2026)
+## [0.1.0] - 2026-05-20 (target submission; hard deadline 2026-05-27)
 
 Initial Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot, submitted to the Reddit Mod Tools and Migrated Apps Hackathon. Port permission granted via [FoxxMD/context-mod#152](https://github.com/FoxxMD/context-mod/issues/152).
 
