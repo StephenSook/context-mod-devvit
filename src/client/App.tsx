@@ -131,7 +131,13 @@ export default function App() {
           </div>
           <RuleCountChips events={events} />
 
-          <div className="flex-1 min-h-0 overflow-y-auto border-t border-line">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto border-t border-line"
+            aria-live="polite"
+            aria-atomic="false"
+            aria-relevant="additions"
+            aria-label="Recent moderation actions"
+          >
             {events.length === 0 ? (
               <EmptyState subreddit={subreddit} />
             ) : (
