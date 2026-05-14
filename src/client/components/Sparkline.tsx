@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { SIGNAL } from '../lib/design-tokens';
 
 export function Sparkline({ data, height = 36, width = 280 }: { data?: number[]; height?: number; width?: number }) {
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
+  const reactId = useId();
+  const gradientId = `spark-fill-${reactId.replace(/:/g, '')}`;
   if (!data || !Array.isArray(data) || data.length < 2) return null;
   // Use reduce instead of Math.max(...data) — spread on large arrays can
   // hit "Maximum call stack size exceeded" (per Codex review HIGH).
@@ -41,12 +43,12 @@ export function Sparkline({ data, height = 36, width = 280 }: { data?: number[];
         onMouseLeave={() => setHover(null)}
       >
         <defs>
-          <linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor={SIGNAL.ok} stopOpacity="0.18" />
             <stop offset="100%" stopColor={SIGNAL.ok} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d={area} fill="url(#spark-fill)" />
+        <path d={area} fill={`url(#${gradientId})`} />
         <path
           d={path}
           fill="none"
