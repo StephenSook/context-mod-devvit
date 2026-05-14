@@ -34,9 +34,26 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
 
-## Status
+## Status — what's production vs scaffolded vs Phase-N pending
 
-**Hackathon-era MVP.** Active development; expect rough edges. See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) for what's in scope.
+**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *full pipeline*; the Status table below tells you which boxes are wired today vs which land Phase 1-3.
+
+| Component | State today | Lands |
+|-----------|-------------|-------|
+| Observatory dashboard (React + Vite + Tailwind, 24h sparkline + event stream + dry-run mod menu) | **Production** (renders against `?demo=1` synthetic; production zero-state surfaces when API returns empty) | shipped |
+| Idempotency primitives (`src/lib/idem.ts`, FNV-1a + BigInt + 3-stage Redis keys + 60s cron lock) | **Production** (150 LOC + 9 unit tests passing) | shipped |
+| Devvit configuration (`devvit.json`, fetch allowlist, post entry, scheduler tasks, menu items, forms) | **Production** | shipped |
+| Hono server routing (`src/index.ts`, `/api/*`, `/internal/*`) | **Production** | shipped |
+| `routes/menu.ts` recent-actions menu (opens custom post) | **Production** (handler wired) | shipped |
+| `routes/api.ts` `/api/recent` + `/api/stats` | **Scaffolded** (returns `{events:[]}` / `{}` today; live ZRANGE wiring lands Phase 3) | Phase 3 |
+| `routes/scheduler.ts` cron handlers (`refresh-config`, `stats-rollup`) | **Scaffolded** (TODO comments; lock-and-log stubs) | Phase 3 |
+| `routes/triggers.ts` (`onPostSubmit`, `onCommentSubmit`, `onAppInstall`) | **Scaffolded** (minimal stubs; full pipeline wires Phase 2) | Phase 1+2 |
+| `routes/forms.ts` dry-run form result handler | **Scaffolded** (TODO; lands Phase 3) | Phase 3 |
+| Rule engine — `handleActivity` → `runRun` → `runCheck` → `runRule` (regex / author / ruleSet) | **Pending** (Vinh's lane; types + schema defined, evaluation code lands Phase 1) | Phase 1 |
+| Action handlers (`remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`) | **Pending** (Phase 2 — Mustache templating + idempotency wrap) | Phase 2 |
+| Phase 4 stretch rules (`history`, `attribution`, `recentActivity`, `repost`) | **Deferred** (post-hackathon) | Phase 4 |
+
+See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
 ## Architecture
 
@@ -99,7 +116,7 @@ flowchart TB
 
 **Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB. Strings + hashes + sorted sets only — no Lists, no Sets, per Devvit constraints.
 
-**Atomic config publish:** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the pointer once at event start so the entire pipeline runs against a consistent config snapshot — no mid-event tear under concurrent reload.
+**Atomic config publish (Phase 1+3 scaffolded, full wiring pending):** the design is — mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the pointer once at event start so the entire pipeline runs against a consistent config snapshot — no mid-event tear under concurrent reload. The cron handler (`src/routes/scheduler.ts:20-33`) is a logging stub today; the rev-pointer write lands with Phase 1 (`runRun`) + Phase 3 (`refresh-config` loader).
 
 ### Request lifecycle
 
@@ -216,7 +233,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 - ✅ Rules: `regex` (with multi-field `testOn` + threshold), `author`, `ruleSet` (AND/OR composition) — types ship; live evaluation lands Phase 1
 - ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — types + Mustache templating ship; handler wiring lands Phase 2
 - ✅ Named rules + composition by name reference — types ship; resolver lands Phase 1
-- ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — works
+- ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — types + Hono routes scaffolded; loader implementation lands Phase 3 (`src/routes/menu.ts:15-20` currently returns a "Phase 3" toast)
 - ✅ Per-action idempotency primitives (`cm:proc` 24h + `cm:action:pending` 5m + `cm:action:done` 7d) — `src/lib/idem.ts` shipped
 - ✅ Observatory dashboard — renders against `?demo=1` synthetic data; live data wires up at Phase 3
 
