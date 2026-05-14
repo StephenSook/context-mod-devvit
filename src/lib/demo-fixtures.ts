@@ -34,6 +34,12 @@ export interface DemoStats {
 }
 
 export function demoEvents(now: number = Date.now()): DemoEvent[] {
+  // Guard against caller passing NaN/Infinity — would propagate to Date and
+  // render "Invalid Date" silently. Fall back to Date.now() with a log.
+  if (!Number.isFinite(now)) {
+    console.error('[cm/demo-fixtures] demoEvents called with non-finite now:', now);
+    now = Date.now();
+  }
   return [
     { ts: now - 1000 * 60 * 2, activityId: 't3_demo_a', runName: 'main', checkName: 'spam-filter', triggered: true, actions: [{ kind: 'remove', ok: true }, { kind: 'comment', ok: true }] },
     { ts: now - 1000 * 60 * 7, activityId: 't1_demo_b', runName: 'main', checkName: 'age-gate', triggered: true, actions: [{ kind: 'remove', ok: true }] },
@@ -43,10 +49,12 @@ export function demoEvents(now: number = Date.now()): DemoEvent[] {
   ];
 }
 
-export const DEMO_STATS: DemoStats = {
+// Freeze the constant + its array property so consumer mutations can't leak
+// across requests in the same isolate.
+export const DEMO_STATS: Readonly<DemoStats> = Object.freeze({
   actionsToday: 47,
   timeSavedMin: 188,
   activeRules: 12,
   topRule: 'spam-filter',
-  hourlyActions24h: [1, 0, 0, 2, 0, 1, 3, 5, 7, 9, 12, 10, 8, 6, 4, 3, 5, 7, 11, 9, 6, 4, 2, 1],
-};
+  hourlyActions24h: Object.freeze([1, 0, 0, 2, 0, 1, 3, 5, 7, 9, 12, 10, 8, 6, 4, 3, 5, 7, 11, 9, 6, 4, 2, 1]) as number[],
+});
