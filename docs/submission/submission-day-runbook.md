@@ -28,8 +28,10 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 
 ## T-5 days (May 15)
 
-- [ ] **Send FoxxMD kanban-seeded heads-up** on Discord — draft in `outreach-drafts.md §1b`
+- [x] ~~**Send FoxxMD kanban-seeded heads-up** on Discord — draft in `outreach-drafts.md §1b`~~ — **SENT EARLY 2026-05-13 3:30 PM ET.** Full audit trail in `outreach-drafts.md §1b` (preserved draft + actual sent text + paraphrase deltas).
 - ~~Check `api.moderatehatespeech.com` domain status~~ — **SKIP, no longer applicable.** MHS rule was proactively cut from `devvit.json` on 2026-05-13 per `reddit/devvit-docs` PR #96 (commit `c2d2865`). No domain request was ever submitted; no status to check. See [`devvit-app-settings.md`](./devvit-app-settings.md) HTTP fetch domains table for closure record.
+
+> Both T-5 items resolved 2026-05-13. T-5 day (May 15) now has no required actions — use as buffer.
 
 ## T-3 days (May 17)
 
