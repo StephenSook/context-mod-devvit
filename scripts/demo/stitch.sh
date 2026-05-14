@@ -80,11 +80,18 @@ ffmpeg -y -i beats/concat-raw.mp4 \
   -c:a copy \
   beats/final.mp4
 
-# 4. Final-check duration.
-dur=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 beats/final.mp4 | cut -d. -f1)
-echo "[stitch] final duration: ${dur}s (expect 60)"
-if [[ "$dur" -gt 60 ]]; then
-  echo "[stitch] WARN: final exceeds 60s hard cap — trim a beat or speed up VO"
+# 4. Final-check duration. Devpost 60s hard cap — check fractional too
+# (60.9s fails the cap even though int-floor would round down to 60).
+dur_raw=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 beats/final.mp4)
+ffprobe_rc=$?
+if [[ $ffprobe_rc -ne 0 || -z "$dur_raw" ]]; then
+  echo "[stitch] ERROR: ffprobe failed (rc=$ffprobe_rc) — beats/final.mp4 missing or unreadable"
+  exit 1
+fi
+# Float-strict 60.0s check using awk (Bash arithmetic is integer-only).
+echo "[stitch] final duration: ${dur_raw}s (Devpost cap 60.0)"
+if awk -v d="$dur_raw" 'BEGIN { exit !(d > 60.0) }'; then
+  echo "[stitch] WARN: final ${dur_raw}s exceeds 60.0s hard cap — trim a beat or speed up VO"
   exit 1
 fi
 
