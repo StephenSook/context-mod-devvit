@@ -55,7 +55,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
 ## Status — what's production vs scaffolded vs Phase-N pending
 
-**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *full pipeline*; the Status table below tells you which boxes are wired today vs which land Phase 1-3.
+**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below tells you which boxes are wired today vs which land Phase 1-3.
 
 | Component | State today | Lands |
 |-----------|-------------|-------|
@@ -66,7 +66,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 | `routes/menu.ts` recent-actions menu (opens custom post) | **Production** (handler wired) | shipped |
 | `routes/api.ts` `/api/recent` + `/api/stats` | **Scaffolded** (returns `{events:[]}` / `{}` today; live ZRANGE wiring lands Phase 3) | Phase 3 |
 | `routes/scheduler.ts` cron handlers (`refresh-config`, `stats-rollup`) | **Scaffolded** (TODO comments; lock-and-log stubs) | Phase 3 |
-| `routes/triggers.ts` (`onPostSubmit`, `onCommentSubmit`, `onAppInstall`) | **Scaffolded** (minimal stubs; full pipeline wires Phase 2) | Phase 1+2 |
+| `routes/triggers.ts` (`onPostSubmit`, `onCommentSubmit`, `onAppInstall`) | **Scaffolded** (minimal stubs; handler wiring lands Phase 2) | Phase 1+2 |
 | `routes/forms.ts` dry-run form result handler | **Scaffolded** (TODO; lands Phase 3) | Phase 3 |
 | Rule engine — `handleActivity` → `runRun` → `runCheck` → `runRule` (regex / author / ruleSet) | **Pending** (Vinh's lane; types + schema defined, evaluation code lands Phase 1) | Phase 1 |
 | Action handlers (`remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`) | **Pending** (Phase 2 — Mustache templating + idempotency wrap) | Phase 2 |
