@@ -58,20 +58,29 @@ export async function firstSeen(thingId: string): Promise<boolean> {
 export async function reserveAction(actionId: string): Promise<boolean> {
   const doneKey = `cm:action:done:${actionId}`;
   const pendingKey = `cm:action:pending:${actionId}`;
+  let reservedHere = false;
   try {
     const reserved = await redis.set(pendingKey, '1', {
       nx: true,
       expiration: new Date(Date.now() + PENDING_TTL_SEC * 1000),
     });
     if (reserved !== 'OK') return false;
+    reservedHere = true;
     const done = await redis.get(doneKey);
     if (done) {
       await redis.del(pendingKey);
+      reservedHere = false;
       return false;
     }
     return true;
   } catch (err) {
-    console.error('[cm/idem/reserveAction] redis err — fail-closed (skip):', actionId, err);
+    // Distinct error tag depending on which half of the lock-then-check failed.
+    // ORPHANED_LEASE means we hold a pending-NX that we couldn't verify against
+    // done — the lease will TTL-expire in PENDING_TTL_SEC (5min); caller skips.
+    const tag = reservedHere
+      ? '[cm/idem/reserveAction/ORPHANED_LEASE]'
+      : '[cm/idem/reserveAction/LOCK_FAIL]';
+    console.error(tag, 'fail-closed (skip):', actionId, err);
     return false;
   }
 }
