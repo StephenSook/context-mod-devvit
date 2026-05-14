@@ -5,20 +5,21 @@
  * Lets anyone who clones the repo run the dashboard locally without
  * Devvit auth — `npm run dev:web` builds + spins this server.
  *
- * Returns 200 + empty payloads on the two API routes. The client
- * App.tsx DEMO_ENABLED fallback seeds synthetic data when ?demo=1
- * is in the URL + the API is reachable + returns empty (Codex M6
- * production-safety pattern).
+ * **This is NOT the production surface.** Production uses Hono routes
+ * in src/routes/api.ts with c.req.query('demo') server-side branch.
+ * This mock returns 200+empty + relies on the client App.tsx
+ * DEMO_ENABLED fallback (Codex M6 production-safety pattern) to seed
+ * synthetic data when ?demo=1 is in the URL.
  *
  * Security: binds 127.0.0.1 explicitly — local loopback only, never
  * LAN-exposed. Static-file directory locked to dist/client/ with
- * explicit path-traversal guard.
+ * URL-decode + null-byte + path-traversal guards.
  */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 5173;
+const PORT = Number(process.env.PORT) || 5173;
 const HOST = '127.0.0.1';
 const DIST = path.resolve(__dirname, '..', '..', 'dist', 'client');
 
@@ -32,6 +33,11 @@ const MIME = {
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
   '.txt': 'text/plain; charset=utf-8',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.map': 'application/json; charset=utf-8',
+  '.webp': 'image/webp',
+  '.wasm': 'application/wasm',
 };
 
 function sendJson(res, status, body) {
@@ -48,13 +54,24 @@ function sendFile(res, filePath) {
     const stat = fs.statSync(filePath);
     if (!stat.isFile()) return false;
     const ext = path.extname(filePath).toLowerCase();
+    if (!MIME[ext]) {
+      console.warn('[cm-dev] unknown MIME for', ext, '— serving as octet-stream');
+    }
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Content-Length': stat.size,
     });
-    fs.createReadStream(filePath).pipe(res);
+    const stream = fs.createReadStream(filePath);
+    stream.on('error', (err) => {
+      console.error('[cm-dev] stream error', filePath, err.code);
+      if (!res.headersSent) res.destroy();
+    });
+    stream.pipe(res);
     return true;
-  } catch {
+  } catch (err) {
+    if (err && err.code !== 'ENOENT' && err.code !== 'EISDIR') {
+      console.error('[cm-dev] sendFile failed', filePath, err.code || err.message);
+    }
     return false;
   }
 }
@@ -69,29 +86,65 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/api/health'))
     return sendJson(res, 200, { ok: true, name: 'cm-devvit-mock', ts: Date.now() });
 
-  // Static file serving from dist/client/ with path-traversal guard.
-  const safePath = path.normalize(url.pathname).replace(/^(\.\.[/\\])+/, '');
+  // Unknown /api/* paths return JSON 404 — not HTML — so the client
+  // gets a parseable error instead of crashing on "Unexpected token <".
+  if (url.pathname.startsWith('/api/')) {
+    console.warn('[cm-dev] unknown /api route', url.pathname);
+    return sendJson(res, 404, { error: 'unknown api route', path: url.pathname });
+  }
+
+  // Static-file serving from dist/client/ with hardening:
+  //   1. Reject null-byte injection (\0 in pathname)
+  //   2. URL-decode the pathname so %2e%2e doesn't bypass the regex
+  //   3. Normalize + strip leading ../ sequences
+  //   4. startsWith(DIST) guard catches anything that escaped above
+  if (url.pathname.includes('\0')) {
+    console.warn('[cm-dev] rejecting null-byte path', JSON.stringify(url.pathname));
+    res.writeHead(400);
+    return res.end('bad request');
+  }
+  let decoded;
+  try {
+    decoded = decodeURIComponent(url.pathname);
+  } catch {
+    res.writeHead(400);
+    return res.end('bad request');
+  }
+  const safePath = path.normalize(decoded).replace(/^(\.\.[/\\])+/, '');
   const candidate = path.join(DIST, safePath === '/' ? 'index.html' : safePath);
   if (!candidate.startsWith(DIST)) {
+    console.warn('[cm-dev] path traversal blocked', JSON.stringify(decoded));
     res.writeHead(403);
     return res.end('forbidden');
   }
   if (sendFile(res, candidate)) return;
 
-  // SPA fallback: route unknown paths back to index.html so client
-  // routing handles the rest.
+  // SPA fallback: route unknown non-/api paths back to index.html so
+  // client routing handles the rest.
   if (sendFile(res, path.join(DIST, 'index.html'))) return;
 
   res.writeHead(404);
   res.end('not found');
 });
 
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`[cm-dev] port ${PORT} already in use — stop other dev server or PORT=5174 npm run dev:web`);
+    process.exit(1);
+  }
+  console.error('[cm-dev] server error', err);
+  process.exit(1);
+});
+
 server.listen(PORT, HOST, () => {
+  console.log(`[cm-dev] MOCK SERVER (production uses Hono routes; this is dev-only)`);
   console.log(`[cm-dev] dashboard at http://${HOST}:${PORT}/?demo=1`);
   console.log('[cm-dev] ctrl-c to stop');
 });
 
-process.on('SIGINT', () => {
-  console.log('\n[cm-dev] shutting down');
+const shutdown = (sig) => {
+  console.log(`\n[cm-dev] ${sig} — shutting down`);
   server.close(() => process.exit(0));
-});
+};
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
