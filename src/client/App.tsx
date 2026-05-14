@@ -151,7 +151,7 @@ export default function App() {
           </div>
         </div>
 
-        <ActionBar subreddit={subreddit} onReload={refresh} />
+        <ActionBar subreddit={subreddit} onReload={refresh} events={events} />
       </div>
     </div>
   );
