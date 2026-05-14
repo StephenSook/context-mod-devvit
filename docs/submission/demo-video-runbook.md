@@ -72,7 +72,15 @@ Pre-position the cursor before each scene begins recording so you don't waste se
 
 ## Stitch (ffmpeg)
 
-Folder layout in `docs/submission/_video-source/` (gitignored):
+> **Pre-baked artifacts at [`scripts/demo/`](../../scripts/demo/):**
+> - `captions-live-data.srt` — 8-cue VO transcript (live-data path)
+> - `captions-synthetic-fallback.srt` — 8 VO cues + truth caption (36–50s)
+> - `captions.notes.md` — instructions for swapping pre-bake with actual VO post-record
+> - `stitch.sh` — executable: `bash scripts/demo/stitch.sh --live` or `--synthetic`
+>
+> The inline ffmpeg snippets below remain as reference but `stitch.sh` is the recommended path on recording day.
+
+Folder layout in `raw-obs/` + `raw-vo/` at repo root (gitignored):
 
 ```
 _video-source/

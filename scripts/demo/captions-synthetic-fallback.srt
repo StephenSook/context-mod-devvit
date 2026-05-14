@@ -1,0 +1,46 @@
+1
+00:00:00,000 --> 00:00:08,000
+Reddit's mods do 466 hours of unpaid labor a day.
+73% of mod actions are already bots.
+The bot infrastructure they depend on got killed in 2023.
+
+2
+00:00:08,000 --> 00:00:22,000
+ContextMod's the rule-engine mod bot 15+ communities run —
+r/mealtimevideos at 60K weekly, r/piercing at 600K.
+Last release 2022. I got written permission from FoxxMD to port it to Devvit.
+
+3
+00:00:22,000 --> 00:00:29,000
+One click to install on any subreddit.
+No hosting. No tokens.
+
+4
+00:00:29,000 --> 00:00:36,000
+Write rules in JSON5 in your sub's wiki.
+Composable rules. Mustache-templated action messages.
+The full ContextMod concept model, ported faithfully.
+
+5
+00:00:36,000 --> 00:00:43,000
+This is the dashboard and event model rendering seeded demo data.
+The live trigger pipeline ships in Phase 1 post-hackathon.
+
+6
+00:00:36,000 --> 00:00:50,000
+Dashboard rendered with ?demo=1 synthetic data.
+Phase 1 live-trigger wiring lands post-hackathon.
+
+7
+00:00:43,000 --> 00:00:50,000
+Telemetry stream: stats, recent actions, hourly volume.
+Plus a dry-run rule tester for testing config before it goes live.
+
+8
+00:00:50,000 --> 00:00:58,000
+FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure.
+This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program.
+
+9
+00:00:58,000 --> 00:01:00,000
+ContextMod, on Devvit. Now.

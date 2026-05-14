@@ -6,3 +6,6 @@ dist/
 .env
 .env.local
 docs/submission/_video-source/
+raw-obs/
+raw-vo/
+beats/
