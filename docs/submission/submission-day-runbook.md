@@ -29,10 +29,7 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 ## T-5 days (May 15)
 
 - [ ] **Send FoxxMD kanban-seeded heads-up** on Discord — draft in `outreach-drafts.md §1b`
-- [ ] **Check `api.moderatehatespeech.com` domain status** at [developers.reddit.com/apps/cm-devvit/developer-settings](https://developers.reddit.com/apps/cm-devvit/developer-settings)
-  - If approved → MHS rule ships Phase 4
-  - If rejected → execute decision tree in [`domain-approval-runbook.md`](./domain-approval-runbook.md): drop from `devvit.json` permissions + move MHS to "explicitly cut" in writeup-draft Section 3
-  - If still pending → check again May 17
+- ~~Check `api.moderatehatespeech.com` domain status~~ — **SKIP, no longer applicable.** MHS rule was proactively cut from `devvit.json` on 2026-05-13 per `reddit/devvit-docs` PR #96 (commit `c2d2865`). No domain request was ever submitted; no status to check. See [`devvit-app-settings.md`](./devvit-app-settings.md) HTTP fetch domains table for closure record.
 
 ## T-3 days (May 17)
 
