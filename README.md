@@ -280,6 +280,8 @@ Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), ev
 
 If you're already running [FoxxMD/context-mod](https://github.com/FoxxMD/context-mod) (Docker/Heroku) you can keep your existing config and migrate progressively.
 
+> **Full schema-compatibility matrix:** [`docs/migration-compatibility.md`](./docs/migration-compatibility.md) — every upstream rule / action / filter / config key mapped to ✅ ported / 🚧 deferred / ✂️ cut with rationale.
+
 **Config compatibility:** YAML/JSON5 → JSON5 only. Convert with [`yaml-to-json`](https://www.npmjs.com/package/yaml-to-json) or any online converter. The schema is a strict subset of upstream — see `What's ported vs deferred` below.
 
 **What's ported (rule engine + dashboard ship in v0.1.0):**
