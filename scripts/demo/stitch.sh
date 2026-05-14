@@ -66,8 +66,16 @@ done
 ffmpeg -y -f concat -safe 0 -i beats/list.txt -c copy beats/concat-raw.mp4
 
 # 3. Bake captions via libass. Geist Mono if installed; falls back to default.
+# Synthetic mode: ALSO overlay the truth caption via drawtext, persisting 36s-50s,
+# rendered concurrently with the SRT cue stack (drawtext = independent filter).
+if [[ "$MODE" == "--synthetic" ]]; then
+  TRUTH_OVERLAY=",drawtext=text='Dashboard rendered with ?demo=1 synthetic data.\nPhase 1 live-trigger wiring lands post-hackathon.':fontfile=/System/Library/Fonts/Geneva.ttc:fontsize=18:fontcolor=white@0.85:box=1:boxcolor=black@0.55:boxborderw=10:x=w-text_w-32:y=h-text_h-32:enable='between(t\,36\,50)'"
+else
+  TRUTH_OVERLAY=""
+fi
+
 ffmpeg -y -i beats/concat-raw.mp4 \
-  -vf "subtitles=${SRT}:force_style='FontName=Geist Mono,FontSize=22,PrimaryColour=&Hf5f5f4,Outline=1.5,Shadow=0.5,MarginV=40'" \
+  -vf "subtitles=${SRT}:force_style='FontName=Geist Mono,FontSize=22,PrimaryColour=&Hf5f5f4,Outline=1.5,Shadow=0.5,MarginV=40'${TRUTH_OVERLAY}" \
   -c:v libx264 -preset slow -crf 18 \
   -c:a copy \
   beats/final.mp4
