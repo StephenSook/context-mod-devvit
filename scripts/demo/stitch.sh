@@ -66,10 +66,22 @@ done
 ffmpeg -y -f concat -safe 0 -i beats/list.txt -c copy beats/concat-raw.mp4
 
 # 3. Bake captions via libass. Geist Mono if installed; falls back to default.
-# Synthetic mode: ALSO overlay the truth caption via drawtext, persisting 36s-50s,
-# rendered concurrently with the SRT cue stack (drawtext = independent filter).
+# Synthetic mode: overlay the truth caption via drawtext, persisting 36s-50s.
+# Position: TOP-right so it doesn't collide with the bottom-margin SRT subtitle
+# stack (libass uses MarginV=40 from the bottom).
+# Font path discovery is portable: try a list of known free-or-system fonts and
+# pick the first that exists. Drop the fontfile arg if none found — ffmpeg's
+# default font handles ASCII fine, just less-pretty.
 if [[ "$MODE" == "--synthetic" ]]; then
-  TRUTH_OVERLAY=",drawtext=text='Dashboard rendered with ?demo=1 synthetic data.\nPhase 1 live-trigger wiring lands post-hackathon.':fontfile=/System/Library/Fonts/Geneva.ttc:fontsize=18:fontcolor=white@0.85:box=1:boxcolor=black@0.55:boxborderw=10:x=w-text_w-32:y=h-text_h-32:enable='between(t\,36\,50)'"
+  TRUTH_FONT=""
+  for fp in \
+    "/System/Library/Fonts/Geneva.ttc" \
+    "/System/Library/Fonts/SFNS.ttf" \
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" \
+    "/usr/share/fonts/dejavu/DejaVuSans.ttf"; do
+    if [[ -f "$fp" ]]; then TRUTH_FONT="fontfile=$fp:"; break; fi
+  done
+  TRUTH_OVERLAY=",drawtext=text='Dashboard rendered with ?demo=1 synthetic data.\nPhase 1 live-trigger wiring lands post-hackathon.':${TRUTH_FONT}fontsize=18:fontcolor=white@0.85:box=1:boxcolor=black@0.55:boxborderw=10:x=w-text_w-32:y=32:enable='between(t\,36\,50)'"
 else
   TRUTH_OVERLAY=""
 fi
@@ -80,17 +92,24 @@ ffmpeg -y -i beats/concat-raw.mp4 \
   -c:a copy \
   beats/final.mp4
 
-# 4. Final-check duration. Devpost 60s hard cap — check fractional too
-# (60.9s fails the cap even though int-floor would round down to 60).
-dur_raw=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 beats/final.mp4)
-ffprobe_rc=$?
-if [[ $ffprobe_rc -ne 0 || -z "$dur_raw" ]]; then
-  echo "[stitch] ERROR: ffprobe failed (rc=$ffprobe_rc) — beats/final.mp4 missing or unreadable"
+# 4. Final-check duration. Devpost 60s hard cap — check fractional + non-numeric.
+# `dur_raw=$(ffprobe ...)` under `set -e` aborts script on non-zero ffprobe exit,
+# so we can't capture rc via $? — wrap in `|| handle` instead.
+dur_raw=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 beats/final.mp4 2>/dev/null) || {
+  echo "[stitch] ERROR: ffprobe failed — beats/final.mp4 missing or unreadable"
+  exit 1
+}
+if [[ -z "$dur_raw" || "$dur_raw" == "N/A" ]]; then
+  echo "[stitch] ERROR: ffprobe returned empty/N-A duration: '$dur_raw'"
   exit 1
 fi
-# Float-strict 60.0s check using awk (Bash arithmetic is integer-only).
+# Reject non-numeric. awk treats "abc" as 0 silently — explicit check first.
+if ! awk -v d="$dur_raw" 'BEGIN { if (d == "0" || d+0 != 0) { exit 0 } exit 1 }'; then
+  echo "[stitch] ERROR: ffprobe returned non-numeric duration: '$dur_raw'"
+  exit 1
+fi
 echo "[stitch] final duration: ${dur_raw}s (Devpost cap 60.0)"
-if awk -v d="$dur_raw" 'BEGIN { exit !(d > 60.0) }'; then
+if awk -v d="$dur_raw" 'BEGIN { exit !(d+0 > 60.0) }'; then
   echo "[stitch] WARN: final ${dur_raw}s exceeds 60.0s hard cap — trim a beat or speed up VO"
   exit 1
 fi
