@@ -215,9 +215,48 @@ Paste from [`writeup-draft.md`](./writeup-draft.md) Section 3. Key honest claims
 
 ### Nominate a most helpful user (optional)
 
+Devpost field accepts ONE primary nominee + free-form reasoning. Pick one of:
+
+**Primary recommendation — u/SampleOfNone:**
 ```
-u/SampleOfNone — publicly flagged in r/Devvit Discord that image parsing is "the hard part on Devvit" while I was scoping Phase 4. That informed my decision to gate the image-hash repost rule on a Day-0 spike before committing to it. Direct impact on scope honesty.
+u/SampleOfNone — moderator of r/piercing (600K visitors, 12K contributors). Publicly flagged in the Reddit Devs Discord (May 12, 2026) that image parsing is "the hard part on Devvit" while I was scoping Phase 4, which directly informed my decision to gate the image-hash repost rule on a Day-0 feasibility spike before committing scope. Also asked a real technical compatibility question ("For subs that already run CM, you plan on using their existing wiki pages?") that improved the port's operator-migration story. Honest scope and operator credibility — both directly attributable to her early engagement.
 ```
+
+**Alternate — u/FoxxMD (only if SampleOfNone declines):**
+```
+u/FoxxMD — author of the original PRAW ContextMod that 15+ communities have run since 2019, including r/mealtimevideos (60K weekly visitors). Gave explicit written permission to port (issue #152), added Stephen + Vinh as repo collaborators on May 12, set up the shared GitHub Projects v2 kanban for cross-team coordination on May 13. Without his permission this port wouldn't exist; without his engagement throughout the hackathon it wouldn't be defensible as "ported faithfully."
+```
+
+> **Send protocol:** ping SampleOfNone via Discord ~5/19 (T-1) asking "would you be cool if I nominated you on my Devpost helper-nomination field + cited r/piercing as a named community in the writeup?" If she declines or doesn't reply within 24h, fall back to FoxxMD (he's already engaged; safe asks via issue thread). Both nominations are valid; pick one.
+
+### [Optional] Developer Platform feedback
+
+Devpost has a $200 Feedback Award (×10 winners) for "detailed, candid, actionable, and constructive feedback" on the Devvit platform. Submission is via Reddit's developer satisfaction survey at [forms.gle/d9jY3szEzRzmKPwL8](https://forms.gle/d9jY3szEzRzmKPwL8) per the Devpost overview.
+
+```
+Submit the survey 5/19 (T-1) — independent of the project Devpost form. Free entry to the Feedback Award pool. Specific topics to cover:
+- Devvit Redis primitive limitations (no Lists/Sets, no Lua/transactions) and the TOCTOU mitigation pattern we had to invent
+- vite plugin blocking `vite dev`/`vite preview` — workaround via mock Python http server documented in this repo
+- HTTP fetch policy PR #96 impact on legitimate third-party APIs (MHS cut)
+- Devvit Web vs Devvit Blocks deprecation timing clarity
+- Documentation gaps on the App Migration Program bounty workflow
+- Custom-post webview iframe URL not being a shareable OG-crawlable surface
+```
+
+---
+
+## Step 4.5 — Rubric alignment (paste into the optional "judges' notes" if Devpost surfaces it)
+
+Per the [hackathon page](https://mod-tools-migration.devpost.com/) judging criteria, here is how this submission maps to each scoring dimension. Stephen pastes this into the "Notes for judges" field if Devpost has one; otherwise it lives here as the internal sanity check before submit.
+
+| Devpost criterion | Our evidence | Source-of-truth document |
+|-------------------|--------------|---------------------------|
+| **Community Impact** | 466 hr/day measured mod labor (Li et al. 2022) + 73% bot-driven actions; 94-upvote anti-AI-tooling ask in May 2026 r/modnews; r/mealtimevideos 60K weekly + r/piercing 600K + 15 other CM subs as named beneficiaries; CM-class tools offload the "context tier" AutoMod can't reach | [`writeup-draft.md`](./writeup-draft.md) §1+§2 · [`pillar-5-numbers.md`](./pillar-5-numbers.md) §1+§5+§9.5+§11 |
+| **Polish** | CI green, type-check clean, lint clean, 9/9 tests passing; AI-tone strict scanner gating all paste-day text; Mermaid architecture + sequence diagrams; CONTRIBUTING + CODE_OF_CONDUCT + SECURITY + CHANGELOG + LICENSE all shipped; per-component Status table in README distinguishes Production vs Scaffolded vs Phase-N pending | `README.md` Status table · `.github/workflows/ci.yml` · `scripts/check-ai-tone.sh` · `CHANGELOG.md` |
+| **Reliable UX** | One-click install via App Directory; Observatory custom-post dashboard renders on mobile webview; mod-menu items work today (View recent actions = production); `?demo=1` synthetic path provides reviewer-installable preview without Phase 1+2+3 backend; AJV validation with last-known-good fallback (designed behavior, lands Phase 1) ensures a bad config never breaks moderation | `README.md` "Quick start" + "Observatory dashboard preview" + Validation section · `docs/screenshots/dashboard-desktop.png` |
+| **Port Completion** | MVP scope (regex / author / ruleSet rules + 7 actions + filters + Mustache + named-rule composition + wiki config + Observatory + idempotency primitives + atomic config publish) is types + scaffolds shipped. Live evaluation + action handlers + trigger routes (Phase 1+2+3) ship per backend lane; honest gating in writeup §3. Explicit cuts (MHS per PR #96; DispatchAction; SentimentRule; full RepostRule; multi-bot) documented with rationale | [`writeup-draft.md`](./writeup-draft.md) §3 "Ported faithfully" · `examples/` 3 working JSON5 configs · README "Comparison" section |
+
+The **Port Completion** criterion is the most-checkable. Devpost's question is *"Could this app be installed today and serve the original function?"*. Honest answer for hackathon-MVP: **Yes for MVP scope once Phase 1+2+3 wiring lands** (Vinh's lane, target 5/17). Without Phase 1+2+3, the dashboard renders + the scaffolds + the safety primitives + the docs are submission-clean, but the live trigger pipeline + action handlers + dashboard live-data wire-up are pending. The synthetic-data fallback demo (`?demo=1` + `scripts/demo/stitch.sh --synthetic`) preserves the demo path even if Phase 1+2+3 slips.
 
 ---
 
