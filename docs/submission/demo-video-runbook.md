@@ -216,23 +216,23 @@ If Phase 1 isn't live by **May 17, 2026** (T-3 days per `submission-day-runbook.
 | History + permission | 8-22s | screenshots | github.com/FoxxMD/context-mod + FoxxMD Discord screenshot + issue #152 | "ContextMod's the rule-engine mod bot 15+ communities run — r/mealtimevideos at 60K weekly, r/piercing at 600K. Last release 2022. I got written permission from FoxxMD to port it to Devvit." |
 | Install | 22-29s | App Directory | live `developers.reddit.com/apps/cm-devvit` | "One click to install on any subreddit. No hosting. No tokens." |
 | Wiki config | 29-36s | wiki tab | live wiki editor with starter JSON5 | "Write rules in JSON5 in your sub's wiki. Composable rules. Mustache-templated action messages. The full ContextMod concept model, ported faithfully." |
-| Trigger flow | 36-43s | dashboard `?demo=1` | synthetic seeded data | "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions." |
-| Dashboard tour | 43-50s | dashboard `?demo=1` | synthetic seeded data | "Telemetry stream: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live." |
-| Wedge + truth caption | 50-58s | title card with caption | static, ffmpeg-rendered | "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program." + ON-SCREEN CAPTION: *"Dashboard rendered with `?demo=1` synthetic data. Phase 1 live-trigger wiring lands post-hackathon."* |
+| Trigger flow | 36-43s | dashboard `?demo=1` | synthetic seeded data + truth caption ON-SCREEN | "This is the dashboard and event model rendering seeded demo data. The live trigger pipeline — `handleActivity` → rule engine → action → `events:recent` — ships in Phase 1 post-hackathon." + ON-SCREEN CAPTION (arrives at 36s, persists to 50s): *"Dashboard rendered with `?demo=1` synthetic data. Phase 1 live-trigger wiring lands post-hackathon."* |
+| Dashboard tour | 43-50s | dashboard `?demo=1` | synthetic seeded data, caption still on-screen | "Telemetry stream: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live." |
+| Wedge | 50-58s | title card | static, ffmpeg-rendered | "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program." (truth caption from beat 5 may persist into early wedge frames; up to motion grader) |
 | Close | 58-60s | three lines fade-up | static | "ContextMod, on Devvit. Now." |
 
 ### Caption-as-truth-telling (ffmpeg subtitle bake)
 
-Add this caption block to `captions.srt` between the wedge VO and the close:
+Add this caption block to `captions.srt` so the disclosure arrives the moment seeded data hits the screen (36s — start of trigger beat) and persists through the dashboard tour (to 50s):
 
 ```
 N
-00:00:50,000 --> 00:00:57,000
+00:00:36,000 --> 00:00:50,000
 Dashboard rendered with ?demo=1 synthetic data.
 Phase 1 live-trigger wiring lands post-hackathon.
 ```
 
-Bake into the final mp4 via the same `ffmpeg -vf "subtitles=captions.srt:..."` pipeline used for the rest of the captions. **Do not** rely on YouTube auto-captions for this disclosure — judges may watch with captions off.
+Bake into the final mp4 via the same `ffmpeg -vf "subtitles=captions.srt:..."` pipeline used for the rest of the captions. **Do not** rely on YouTube auto-captions for this disclosure — judges may watch with captions off. The 36s arrival is non-negotiable: showing seeded data without a concurrent truth-caption reads as a real-trigger demo.
 
 ### Writeup synchronization
 

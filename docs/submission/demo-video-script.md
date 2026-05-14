@@ -61,7 +61,7 @@
 
 **VO:** "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions."
 
-> Note: if Phase 1 backend isn't live by recording day, swap this beat for `?demo=1` synthetic-data dashboard tour + this VO line: *"This is the rule engine evaluating a config in real time. Live trigger wiring lands in Phase 1 of post-hackathon work — see the writeup for scope honesty."*
+> Note: if Phase 1 backend isn't live by recording day, swap this beat for `?demo=1` synthetic-data dashboard tour + this VO line: *"This is the dashboard and event model rendering seeded demo data. The live trigger pipeline — `handleActivity` → rule engine → action → `events:recent` — ships in Phase 1 post-hackathon. The truth caption stays on-screen from this beat through the dashboard tour."* The synthetic-data truth caption (`captions.srt` N=4 per `demo-video-runbook.md`) MUST arrive at the 36s mark — not delayed to the 50s wedge — so the disclosure starts the moment seeded data is shown.
 
 **Beat 4 (43-50s) — Dashboard tour:**
 - Pan across stat cards (Actions today, Mod time saved, Active rules, Top rule)
