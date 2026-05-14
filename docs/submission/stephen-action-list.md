@@ -50,7 +50,7 @@ hey, quick check on phase 0.10 image-blockhash spike — still in scope or shoul
 phase 0.10 spike status? deciding demo storyline 5/18
 ```
 
-Selection guidance: if you've already been chatting easily in Discord, use casual. If communication has been sparse, super-short reads as respectful-of-time. PLAN.md-formal stays in the kanban audit trail.
+Selection guidance: if Discord chat has been flowing already, use casual. If communication has been sparse, super-short reads as respectful-of-time. PLAN.md-formal stays in the kanban audit trail.
 
 **Verify:** Vinh replies within 24h with one of (a) "still working on it," (b) "feasible, will land," (c) "blocked, cut it." Any of the three unblocks the demo plan.
 
