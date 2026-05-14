@@ -20,11 +20,13 @@
 
 ---
 
-## 1. Reply to FoxxMD — collab access + "let's keep technical on GitHub"
+## 1. Reply to FoxxMD — collab access + "let's keep technical on GitHub" ✅ SENT 2026-05-13 ~2:45 PM ET
 
 **Context:** FoxxMD added Stephen + Vinh as repo collaborators on May 12 and said he'd prefer technical discussion to live on GitHub issues/discussions for indexability. Also offered to set up a GitHub Project kanban board. Stephen owes a thank-you + acknowledgement + answer on the board.
 
-**Send:** Discord same thread (drafted May 13, 2026 — send within 24h of drafting to keep "thanks for the X today" framing accurate).
+**Status:** SENT in own voice (paraphrased; FoxxMD replied "you should have access to this new project now: https://github.com/users/FoxxMD/projects/6" at 2:50 PM, confirming the yes-to-kanban path).
+
+**Original draft (preserved for audit):**
 
 ```
 thanks for the collab access — confirmed on both ends. fully agree on keeping technical discussion in github issues/discussions for indexability, i'll move anything substantive over there.
@@ -34,7 +36,15 @@ the kanban project board would actually help — got an internal phase 1-6 plan 
 vinh has access too, so once we kick off phase 1 he picks up backend tasks directly from the board.
 ```
 
-**AI-tone scan:** clear.
+**Actual sent text (Discord, May 13 ~2:45 PM ET, paraphrased from draft):**
+
+```
+thanks for the collab access, confirmed on both ends!! Github issues/discussions works, and the kanban board would help too since I can mirror our phase 1–6 plan there so you can see scope/cuts clearly. Vinh has access too, so once phase 1 starts he can grab backend tasks straight from the board.
+```
+
+Notable paraphrase deltas: dropped the "agree on indexability" beat, swapped "lmk if you want me to seed" → implied yes-to-seed, kept the Vinh-onboarding handoff. Tighter, less explanatory, more Stephen's voice.
+
+**AI-tone scan:** clear (both draft + sent text).
 
 ---
 
