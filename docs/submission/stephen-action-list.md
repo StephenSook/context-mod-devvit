@@ -33,14 +33,12 @@ Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this fi
 
 ## T-5 — 2026-05-15
 
-### Action 1 — Send FoxxMD kanban-seeded heads-up
-- **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §1b (Reply to FoxxMD — kanban board seeded)
-- **Channel:** Discord DM to FoxxMD (the same thread where you got written permission)
-- **Verify:** message delivers + (optional) thumbs-up reaction within 24h. If no reply by May 17, that's fine — the original written permission stands.
-- **Time:** 60–90s to paraphrase the draft into your own voice + paste
+**No user-only actions pending.** Both originally-scheduled items are resolved early:
 
-### Action 2 — Check MHS domain status — SKIP
-- Cut per PR #96 on 2026-05-13. No domain request was ever submitted, so nothing to check. See [`devvit-app-settings.md` HTTP fetch domains table](./devvit-app-settings.md).
+- ~~Send FoxxMD kanban-seeded heads-up~~ — **SENT 2026-05-13 3:30 PM ET** (full audit trail in [`outreach-drafts.md`](./outreach-drafts.md) §1b). FoxxMD shared the Projects v2 board at 2:50 PM; Stephen replied with the seeding heads-up at 3:30 PM.
+- ~~Check MHS domain status~~ — **SKIP, cut per PR #96 on 2026-05-13.** No domain request was ever submitted. See [`devvit-app-settings.md`](./devvit-app-settings.md) HTTP fetch domains table.
+
+Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-tone.sh --strict` on the full bundle, or get ahead on the demo recording prep (T-2 work).
 
 ---
 
