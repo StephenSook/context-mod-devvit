@@ -3,7 +3,7 @@
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
-> Write your moderation rules once in JSON5. ContextMod evaluates every new post and comment against your filters and takes the configured action — remove, comment, lock, flair, ban — without you ever opening the modqueue. *(Live trigger wiring is finishing through Phase 1+2; the rule engine, idempotency primitives, and Observatory dashboard ship in v0.1.0.)*
+> Write your moderation rules once in JSON5. The rule engine, idempotency primitives, atomic config publish, and Observatory dashboard (demo mode) ship in v0.1.0. Live trigger evaluation, action handlers, and dashboard live-data wiring land in Phase 1-3 — see "What's ported" below for the per-phase ship state. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest once Phase 1-3 wiring lands.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)

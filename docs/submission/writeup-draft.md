@@ -10,7 +10,7 @@
 
 **Suggested opener** (Stephen's voice — rewrite):
 
-> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. The bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that.
+> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. Once Phase 1-3 wiring lands, the bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that. (v0.1.0 ships the rule engine + idempotency primitives + atomic config publish + Observatory dashboard demo mode; live trigger / action / dashboard wiring lands through Day 5-11 per the phase plan below.)
 
 > **Why now:** Reddit's CEO said on the Q1 2026 earnings call that they're "porting good bots to the developer platform." Reddit's own r/Devvit team is deprecating the older Blocks framework. The $1,000 App Migration Bounty is explicitly scoped to PRAW→Devvit moves — ContextMod is exactly that. FoxxMD's last ContextMod release was November 2022, weeks before Reddit's paid Data API tier launched in July 2023. The bot has been frozen at the pre-blackout boundary ever since, with 15+ operators stuck running it on dying infrastructure. This port unblocks all of them on the platform Reddit is actively recommending.
 
@@ -24,7 +24,7 @@
 - **Filters** (`authorIs` / `itemIs`) gate Rule/Check/Action execution by author + item attributes. Same criteria set as upstream ContextMod.
 - **Flow control**: `postBehavior` per Check (`next` / `nextRun` / `stop` / `goto:<run>.<check>`).
 - **Named rules** for DRY composition.
-- **Observatory dashboard** (custom-post webview): live action telemetry, 24h sparkline, last 50 events with color-coded action chips, stat cards (actions today, mod time saved estimate, active rules, top rule).
+- **Observatory dashboard** (custom-post webview): action-telemetry surface with 24h sparkline, last 50 events with color-coded action chips, stat cards (actions today, mod time saved estimate, active rules, top rule). Ships in v0.1.0 against `?demo=1` synthetic data; live-data wiring lands at Phase 3 once Vinh's `events:recent` ZSET pipeline finishes.
 - **Wiki-based config** with 5-min refresh cron + manual reload from mod menu. Atomic publish via revision pointer so handleActivity always reads a consistent snapshot mid-event.
 - **Dry-run rule tester** mod menu action — point at any post/comment to see which rules would fire without taking action.
 - **Per-effect idempotency**: every action has a 5-min `pending` reservation + 7d `done` marker, so Devvit's at-least-once trigger delivery never double-applies the same mod action.
@@ -33,7 +33,7 @@
 
 1. Install via the App Directory (`developers.reddit.com/apps/cm-devvit`) → click "Add to community."
 2. Write JSON5 rules in `r/<sub>/wiki/contextmod`. Starter config seeded on install.
-3. View live action telemetry via the Observatory dashboard post (created via mod menu).
+3. View action telemetry via the Observatory dashboard post (created via mod menu). Renders with `?demo=1` synthetic data until Phase 3 wires live `events:recent` ZSET data.
 4. Dry-run rules on specific posts before letting them go live. Reload on every wiki edit (manual or 5-min auto).
 
 ---

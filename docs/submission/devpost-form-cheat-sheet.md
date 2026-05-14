@@ -33,7 +33,7 @@ ContextMod — Devvit port of FoxxMD's PRAW mod bot
 
 **Recommended:**
 ```
-FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, live action dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck. 15+ communities ready.
+FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, action-telemetry dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck. 15+ communities ready.
 ```
 *198 characters (Devpost cap is 200). Names the upstream, names the platform, lists the wedge (no hosting/tokens/bottleneck), grounds in a concrete operator base.*
 
@@ -60,7 +60,7 @@ I got written permission from FoxxMD to port it (GitHub issue [FoxxMD/context-mo
 
 ## What it does
 
-Mods install ContextMod on their sub with one click — no Heroku, no API tokens, no shared rate limits. They write rules in JSON5 inside `r/<sub>/wiki/contextmod`. ContextMod evaluates every new post and comment against those rules and takes the configured action: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. A custom-post Observatory dashboard surfaces live action telemetry — stat cards, 24h sparkline, last 50 events with color-coded chips. A dry-run mod-menu lets you test rules against a specific post before committing.
+Mods install ContextMod on their sub with one click — no Heroku, no API tokens, no shared rate limits. They write rules in JSON5 inside `r/<sub>/wiki/contextmod`. Once Phase 1-3 wiring lands, ContextMod evaluates every new post and comment against those rules and takes the configured action: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. A custom-post Observatory dashboard surfaces action telemetry — stat cards, 24h sparkline, last 50 events with color-coded chips. v0.1.0 ships the rule engine + idempotency primitives + atomic config publish + dashboard demo mode; live trigger / action / dashboard data wiring lands through Day 5-11. A dry-run mod-menu lets you test rules against a specific post before committing.
 
 The rule engine ports the original ContextMod concept model faithfully: **Run → Check → Rule → Action** with `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:<run>.<check>`), filters (`authorIs` / `itemIs`), named rule composition, Mustache action templating with `{{item.*}}` / `{{author.*}}` / `{{rules.<name>.data.*}}` context. v0.1.0 ships 3 MVP rule kinds (`regex`, `author`, `ruleSet`) and 7 actions; Phase 4 adds `history`, `attribution`, `recentActivity`, `repost`. Upstream `mhs` toxicity classifier was cut per PR #96.
 
