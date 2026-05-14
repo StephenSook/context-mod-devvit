@@ -134,7 +134,7 @@ not asking for a review, just a heads-up that this is happening before submissio
 
 **Context:** Once Stephen hits submit on Devpost, share the public devpost project page in r/Devvit + Discord. Keep it short — community is fatigued with AI-marketed submissions during hackathon week.
 
-**Send:** May 27, 2026 (after the actual submission lands).
+**Send:** Same day Stephen actually hits Submit on Devpost. Target = May 20, 2026 per `submission-day-runbook.md`; hard-deadline fallback = May 27. Don't pre-post — community treats "we just submitted" with more weight than "we'll submit soon."
 
 ```
 title: ContextMod Devvit Web port — submitted to mod tools hackathon
