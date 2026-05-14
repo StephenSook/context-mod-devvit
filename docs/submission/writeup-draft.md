@@ -20,7 +20,7 @@
 
 - **3 MVP rule kinds shipped** in v0.1.0: `regex` (multi-field threshold matching), `author` (basic criteria — age, karma, flair, isMod, isContributor, verified, shadowBanned), `ruleSet` (AND/OR composition).
 - **7 MVP actions**: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. All support Mustache templates over `{{item}}`, `{{author}}`, `{{rules.<name>.data}}` context.
-- **5 stretch rule kinds** in Phase 4: `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants), `mhs` (toxicity classification).
+- **4 stretch rule kinds** in Phase 4: `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants). Upstream `mhs` toxicity classifier was **cut** from the Devvit port after Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider list to OpenAI + Gemini only — `api.moderatehatespeech.com` falls outside that carve-out.
 - **Filters** (`authorIs` / `itemIs`) gate Rule/Check/Action execution by author + item attributes. Same criteria set as upstream ContextMod.
 - **Flow control**: `postBehavior` per Check (`next` / `nextRun` / `stop` / `goto:<run>.<check>`).
 - **Named rules** for DRY composition.
@@ -97,11 +97,12 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 
 ### Gaps vs upstream (deferred to Phase 4)
 
-- `history`, `attribution`, `recentActivity`, `repost`, `mhs` rules — landing in Phase 4
+- `history`, `attribution`, `recentActivity`, `repost` rules — landing in Phase 4
 - Image-hash repost detection — gated on a Day-0 spike (decode + blockhash in pure JS within Devvit's 30s/no-native-deps env)
 
 ### Gaps vs upstream (explicitly cut)
 
+- `mhs` (ModerateHateSpeech toxicity classifier) — explicitly cut. Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out. Available in upstream ContextMod's PRAW build; not available in the Devvit port. Documented honestly rather than worked around.
 - `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube — explicitly cut. Sentiment needs NLP libs that don't bundle in Devvit; YouTube API exceeds scope.
 - `DispatchAction` (defer-and-replay) — cut; not load-bearing for MVP, defer to v2 if operators ask.
 - Multi-bot orchestration (CM's "shared streams" pattern) — Devvit's per-sub install model replaces this architecturally.
@@ -109,7 +110,7 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 
 ### Can this be installed today and serve the original function?
 
-**Yes, for the MVP scope.** Subreddits using the original CM primarily for regex-based spam removal, mod-flair gating, author-criteria filtering, and named-rule composition will see feature parity at install. Subs using CM specifically for repost detection or hate-speech filtering will need to wait for Phase 4 (currently in active development).
+**Yes, for the MVP scope.** Subreddits using the original CM primarily for regex-based spam removal, mod-flair gating, author-criteria filtering, and named-rule composition will see feature parity at install. Subs using CM specifically for repost detection will need to wait for Phase 4 (currently in active development). Subs using CM for hate-speech filtering will need to keep running the upstream PRAW build — the Devvit `mhs` port is cut per PR #96.
 
 ---
 
@@ -130,7 +131,8 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 - [x] Written permission documentation captured (Discord transcript in `outreach-drafts.md` + GitHub [issue #152](https://github.com/FoxxMD/context-mod/issues/152))
 - [x] Repo flipped to public + GitHub Pages live for privacy/ToS (May 13, 2026)
 - [ ] App `--public` flag set + Devvit app review passed (post Phase 1+2)
-- [ ] Phase 4 image-hash + MHS rule either shipped OR explicitly downgraded in writeup (decision tree in `domain-approval-runbook.md`)
+- [x] `mhs` rule cut per `reddit/devvit-docs` PR #96 (2026-05-08) — documented in Section 3 "Gaps vs upstream (explicitly cut)"
+- [ ] Phase 4 image-hash repost detection either shipped OR explicitly downgraded in writeup
 - [ ] Demo video recorded + uploaded to YouTube (unlisted) — gated on Phase 1 backend live
 - [ ] Stephen rewrites every section of this draft in his own voice
 - [ ] Run `./scripts/check-ai-tone.sh --strict` against final pasted text
