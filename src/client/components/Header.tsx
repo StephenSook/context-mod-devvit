@@ -1,5 +1,6 @@
 export function Header({ subreddit, refreshedAt }: { subreddit: string; refreshedAt: number }) {
   const ago = Math.max(1, Math.round((Date.now() - refreshedAt) / 1000));
+  const refreshedAtIso = new Date(refreshedAt).toISOString();
   return (
     <header
       className="cm-fade-up relative px-5 py-3.5 flex items-center justify-between border-b border-line"
@@ -25,7 +26,13 @@ export function Header({ subreddit, refreshedAt }: { subreddit: string; refreshe
         <span className="text-bone-300 text-[11px]">·</span>
         <span className="telemetry text-[11px] text-bone-200">r/{subreddit}</span>
         <span className="text-bone-300 text-[11px]">·</span>
-        <span className="telemetry text-[11px] text-bone-300">{ago}s ago</span>
+        <time
+          className="telemetry text-[11px] text-bone-300"
+          dateTime={refreshedAtIso}
+          title={`Last refresh: ${refreshedAtIso}`}
+        >
+          {ago}s ago
+        </time>
       </div>
     </header>
   );
