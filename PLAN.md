@@ -72,7 +72,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
 | 4.1 | URL-dedupe Repost rule | `src/rules/repost.ts` | **Vinh** | ⬜ | 1.6 | Cheap: sha256(url) + Redis SET w/ 30d TTL |
-| 4.2 | MHSRule (HTTP fetch toxicity) | `src/rules/mhs.ts` | **Vinh** | ⬜ | 1.6 | api.moderatehatespeech.com |
+| ~~4.2~~ | ~~MHSRule (HTTP fetch toxicity)~~ | ~~`src/rules/mhs.ts`~~ | — | ✂️ CUT | — | **CUT 2026-05-13 per Reddit PR #96** — HTTP fetch policy AI-provider allowlist locked to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside. See `docs/submission/devvit-app-settings.md` + `policies/privacy.md`. |
 | 4.3 | History infrastructure (author cache) | `src/state/authorHistory.ts` | **Vinh** | ⬜ | 1.1 | Shared by 4.4–4.6 — build once |
 | 4.4 | HistoryRule | `src/rules/history.ts` | **Vinh** | ⬜ | 4.3 | Submission/comment count + karma |
 | 4.5 | AttributionRule | `src/rules/attribution.ts` | **Vinh** | ⬜ | 4.3 | Domain/YouTube frequency |
@@ -143,7 +143,7 @@ Each loaded config writes immutable `cfg:rev:{n}` then atomically bumps `cfg:cur
 Every cron handler MUST `acquireLock(taskName)` at top, release on completion. 60s TTL. Already wired in `src/routes/scheduler.ts`. Per ultraplan M1. **Locked 2026-05-12.**
 
 ### D7 — Path B scope: MVP + select stretch
-MVP = Regex/Author/RuleSet + 7 actions + filters + Mustache + named rules + wiki config + dashboard + dry-run tester. Stretch = URL repost + MHSRule + HistoryRule + AttributionRule + RecentActivityRule + image-hash (gated). CUT = DispatchAction, SentimentRule, full RepostRule w/ YouTube, RepeatActivityRule, Web UI w/ Monaco, multi-bot. **Locked 2026-05-12 after triple review.**
+MVP = Regex/Author/RuleSet + 7 actions + filters + Mustache + named rules + wiki config + dashboard + dry-run tester. Stretch = URL repost + HistoryRule + AttributionRule + RecentActivityRule + image-hash (gated). CUT = MHSRule (per Reddit PR #96, 2026-05-13), DispatchAction, SentimentRule, full RepostRule w/ YouTube, RepeatActivityRule, Web UI w/ Monaco, multi-bot. **Locked 2026-05-12 after triple review; MHS cut layered in 2026-05-13.**
 
 ### D8 — Image hashing gated on Day 0–2 spike
 If 0.10 shows fetch+decode+hash works in Devvit within 5s and <100MB peak memory, image-hash repost ships. Otherwise feature stubs in `4.7`. **Decision deadline: end of Day 2.**
