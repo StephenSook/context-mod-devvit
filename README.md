@@ -68,7 +68,6 @@ flowchart TB
   end
 
   subgraph External["External HTTP (allowlist)"]
-    MHS{{"api.moderatehatespeech.com<br/>⚠ pending review (Phase 4)"}}
     RIMG{{"i.redd.it · preview.redd.it<br/>· external-{preview,i}.redd.it<br/>✓ global allowlist (no approval needed)"}}
   end
 
@@ -86,7 +85,6 @@ flowchart TB
   CFG <-.->|"SET cfg:rev:n"| REDIS
   STATS <-.->|"ZADD"| REDIS
   DASH -->|"GET /api/recent · /api/stats · /api/health"| HA
-  PIPE -.->|"fetch (MHS rule)"| MHS
   PIPE -.->|"fetch (image hash)"| RIMG
 
   classDef platform fill:#FF4500,stroke:#CC3700,color:#fff
@@ -96,7 +94,7 @@ flowchart TB
   class TRIG,SCHED,WIKI,REDIS,RAPI platform
   class HA,CFG,PIPE,IDEM,ACT,STATS server
   class DASH client
-  class MHS,RIMG external
+  class RIMG external
 ```
 
 **Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB. Strings + hashes + sorted sets only — no Lists, no Sets, per Devvit constraints.
@@ -173,7 +171,7 @@ Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable exa
 
 - **Run** — ordered list of Checks. Supports `postBehavior` (`next` / `nextRun` / `stop` / `goto:<run>.<check>`) for branching workflows.
 - **Check** — a group of Rules combined with `AND` or `OR`. When triggered, executes its Actions.
-- **Rule** — a single boolean predicate (`regex`, `author`, `history`, `attribution`, `recentActivity`, `repost`, `mhs`, plus composite `ruleSet`).
+- **Rule** — a single boolean predicate (`regex`, `author`, `history`, `attribution`, `recentActivity`, `repost`, plus composite `ruleSet`). Upstream `mhs` rule cut from Devvit port per PR #96 — see Phase FAQ.
 - **Filter** — `authorIs` / `itemIs` clauses that gate Rule/Check/Action execution by author + item attributes.
 - **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
 - **Named rules** — declare a rule once with `name:`, reference by string elsewhere — DRY composition.
@@ -192,7 +190,6 @@ Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), ev
 
 | Domain | Status | Why we need it | What data we send | What data we store |
 |---|---|---|---|---|
-| `api.moderatehatespeech.com` | declared | Toxicity classification (`MHSRule`, port of CM's classifier rule). Only triggered when a mod enables the rule in their config. | Comment/post text, no PII. | Boolean `flagged` + numeric `confidence` (~kb-sized JSON). Never the original text. |
 | `i.redd.it` | global allowlist (no approval needed) | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 64-bit blockhash + post ID. Never the image bytes. |
 | `preview.redd.it` | global allowlist | Same as above for preview-sized Reddit images. | None. | Same. |
 | `external-preview.redd.it` | global allowlist | Same for cross-posted previews. | None. | Same. |
@@ -224,7 +221,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 - ✅ Observatory dashboard — renders against `?demo=1` synthetic data; live data wires up at Phase 3
 
 **What's deferred (Phase 4 stretch, not yet shipped):**
-- `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants), `mhs` rules — landing in Phase 4
+- `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants) rules — landing in Phase 4. `mhs` rule cut per Phase FAQ.
 - `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube — explicitly **cut** (NLP libs don't bundle in Devvit; YouTube API exceeds scope)
 - `DispatchAction` — explicitly **cut** (defer-and-replay isn't load-bearing for MVP; defer to v2 if operators ask)
 
