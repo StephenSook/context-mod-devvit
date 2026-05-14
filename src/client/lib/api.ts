@@ -8,9 +8,17 @@ import type { ApiResult, EventRecord, StatsRollup } from './types';
  * API outage indistinguishable from "no events yet" (Codex review HIGH F5).
  */
 
+// Propagate ?demo=1 from window.location to the fetch URL so the server-side
+// gate in src/routes/api.ts returns seeded fixtures instead of the empty stub.
+const demoSuffix =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('demo') === '1'
+    ? '?demo=1'
+    : '';
+
 export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
   try {
-    const res = await fetch('/api/recent');
+    const res = await fetch(`/api/recent${demoSuffix}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     const events = Array.isArray(data?.events) ? (data.events as EventRecord[]) : [];
@@ -24,7 +32,7 @@ export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
 
 export async function fetchStatsSafe(): Promise<ApiResult<StatsRollup>> {
   try {
-    const res = await fetch('/api/stats');
+    const res = await fetch(`/api/stats${demoSuffix}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
     const c = data?.counters;
