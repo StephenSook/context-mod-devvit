@@ -21,7 +21,7 @@ Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this fi
 ## T-5 — 2026-05-15
 
 ### Action 1 — Send FoxxMD kanban-seeded heads-up
-- **Source draft:** [`outreach-drafts.md` §1b](./outreach-drafts.md#1b-foxxmd-kanban-seeded-heads-up)
+- **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §1b (Reply to FoxxMD — kanban board seeded)
 - **Channel:** Discord DM to FoxxMD (the same thread where you got written permission)
 - **Verify:** message delivers + (optional) thumbs-up reaction within 24h. If no reply by May 17, that's fine — the original written permission stands.
 - **Time:** 60–90s to paraphrase the draft into your own voice + paste
@@ -36,7 +36,7 @@ Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this fi
 ### Action 1 — Confirm Phase 1+2 status with Vinh
 - **What to ask:** "Is `handleActivity` → config load → `runRun` → `runCheck` → `runRule` → action handler → `events:recent` ZSET push executing end-to-end on a real `r/cm_devvit_test` post submission?"
 - **If yes:** proceed with the live-data demo recording May 17–19.
-- **If no:** execute synthetic-data fallback per [`demo-video-runbook.md` Fallback section](./demo-video-runbook.md#fallback-if-phase-1-slips). VO swap is documented; the truth caption at 36s is non-negotiable.
+- **If no:** execute synthetic-data fallback per [`demo-video-runbook.md`](./demo-video-runbook.md) "Fallback if Phase 1 slips" section. VO swap is documented; the truth caption at 36s is non-negotiable.
 - **Verify:** post a test submission in `r/cm_devvit_test` titled "free crypto giveaway scam" — see if the regex spam-filter rule fires + an event row surfaces on the Observatory dashboard in real time.
 - **Time:** 5–10 min (Discord/Slack ping + test post)
 
@@ -77,13 +77,13 @@ Nothing user-facing. Claude finishes Wave F (gates + Playwright verify + this fi
 ## T-1 — 2026-05-19
 
 ### Action 1 — Post r/Devvit progress check
-- **Source draft:** [`outreach-drafts.md` §4](./outreach-drafts.md#4-rdevvit-progress-check)
+- **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §4 (r/Devvit subreddit + Discord update)
 - **Gating condition:** only post if you have something concrete to show — Phase 1+2 partially live OR synthetic-data demo recorded
 - **Verify:** post visible at reddit.com/r/Devvit
 - **Time:** 60s
 
 ### Action 2 — Optional FoxxMD quote ask
-- **Source draft:** [`outreach-drafts.md` §3](./outreach-drafts.md#3-foxxmd-optional-quote-ask)
+- **Source draft:** [`outreach-drafts.md`](./outreach-drafts.md) §3 (FoxxMD — optional quote ask)
 - **Skip if:** would read as last-minute. Honesty over hustle.
 - **Time:** 60s if you choose to send
 
