@@ -25,8 +25,8 @@
 
 ## 4. AutoModerator scale (the existing baseline)
 
-- "AutoModerator reviews ~82% of submitted content, acts on ~8%" — Reddit's own published data (cite via Karmatic 2025 restatement; primary source needs hedge).
-- AutoMod is the most widely-deployed automated regulation tool on Reddit. (Wright 2022)
+- AutoModerator is the most widely-deployed automated regulation tool on Reddit — installed across the overwhelming majority of subreddits with any active moderation, per Wright 2022 (*Automated Moderation, Shadow Bans, and Social Media* — University of Chicago Law Review) and Jhaver et al. 2019 ([CSCW paper on AutoMod usage](https://dl.acm.org/doi/10.1145/3359276)).
+- Reddit's own published transparency reporting attributes the bulk of automated content review and removal actions to AutoMod rather than human mods; the often-cited "~82% reviewed / ~8% acted" figure surfaces in third-party restatements (e.g., Karmatic 2025) but does not have a clean primary-source URL we can hand a judge. Treat as "AutoMod handles the majority of automated review surface" and avoid the precise percentage in Q&A unless asked, then point to Wright + Jhaver as the citable academic baseline.
 
 ## 5. ContextMod current footprint (the upstream this port serves)
 
