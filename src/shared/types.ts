@@ -118,7 +118,20 @@ export interface NamedRuleRef {
   name: string;
 }
 
-export type Rule = RegexRule | AuthorRule | RuleSetRule | NamedRuleRef;
+/**
+ * URL-dedupe repost rule (Phase 2.5, Council Expansionist).
+ * Fingerprints `item.url` via FNV-1a64 and writes a 30-day Redis seen-marker;
+ * triggers on the second submission of the same URL. Sub-scoped to avoid
+ * cross-tenant pollution. SRE flagged: ship behind `dryRun` until mods watch
+ * the dry-run feed for a few days — false positives nuke legitimate crossposts.
+ */
+export interface RepostRule {
+  kind: 'repost';
+  name?: string;
+  windowDays?: number;                // default 30
+}
+
+export type Rule = RegexRule | AuthorRule | RuleSetRule | NamedRuleRef | RepostRule;
 
 // Actions — shape is shared with src/actions/* in Phase 2. Phase 1 only needs
 // the type so RunResult.actions[] type-checks; runtime dispatch lands in 2.1.

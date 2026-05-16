@@ -15,7 +15,7 @@ import { runCheck } from './runCheck';
 
 const MAX_ITERATIONS = 100;
 
-export async function runRun(run: Run, item: Item, author: Author): Promise<RunResult> {
+export async function runRun(run: Run, item: Item, author: Author, sub?: string): Promise<RunResult> {
   const indexByName = new Map<string, number>();
   run.checks.forEach((c, i) => indexByName.set(c.name, i));
 
@@ -38,7 +38,7 @@ export async function runRun(run: Run, item: Item, author: Author): Promise<RunR
     }
     const check = run.checks[i]!;
     lastCheckName = check.name;
-    const res = await runCheck(check, item, author);
+    const res = await runCheck(check, item, author, sub);
     if (res.triggered) {
       if (!firstTriggeredCheckName) firstTriggeredCheckName = res.checkName;
       collectedActions.push(...res.actions);

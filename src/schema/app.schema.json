@@ -64,7 +64,8 @@
         { "$ref": "#/definitions/RegexRule" },
         { "$ref": "#/definitions/AuthorRule" },
         { "$ref": "#/definitions/RuleSetRule" },
-        { "$ref": "#/definitions/NamedRuleRef" }
+        { "$ref": "#/definitions/NamedRuleRef" },
+        { "$ref": "#/definitions/RepostRule" }
       ]
     },
     "RegexRule": {
@@ -110,6 +111,16 @@
       "properties": {
         "kind": { "const": "named" },
         "name": { "type": "string" }
+      }
+    },
+    "RepostRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind":       { "const": "repost" },
+        "name":       { "type": "string" },
+        "windowDays": { "type": "number", "minimum": 1, "maximum": 365 }
       }
     },
     "FilterSpec": {

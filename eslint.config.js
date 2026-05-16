@@ -16,6 +16,7 @@ export default defineConfig([
       'src/rules/**/*.{ts,tsx,mjs,cjs,js}',
       'src/shared/**/*.{ts,tsx,mjs,cjs,js}',
       'src/state/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/actions/**/*.{ts,tsx,mjs,cjs,js}',
       'src/index.ts',
     ],
     languageOptions: {

@@ -95,4 +95,24 @@ describe('escapeMarkdown', () => {
   it('returns empty string for empty input without crashing', () => {
     expect(escapeMarkdown('')).toBe('');
   });
+
+  // Phase 2.5 Step 2.5.3 — the four mandatory fixtures from the plan.
+  // These pin the contract; in-playtest renderer verification is a separate
+  // manual gate (paste each into a comment in r/cm_devvit_test, confirm Reddit
+  // renders the URL auto-link / defanged ping / literal brackets).
+  describe('Phase 2.5 mandatory fixtures', () => {
+    it('fixture 1 — YouTube URL: only the dot is escaped; auto-link survives', () => {
+      expect(escapeMarkdown('https://youtu.be/abc')).toBe('https://youtu\\.be/abc');
+    });
+    it('fixture 2 — user ping is defanged', () => {
+      expect(escapeMarkdown('u/spammer pinged you')).toBe('u\\/spammer pinged you');
+    });
+    it('fixture 3 — subreddit ping is defanged', () => {
+      expect(escapeMarkdown('check r/funny')).toBe('check r\\/funny');
+    });
+    it('fixture 4 — link injection neutralized (brackets + parens both escaped)', () => {
+      const out = escapeMarkdown('[click](javascript:alert(1))');
+      expect(out).toBe('\\[click\\]\\(javascript:alert\\(1\\)\\)');
+    });
+  });
 });
