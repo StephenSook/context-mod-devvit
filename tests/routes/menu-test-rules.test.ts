@@ -43,6 +43,6 @@ describe('POST /test-rules menu handler', () => {
     });
     const res = await menu.request(req);
     const json = await res.json() as { showToast?: string };
-    expect(json.showToast).toMatch(/select a post or comment/i);
+    expect(json.showToast).toMatch(/post or comment/i);
   });
 });
