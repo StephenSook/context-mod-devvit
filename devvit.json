@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "cm-devvit",
+  "name": "contextmod-vinh",
   "server": {
     "dir": "dist/server",
     "entry": "index.cjs"
@@ -87,6 +87,6 @@
     "dev": "vite build --watch"
   },
   "dev": {
-    "subreddit": "cm_devvit_test"
+    "subreddit": "contextmod_vinh_dev"
   }
 }
