@@ -94,89 +94,94 @@ Completed on Day 0 (2026-05-12):
 
 ## Phase 1 — Core Engine (Day 2–5, ~24h, Vinh-led)
 
+> **✅ PHASE 1 COMPLETE — 2026-05-16, commit `6694109`.** All 11 sub-steps from the Vinh-owned execution plan (`docs/superpowers/plans/2026-05-14-vinh-backend-plan.md`) shipped. Type-check green (strict + exactOptionalPropertyTypes); 93/93 unit tests across 13 files. PLAN.md rows 1.1–1.8 flipped to ✅. Path note: files landed at `src/{state,shared,core,rules,schema}/` (without the `src/server/` prefix the v1 spec used) — confirmed alignment with PLAN.md's File(s) column.
+
 See PLAN.md tasks 1.1–1.8.
 
-### Task 1.1 — Central Redis key schema (Vinh, 1–2h)
+### Task 1.1 — Central Redis key schema (Vinh, 1–2h) — ✅ 2026-05-16
 
-**Files:** Create `src/server/state/keys.ts`, test `tests/state/keys.test.ts`
+**Files:** Shipped at `src/state/keys.ts` + `tests/state/keys.test.ts` (4 tests).
 
-- [ ] Test verifies every K helper produces correct namespaced string
-- [ ] Implement `const K = { configCurrent, configRev, configCurrentRev, seenActivity, authorProfile, authorFlair, recentEvents, recentEventsByActivity, statsTrigger, statsAction, imageHashByPost, imageHashBucket, repostUrl, rateLimit, dashboardPostId, schemaVersion, failedActionsQueue }`
-- [ ] Cover Δ C1: no LIST or SET-data-type keys; everything maps to string/hash/zset
-- [ ] Commit: `feat(state): central Redis key schema (Δ C1)`
+- [x] Test verifies every K helper produces correct namespaced string
+- [x] Implement `const K = { proc, actionDone, actionPending, lock, cfgRev, cfgCurrentRev, cfgLastWikiRev, eventsRecent, installSubname, authorHist, statsRollup, schemaVersion, currentInstallId }` — every key sub-segmented (default `_` sentinel) for multi-tenant safety (Council 21:30 fix). `installSubname` keyed by installId, not sub (4th-pass Long-Term Architect).
+- [x] Δ C1 honored: only string/hash/zset key types referenced
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.2 — Config loader: JSON5 + AJV + named-rule expansion (Vinh, 2–3h)
+### Task 1.2 — Config loader: JSON5 + AJV + named-rule expansion (Vinh, 2–3h) — ✅ 2026-05-16
 
-**Files:** Copy `<upstream CM repo>/src/Schema/App.json` to `src/server/schema/app.schema.json`. Trim defs for cut rules (SentimentRule, RepeatActivityRule, full RepostRule, DispatchAction, MessageAction, ModNoteAction, UserNoteAction, SubmissionAction, ContributorAction, CancelDispatchAction). Add `schema_version: "1"` required field at root. Keep: RegexRule, AuthorRule, RuleSet, SubmissionCheck, CommentCheck, Run, HistoryRule, AttributionRule, RecentActivityRule, MHSRule, RepostRule (URL-only mode), actions Approve/Remove/Lock/Comment/Report/Ban/UserFlair.
+**Files:** Shipped at `src/schema/app.schema.json` (trimmed defs — MVP: RegexRule, AuthorRule, RuleSetRule, NamedRuleRef, plus the 7 actions Approve/Remove/Lock/Comment/Report/Ban/UserFlair). HistoryRule/AttributionRule/RecentActivityRule/MHSRule/RepostRule deferred to Phase 4 per PLAN.md cut list. `schema_version` field not added — versioning lives on the RecentEvent shape per Step 3.5 instead; revisit at Phase 3 if config-shape migrations are needed.
 
-- [ ] `src/server/core/namedRules.ts` — `extractNamedEntities` + `insertNamedEntities` walking config tree
-- [ ] `src/server/core/config.ts` — `parseConfig(raw: string): Promise<ValidatedConfig>` using JSON5 + Ajv + named-rule expansion + schema_version check
-- [ ] Tests for both modules
-- [ ] Commit: `feat(config): JSON5 + AJV + named-rule expansion + schema_version`
+- [x] `src/core/namedRules.ts` — `expandNamedRules` walks the config tree, inlines named refs, breaks cycles via visited-set + short-circuit to empty AND-ruleset (logged at error level)
+- [x] `src/core/config.ts` — `parseConfig(json5Text): {ok, config|errors}` using JSON5 + Ajv + named-rule expansion + computed `needsAuthorEnrichment` short-circuit
+- [x] Tests: `tests/core/config.test.ts` (8) + `tests/core/namedRules.test.ts` (4)
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.3 — Atomic config publish via revision pointer (Vinh, 1–2h, Δ C3)
+### Task 1.3 — Atomic config publish via revision pointer (Vinh, 1–2h, Δ C3) — ✅ 2026-05-16
 
-**Files:** Create `src/server/state/configStore.ts`
+**Files:** Shipped at `src/state/configStore.ts`. Sub-threaded via `K.cfgRev` / `K.cfgCurrentRev`.
 
-- [ ] `loadCurrent()`: GET `cfg:current_rev` → returns int n → GET `cfg:rev:{n}` → parse JSON → return; cache in module-scope w/ revision tag
-- [ ] `publish(config)`: get next rev, SET `cfg:rev:{n+1}` immutable, atomically bump `cfg:current_rev` to n+1
-- [ ] `invalidateCache()`: clears in-process cached config
-- [ ] handleActivity reads `current_rev` ONCE at event start, passes `n` to every downstream call → guarantees single-version semantics per event
-- [ ] Tests with mocked redis
-- [ ] Commit: `feat(state): atomic config publish via revision pointer (Δ C3)`
+- [x] `getCurrentRev(sub?)`: GET `cm:{sub}:cfg:current_rev` → parse int n → GET `cm:{sub}:cfg:rev:{n}` → JSON.parse → returns `{rev, config} | null`
+- [x] `publish(config, sub?)`: read current rev, SET `cfg:rev:{n+1}` immutable, then bump `cfg:current_rev` to `n+1` (Devvit Redis has no Lua / multi-key txn — pointer-as-synchronization-point pattern documented in source)
+- [ ] In-process cache invalidation — deferred to Phase 2 when `handleActivity` lands; for now every read goes to Redis
+- [x] handleActivity contract: reads `current_rev` once at event start, threads `rev` through `ActionContext` (Phase 2). `ActionContext.config` is REQUIRED per type contract (Council 23:00 — prevents Phase 2.5 dry-run gate from being a silent no-op).
+- [x] Tests: `tests/state/configStore.test.ts` (4) with mocked redis Map — covers fresh publish, rev bump, null when unpublished, multi-tenant sub isolation
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.4 — Filter evaluation (Vinh, 2–3h)
+### Task 1.4 — Filter evaluation (Vinh, 2–3h) — ✅ 2026-05-16
 
-**Files:** `src/server/core/filters.ts`, `tests/filters.test.ts`
+**Files:** Shipped at `src/core/filters.ts` + `tests/core/filters.test.ts` (20 cases).
 
-Port from `<upstream CM repo>/src/Common/Infrastructure/Filters/{FilterShapes,FilterCriteria,AuthorCritPropHelper}.ts`. MVP subset only.
+Port simplified from upstream — MVP predicate set, idiomatic TypeScript rather than 1:1 port. `passesFilters(spec, item, author)` is a pure boolean over `FilterSpec = {authorIs?, itemIs?}`.
 
-- [ ] `evalAuthorIs(filter, author)` — handles include/exclude w/ AuthorCriteria (name, nameMatch, age, linkKarma, commentKarma, totalKarma, flairText, isMod, isContributor, verified, shadowBanned)
-- [ ] `evalItemIs(filter, item)` — handles include/exclude w/ ItemCriteria (removed, approved, locked, stickied, score, age, title, over18, isSelf, linkFlairText, depth, op)
-- [ ] Helpers: `cmpNum` (handles `>`, `>=`, `<`, `<=`, exact match), `matchString` (handles `/regex/flags` syntax)
-- [ ] include semantics: any-criteria-set matches passes. exclude semantics: any-criteria-set match fails.
-- [ ] 12+ test cases covering each criteria field
-- [ ] Commit: `feat(core): filter evaluation (authorIs + itemIs)`
+- [x] AuthorFilter predicates: `nameIn`/`nameNotIn`, `flairTextIn`/`flairTextNotIn`, `ageMinSec`/`ageMaxSec`, `linkKarmaMin`/Max, `commentKarmaMin`/Max, `isMod`, `isContributor`, `verified`, `shadowBanned`
+- [x] ItemFilter predicates: `over18`, `locked`, `stickied`, `removed`, `approved`, `isSelf`, `scoreMin`/Max, `linkFlairTextIn`/`linkFlairTextNotIn`, `titleMatches`/`bodyMatches`/`urlMatches` (regex source as string)
+- [x] Number comparisons use explicit Min/Max fields (vs upstream `cmpNum` w/ string operators) — simpler AJV schema, same expressiveness
+- [x] Short-circuits on first failed predicate; called from `runCheck` as pre-rule-eval gate
+- [x] 20 tests (vs spec's 12+ target) covering: empty/null filter passes everything, each predicate kind positive + negative, combined item+author intersection
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.5 — Mustache renderer (Vinh, 30min)
+### Task 1.5 — Mustache renderer (Vinh, 30min) — ✅ 2026-05-16
 
-**Files:** `src/server/core/template.ts`, `tests/template.test.ts`
+**Files:** Shipped at `src/core/template.ts` + `tests/core/template.test.ts` (8 cases).
 
-- [ ] `import Mustache from 'mustache'; Mustache.escape = s => s;` — no-escape mode, Reddit accepts raw text
-- [ ] `renderTemplate(tmpl, ctx)` — ctx = `{ item, author, manager, rules, actions }`
-- [ ] Tests for nested dot-paths, missing fields, long strings, special chars
-- [ ] Cap: truncate output to 10K chars (Reddit comment limit)
-- [ ] Commit: `feat(core): Mustache renderer w/ no-escape + 10K truncation`
+- [x] `Mustache.escape = (s) => s` — no-escape mode (Reddit is markdown, not HTML)
+- [x] `render(tmpl, ctx)` — `ctx = { item: Item & {titleSafe, bodySafe}, author: Author & {nameSafe}, manager?, rules?, actions? }`
+- [x] Bonus per Phase 2.5 Council fix: `escapeMarkdown(s)` defangs markdown-active chars + `u/`/`r/` pings, anchored on `\b` word boundary so `https://youtu.be/...` URLs are not mangled (regression test included)
+- [ ] 10K truncation cap — deferred to Phase 2 when `comment` action lands; Mustache itself is unbounded but the cap is action-level, not template-level
+- [x] 8 tests: substitution, no-HTML-escape regression, escapeMarkdown char set + ping defangs + URL preservation + link-injection neutralization + empty-string safety
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.6 — Rule dispatcher + MVP rules (Vinh, 2–3h)
+### Task 1.6 — Rule dispatcher + MVP rules (Vinh, 2–3h) — ✅ 2026-05-16
 
-**Files:** `src/server/core/runRule.ts`, `src/server/rules/{regex,author,ruleSet}.ts`
+**Files:** Shipped at `src/core/runRule.ts` + `src/rules/{regex,author,ruleset}.ts` + tests under `tests/rules/`.
 
-- [ ] `runRule(cfg, item, author): Promise<RuleResult>` — dispatches by cfg.kind, applies rule-level authorIs/itemIs guards
-- [ ] `regex.ts` — RegexRule: matches title/body/url against regex, handles matchThreshold
-- [ ] `author.ts` — AuthorRule: thin wrapper over evalAuthorIs
-- [ ] `ruleSet.ts` — evalRuleSet AND/OR over child results
-- [ ] All tests
-- [ ] Commit: `feat(rules): Regex + Author + RuleSet + dispatcher`
+- [x] `runRule(rule, item, author)` — dispatches by `rule.kind`. Throws loud on un-expanded `named` ref (Step 1.7 must run at config-parse time, not here).
+- [x] `regex.ts` — title (default) / body / url targets + flags; invalid pattern treated as non-match without crashing
+- [x] `author.ts` — thin wrapper over `passesFilters({authorIs: rule.filter}, ...)` — CM treats author predicates as rules so the trigger state machine sees author decisions in sequence
+- [x] `ruleset.ts` — AND/OR short-circuit; recurses into `runRule` for nested rulesets; empty ruleset = never triggers (namedRules cycle break depends on this)
+- [ ] `matchThreshold` for regex — not yet implemented; current `regex.ts` is binary match. Add in Phase 2 if any MVP config needs N-count semantics.
+- [x] Tests: `regex.test.ts` (6), `author.test.ts` (3), `ruleset.test.ts` (6) — 15 total
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.7 — Check evaluation (Vinh, 1h)
+### Task 1.7 — Check evaluation (Vinh, 1h) — ✅ 2026-05-16
 
-**Files:** `src/server/core/runCheck.ts`, `tests/core/runCheck.test.ts`
+**Files:** Shipped at `src/core/runCheck.ts` + `tests/core/runCheck.test.ts` (5 cases).
 
-- [ ] `runCheck(check, item, author): Promise<CheckResult>` — applies check-level filters, runs all rules, aggregates via AND (default) or OR
-- [ ] Returns `{ triggered, data, rules: RuleResult[] }`
-- [ ] Tests
-- [ ] Commit: `feat(core): runCheck w/ AND/OR aggregation`
+- [x] `runCheck(check, item, author): Promise<CheckResult>` — applies check-level filters as a pre-gate (short-circuits to `triggered:false, actions:[]` when filter fails), runs rules in sequence with AND/OR aggregation
+- [x] Returns `{ triggered, checkName, actions }` — `actions` populated from `check.actions` only when triggered (caller `runRun` collects across triggered checks). `data` / per-rule trace dropped from v1 spec — `RuleResult` is just `{triggered}` in the MVP; Phase 3.5 RecentEvent shape covers the trace need separately.
+- [x] Empty rule list → not triggered (matches Run state-machine expectations)
+- [x] Tests: AND with 2 hits, OR with 1 hit + 1 miss, filter mismatch short-circuits, checkName echo, empty rules
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
-### Task 1.8 — Run state machine — postBehavior + goto (Vinh, 2–3h)
+### Task 1.8 — Run state machine — postBehavior + goto (Vinh, 2–3h) — ✅ 2026-05-16
 
-**Files:** `src/server/core/runRun.ts`, `tests/core/runRun.test.ts`
+**Files:** Shipped at `src/core/runRun.ts` + `tests/core/runRun.test.ts` (6 cases).
 
-- [ ] `runAllRuns(runs, item, author, exec)` — flat index-based state machine
-- [ ] Behaviors: `next` | `nextRun` | `stop` | `goto:RUN.CHECK`
-- [ ] 100-iteration safety break w/ warn log + early exit
-- [ ] Tests covering each behavior + goto target validation + stale-target fallback
-- [ ] Commit: `feat(core): Run state machine w/ postBehavior + goto`
+- [x] `runRun(run, item, author): Promise<RunResult>` — flat index-based state machine over a single run's checks. `handleActivity` (Phase 2) iterates across runs.
+- [x] Behaviors: `'next'` (default) | `'stop'` | `{goto: 'checkName'}` — `goto:RUN.CHECK` cross-run jumps deferred; cross-run flow happens at the `handleActivity` level
+- [x] 100-iteration safety break → `{ terminated: 'iteration-limit', lastCheckName }` + `console.error` (Council Software Lead — visible config bug instead of silently-stopped bot)
+- [x] Tests: linear collection, `stop` halts after first trigger, `goto` jumps forward (skipping intermediate checks), goto to unknown name bails gracefully, 100-iter limit terminates a circular goto, no-trigger path returns `triggered:false`
+- [x] Commit: bundled into `feat(phase-1): ContextMod rule engine — 11 steps, 93 tests green` (`6694109`)
 
 ---
 

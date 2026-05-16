@@ -36,14 +36,14 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 1.1 | Redis key schema (central) | `src/state/keys.ts` | **Vinh** | ⬜ | 0.5 | Strings + hashes + sorted-sets ONLY per D3 |
-| 1.2 | Config loader: JSON5 + AJV + named-rule expand | `src/core/{config,namedRules}.ts` | **Vinh** | ⬜ | 1.1 | Trim CM schema to MVP rules |
-| 1.3 | Atomic config publish via revision pointer | `src/state/configStore.ts` | **Vinh** | ⬜ | 1.2 | `cfg:rev:{n}` + `cfg:current_rev` per D5 |
-| 1.4 | Filter eval (authorIs + itemIs) | `src/core/filters.ts` | **Vinh** | ⬜ | — | Port from CM `Filter` base — `authorIs` evaluates against `Author` shape (name/age/karma/flair/verified/contributor/mod/shadowBanned per `src/shared/types.ts`); `itemIs` against `Item` shape (title/body/url/age/score/isSelf/over18/removed/approved/locked/depth/op). Criteria operators: `equals`/`contains`/`matches` (regex)/`lessThan`/`greaterThan` for scalars; `in`/`includes` for arrays. Return boolean; check-level filter short-circuits before rule eval. Upstream reference: `github.com/FoxxMD/context-mod/src/Filter` |
-| 1.5 | Mustache renderer | `src/core/template.ts` | **Vinh** | ⬜ | — | No-escape mode (Reddit comments are plaintext) |
-| 1.6 | Rule dispatcher + Regex + Author + RuleSet | `src/core/runRule.ts`, `src/rules/*` | **Vinh** | ⬜ | 1.4 | 3 MVP rule kinds |
-| 1.7 | Check eval (AND/OR aggregation) | `src/core/runCheck.ts` | **Vinh** | ⬜ | 1.6 | `condition: 'AND'` → all rules pass for actions to fire; `'OR'` → any rule passing. Short-circuit on first failed AND / first passed OR. Edge cases: empty `rules:[]` → check NEVER fires (treat as `triggered: false`); single rule → return that rule's result; ruleSet reference returns nested boolean — flatten via named-rule resolver before this stage. Return shape: `{triggered: boolean, matchedRule: string \| null, evalTrace: Array<{ruleName, kind, passed, ms}>}` — evalTrace feeds dashboard event chips + dry-run output. |
-| 1.8 | Run state machine (postBehavior + goto) | `src/core/runRun.ts` | **Vinh** | ⬜ | 1.7 | 100-iter safety break |
+| 1.1 | Redis key schema (central) | `src/state/keys.ts` | **Vinh** | ✅ 2026-05-16 | 0.5 | Shipped `K.*` factories, every key sub-segmented (default `_` sentinel) — multi-tenant safe per Council 21:30. idem.ts migrated. Commit 6694109. |
+| 1.2 | Config loader: JSON5 + AJV + named-rule expand | `src/core/{config,namedRules}.ts` | **Vinh** | ✅ 2026-05-16 | 1.1 | JSON5 → AJV → typed AppConfig. `expandNamedRules` runs at parse time w/ cycle break. Trimmed schema at `src/schema/app.schema.json`. Commit 6694109. |
+| 1.3 | Atomic config publish via revision pointer | `src/state/configStore.ts` | **Vinh** | ✅ 2026-05-16 | 1.2 | `publish()` writes immutable `cfg:rev:{n}` then bumps `cfg:current_rev` (D5). `getCurrentRev()` returns snapshot. Sub-threaded. Commit 6694109. |
+| 1.4 | Filter eval (authorIs + itemIs) | `src/core/filters.ts` | **Vinh** | ✅ 2026-05-16 | — | `passesFilters({authorIs, itemIs}, item, author)` — full predicate set (name/karma/age/flair/mod + over18/locked/score/regex matches). Used by Step 1.7 as pre-check gate. Commit 6694109. |
+| 1.5 | Mustache renderer | `src/core/template.ts` | **Vinh** | ✅ 2026-05-16 | — | `render()` w/ HTML escape disabled. `escapeMarkdown()` (\b-anchored) added for Phase 2.5 — defangs `u/`/`r/` pings + brackets/parens without mangling URLs. Commit 6694109. |
+| 1.6 | Rule dispatcher + Regex + Author + RuleSet | `src/core/runRule.ts`, `src/rules/*` | **Vinh** | ✅ 2026-05-16 | 1.4 | 3 MVP rule kinds: regex (title/body/url + flags), author (reuses authorIs filter), ruleset (nested AND/OR). Named-ref throws if not pre-expanded. Commit 6694109. |
+| 1.7 | Check eval (AND/OR aggregation) | `src/core/runCheck.ts` | **Vinh** | ✅ 2026-05-16 | 1.6 | AND/OR short-circuit + pre-filter gate (Step 1.4). Return shape: `{triggered, checkName, actions}`. Empty rules → not triggered. Commit 6694109. |
+| 1.8 | Run state machine (postBehavior + goto) | `src/core/runRun.ts` | **Vinh** | ✅ 2026-05-16 | 1.7 | postBehavior `next`/`stop`/`{goto}`; 100-iter safety break → `terminated:'iteration-limit'` + `lastCheckName` (Council Software Lead). Commit 6694109. |
 
 ### Phase 2 — Actions + handleActivity (Day 5–8, ~20h)
 
