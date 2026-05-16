@@ -59,10 +59,11 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
   }
 
   const aid = actionId(ctx.item.id, action.kind, payloadDigest(action));
-  const reserved = await reserveAction(aid, ctx.subredditName);
-  if (!reserved) {
+  const reservation = await reserveAction(aid, ctx.subredditName);
+  if (!reservation) {
     return { status: 'skipped-locked', kind: action.kind };
   }
+  const { token } = reservation;
 
   let sideEffectDone = false;
   try {
@@ -76,7 +77,7 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
       case 'userFlair': await runUserFlair(action, ctx); break;
     }
     sideEffectDone = true;
-    await commitAction(aid, ctx.subredditName);
+    await commitAction(aid, token, ctx.subredditName);
     return { status: 'ok', kind: action.kind };
   } catch (err) {
     if (sideEffectDone) {
@@ -88,7 +89,7 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
       console.error('[cm/runAction] side-effect succeeded but idempotency commit failed:', action.kind, ctx.item.id, err);
       return { status: 'error', kind: action.kind };
     }
-    await releaseAction(aid, ctx.subredditName);
+    await releaseAction(aid, token, ctx.subredditName);
     console.error('[cm/runAction] action failed, released for retry:', action.kind, ctx.item.id, err);
     return { status: 'error', kind: action.kind };
   }

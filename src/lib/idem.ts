@@ -48,10 +48,14 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
 
 /**
  * Reserve an action slot BEFORE executing the side-effect.
- * Returns true if not previously done AND not currently pending → proceed.
- * Fail-CLOSED on Redis error (treats as already done → skip).
+ * Returns `{token}` if not previously done AND not currently pending → proceed.
+ * Returns null on conflict / already done / Redis error (fail-CLOSED).
  *
- * Caller MUST follow up with commitAction() on success OR releaseAction() on failure.
+ * Caller MUST follow up with commitAction(actionId, token) on success OR
+ * releaseAction(actionId, token) on failure. The token is mandatory:
+ * commitAction/releaseAction compare-and-delete only if the pending value
+ * still matches THIS caller's token, so a slow worker can't accidentally
+ * delete a successor's valid lease (Codex CRITICAL 2026-05-16 fix).
  *
  * TOCTOU note: Devvit's Redis surface lacks Lua / transactions, so the
  * reservation pattern is lock-then-check (not check-then-lock). Set the
@@ -60,24 +64,27 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
  * caller completed during the lock attempt. The lock guarantees only one
  * caller proceeds into the side-effect for a given actionId at a time.
  */
-export async function reserveAction(actionId: string, sub?: string): Promise<boolean> {
+export async function reserveAction(actionId: string, sub?: string): Promise<{ token: string } | null> {
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
+  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   let reservedHere = false;
   try {
-    const reserved = await redis.set(pendingKey, '1', {
+    const reserved = await redis.set(pendingKey, token, {
       nx: true,
       expiration: new Date(Date.now() + PENDING_TTL_SEC * 1000),
     });
-    if (reserved !== 'OK') return false;
+    if (reserved !== 'OK') return null;
     reservedHere = true;
     const done = await redis.get(doneKey);
     if (done) {
-      await redis.del(pendingKey);
+      // Token check is owner-safe — only delete pending if it's still ours.
+      const current = await redis.get(pendingKey);
+      if (current === token) await redis.del(pendingKey);
       reservedHere = false;
-      return false;
+      return null;
     }
-    return true;
+    return { token };
   } catch (err) {
     // Distinct error tag depending on which half of the lock-then-check failed.
     // ORPHANED_LEASE means we hold a pending-NX that we couldn't verify against
@@ -86,21 +93,26 @@ export async function reserveAction(actionId: string, sub?: string): Promise<boo
       ? '[cm/idem/reserveAction/ORPHANED_LEASE]'
       : '[cm/idem/reserveAction/LOCK_FAIL]';
     console.error(tag, 'fail-closed (skip):', actionId, err);
-    return false;
+    return null;
   }
 }
 
 /**
  * Commit a successful action: write the 7d done marker, then clear the pending lease.
  *
- * Codex CRITICAL 2026-05-16: if the done-marker write fails AND we delete the
+ * Codex CRITICAL 2026-05-16 (a): if the done-marker write fails AND we delete the
  * pending lease, the next retry sees neither marker and fires the action AGAIN
  * (double mod-action: ban twice, comment twice, etc). Fix: retry done-write
  * with backoff, throw on persistent failure, NEVER delete the pending lease
  * unless the done marker was actually written. Pending TTL (5 min) caps the
  * worst-case wait — better double-action 5 min later than instantly.
+ *
+ * Codex CRITICAL 2026-05-16 (b): token compare-and-delete. If this worker's
+ * pending lease TTL'd out and a successor acquired the same key with a new
+ * token, blindly deleting pending would reopen the gate for a third execution.
+ * The token check makes pending delete a no-op if we're no longer the owner.
  */
-export async function commitAction(actionId: string, sub?: string): Promise<void> {
+export async function commitAction(actionId: string, token: string, sub?: string): Promise<void> {
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
   const doneExpiration = new Date(Date.now() + DONE_TTL_SEC * 1000);
@@ -132,11 +144,13 @@ export async function commitAction(actionId: string, sub?: string): Promise<void
     throw lastErr;
   }
 
-  // Done marker is durable. Pending delete is best-effort — if it fails the
-  // pending TTL (5 min) will reap it; reserveAction's lock-then-check pattern
-  // means a concurrent caller in that window will see done==true and skip.
+  // Done marker is durable. Compare-and-delete pending — only clear it if we're
+  // still the lease owner. If TTL expired + successor took over, current !=
+  // token and we leave the successor's lease intact (it'll see done==true
+  // when it re-reads in reserveAction's lock-then-check).
   try {
-    await redis.del(pendingKey);
+    const current = await redis.get(pendingKey);
+    if (current === token) await redis.del(pendingKey);
   } catch (err) {
     console.error('[cm/idem/commitAction/PENDING_DEL_FAIL]', '(harmless, TTL reaps in 5min):', actionId, err);
   }
@@ -144,11 +158,18 @@ export async function commitAction(actionId: string, sub?: string): Promise<void
 
 /**
  * Release a reserved action slot when the side-effect failed.
- * Lets the next retry re-attempt the action.
+ * Compare-and-delete: only release if we still own the lease (token matches).
+ * If a successor took over (our TTL expired), leave their lease intact.
+ *
+ * Codex CRITICAL 2026-05-16 fix: token check prevents the
+ * "slow-worker-releases-successor's-lease" race that would otherwise allow
+ * a third execution of the same actionId.
  */
-export async function releaseAction(actionId: string, sub?: string): Promise<void> {
+export async function releaseAction(actionId: string, token: string, sub?: string): Promise<void> {
+  const pendingKey = K.actionPending(actionId, sub);
   try {
-    await redis.del(K.actionPending(actionId, sub));
+    const current = await redis.get(pendingKey);
+    if (current === token) await redis.del(pendingKey);
   } catch (err) {
     console.error('[cm/idem/releaseAction] redis err (pending will expire in 5 min):', actionId, err);
   }

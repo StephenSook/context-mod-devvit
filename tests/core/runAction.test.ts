@@ -54,7 +54,7 @@ beforeEach(() => {
 describe('runAction — happy path', () => {
   it('reserve → side-effect → commit (in that order)', async () => {
     const order: string[] = [];
-    reserveAction.mockImplementation(async () => { order.push('reserve'); return true; });
+    reserveAction.mockImplementation(async () => { order.push('reserve'); return { token: 'tk' }; });
     redditRemove.mockImplementation(async () => { order.push('side-effect'); });
     commitAction.mockImplementation(async () => { order.push('commit'); });
 
@@ -68,7 +68,7 @@ describe('runAction — happy path', () => {
 
 describe('runAction — failure path', () => {
   it('releases the reservation when the Devvit call throws + returns error', async () => {
-    reserveAction.mockResolvedValueOnce(true);
+    reserveAction.mockResolvedValueOnce({ token: 'tk' });
     redditRemove.mockRejectedValueOnce(new Error('boom'));
 
     const res = await runAction(action, ctx);
@@ -79,7 +79,7 @@ describe('runAction — failure path', () => {
   });
 
   it('retry after release succeeds', async () => {
-    reserveAction.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    reserveAction.mockResolvedValueOnce({ token: 'tk1' }).mockResolvedValueOnce({ token: 'tk2' });
     redditRemove.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
 
     await runAction(action, ctx);  // first attempt fails
@@ -92,7 +92,7 @@ describe('runAction — failure path', () => {
 
 describe('runAction — stale-lease path', () => {
   it('returns skipped-locked when reserveAction returns false', async () => {
-    reserveAction.mockResolvedValueOnce(false);
+    reserveAction.mockResolvedValueOnce(null);
 
     const res = await runAction(action, ctx);
 
