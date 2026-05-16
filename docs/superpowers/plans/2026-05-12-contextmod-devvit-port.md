@@ -187,67 +187,120 @@ Port simplified from upstream — MVP predicate set, idiomatic TypeScript rather
 
 ## Phase 2 — Actions + handleActivity (Day 5–8, ~20h, Vinh-led)
 
+> **✅ PHASE 2 COMPLETE — 2026-05-16, commit `9532cf4`.** All 5 PLAN.md rows (2.1–2.5) shipped, plus the three Phase 2.5 council-promoted items (2.5.1 repost rule, 2.5.2 dry-run gate, 2.5.3 markdown sanitizer fixtures). 137/137 tests across 18 files (was 93 after Phase 1, +44 net). `tsc --noEmit` clean. ESLint clean (typed-server glob extended to `src/actions/`). Verified live on `r/contextmod_vinh_dev` playtest — spam-removal post triggered remove + Mustache comment with escaped username; same-URL re-submission triggered repost-watch with dry-run gate (no Reddit side-effect). Path note: files landed at `src/{core,actions,rules,state,routes}/` (no `src/server/` prefix — same convention as Phase 1). PLAN.md rows 2.1–2.5 + 2.5.1–2.5.3 flipped to ✅.
+
 See PLAN.md tasks 2.1–2.5.
 
-### Task 2.1 — Action dispatcher + per-action idempotency (Vinh, 2h, Δ C2)
+### Task 2.1 — Action dispatcher + per-action idempotency (Vinh, 2h, Δ C2) — ✅ 2026-05-16
 
-**Files:** `src/server/core/runAction.ts`
+**Files:** Shipped at `src/core/runAction.ts` + `tests/core/runAction.test.ts` (7 tests).
 
-- [ ] `runAction(actionCfg, ctx, redditClient): Promise<{kind, ok, error?, data?}>` — dispatches by cfg.kind
-- [ ] **Critical:** computes `actionId = fnv1a64(thingId|kind|payloadHash)`. Calls `reserveAction(actionId)` BEFORE side-effect. If reserved → skip (retry idempotency). After side-effect: if ok → keep reservation. If fail → `releaseAction(actionId)` so retry can re-attempt.
-- [ ] Mustache context = `{ item, author, manager: { subreddit }, rules: ruleNamedResults, actions: priorActionResults }`
-- [ ] Dry-run flag: skip reddit.* call, return planned action only
-- [ ] Tests with mocked actions
-- [ ] Commit: `feat(core): action dispatcher w/ per-action idempotency (Δ C2)`
+- [x] `runAction(action, ctx): Promise<ActionResult>` — dispatches by `action.kind` to `src/actions/{kind}.ts`
+- [x] **Critical:** computes `actionId = actionId(thingId, kind, payloadDigest(action))` using the exported helper at `src/lib/idem.ts:123` — pipe-separated to prevent (`t3_a`,`ban`,`x`) vs (`t3_ab`,`an`,`x`) collisions (Council Software Lead). reserve → side-effect → commit; release on throw. Stale-lease returns `{status: 'skipped-locked'}` so handleActivity records it explicitly (Council Software Lead — was a silent 5-min drop in plan v1)
+- [x] Dry-run gate (Phase 2.5): per-action `dryRun` overrides `ctx.config.dryRun`; gated branch returns `{status: 'dry-run', wouldHaveCalled: kind}` BEFORE reserving, so a flipped-to-live config can still fire later
+- [x] `ActionContext.config` REQUIRED on the type contract so the gate cannot silently regress (`tsc` breaks if dropped)
+- [x] Mustache context construction lives in `src/actions/comment.ts` (per-action) rather than the dispatcher — keeps the dispatcher generic
+- [x] Tests: reserve order, throw→release, stale-lease, dry-run (global + per-action), `dryRun: false` override
+- [x] Commit: bundled into `feat(phase-2): ContextMod actions + handleActivity` (`9532cf4`)
 
-### Task 2.2 — 7 MVP actions (Vinh, 4–6h)
+### Task 2.2 — 7 MVP actions (Vinh, 4–6h) — ✅ 2026-05-16
 
-**Files:** `src/server/actions/{remove,approve,lock,comment,report,ban,userFlair}.ts`
+**Files:** Shipped at `src/actions/{remove,approve,lock,comment,report,ban,userFlair}.ts` + `tests/actions/actions.test.ts` (16 tests).
 
-Each action is 5–15 LOC over `reddit.*` client. Same shape: `async (cfg, ctx, reddit) => {ok, data?}`. Test one (remove) thoroughly, others follow same pattern.
+Reddit signatures verified against `node_modules/@devvit/reddit/RedditClient.d.ts`. Departures from the v1 spec are reality-corrections, not scope drift.
 
-- [ ] `remove.ts` — `reddit.remove(ctx.item.id, cfg.spam)` + optional `reddit.submitComment` with Mustache-rendered note
-- [ ] `approve.ts` — `reddit.approve(ctx.item.id)`
-- [ ] `lock.ts` — `reddit.lock(ctx.item.id)`
-- [ ] `comment.ts` — `reddit.submitComment(...)` + optional sticky/distinguish on returned Comment
-- [ ] `report.ts` — `reddit.report(ctx.item.id, {reason: rendered})`
-- [ ] `ban.ts` — `reddit.banUser` w/ Mustache-rendered message/reason/note + duration
-- [ ] `userFlair.ts` — `reddit.setUserFlair`
-- [ ] Each commit atomic: `feat(actions): remove`, `feat(actions): approve`, etc.
+- [x] `remove.ts` — `reddit.remove(item.id, action.isSpam ?? false)` (no chained comment — that's the separate `comment` action per the executable plan's flatter shape)
+- [x] `approve.ts` — `reddit.approve(item.id)`
+- [x] `lock.ts` — NOT on `reddit.*`; routes via `reddit.getPostById(t3_...).lock()` or `reddit.getCommentById(t1_...).lock()` (verified against `RedditClient.d.ts` — `reddit.lock` does not exist)
+- [x] `comment.ts` — `reddit.submitComment({id, text})`. Threads `*Safe` markdown-escaped variants (`author.nameSafe`, `item.titleSafe`, `item.bodySafe`) into the Mustache context per Step 2.5.3 — see template.ts:33 rationale
+- [x] `report.ts` — resolves the Post/Comment model (`reddit.report(thing, {reason})` takes the model, not the ID) then calls report
+- [x] `ban.ts` — `reddit.banUser(BanUserOptions)`. **Reality-correction:** the v1 plan said `duration: 0 = permanent`; actual Reddit API treats `duration: 0` as a same-day unban. Permanent = omit the field. Implementation omits `duration` when 0 or unset. Optional fields (`reason`, `note`, `message`) also omitted-when-unset for `exactOptionalPropertyTypes` compliance
+- [x] `userFlair.ts` — `reddit.setUserFlair(SetUserFlairOptions)`; optional `text`/`cssClass` omitted-when-unset
+- [x] Bundled into the single `feat(phase-2): ContextMod actions + handleActivity` commit rather than per-file atomic commits (the actions are too coupled to be useful in isolation; bundling tests + dispatcher together gave a green checkpoint)
+- [x] Commit: `9532cf4`
 
-### Task 2.3 — handleActivity orchestrator (Vinh, 2–3h)
+### Task 2.3 — handleActivity orchestrator (Vinh, 2–3h) — ✅ 2026-05-16
 
-**Files:** `src/server/core/handleActivity.ts`, `tests/core/handleActivity.test.ts`
+**Files:** Shipped at `src/core/handleActivity.ts` + `tests/core/handleActivity.test.ts` (6 tests).
 
-- [ ] Idempotency guard via `firstSeen(activityId)`
-- [ ] Load `cfg:current_rev` ONCE at event start, pass rev through entire pipeline (per Δ C3)
-- [ ] `runAllRuns` with executor closure that runs runCheck + dispatches actions
-- [ ] On rule trigger: build Mustache ctx, dispatch actions w/ per-action idempotency
-- [ ] On action fail: log error, push to `failed_actions:queue` ZSET (per Δ C14)
-- [ ] Pushes compact event record to `events:recent` ZSET (ZADD score=ts, ZREMRANGEBYRANK trim to 500 entries)
-- [ ] Tests with mocked redis+reddit
-- [ ] Commit: `feat(core): handleActivity orchestrator (Δ C3, C14)`
+- [x] Idempotency guard via `firstSeen(activityId, sub)` — lives in the trigger handlers (`src/routes/triggers.ts`), called BEFORE normalize so a re-delivered trigger doesn't burn the expensive `getUserByUsername` call
+- [x] Load `cfg:current_rev` ONCE at event start via `configStore.getCurrentRev(sub)`, threads `rev` + the full `config` through every `runAction` call via `ActionContext` (per Δ C3 + Council fix for the Phase 2.5 dry-run gate)
+- [x] Iterates `current.config.runs`, calls `runRun(run, item, author, sub)`, collects `result.actions` only on `result.triggered`
+- [x] On rule trigger: dispatches actions, aggregates `ActionResult.status === 'ok'` into `{kind, ok}[]` per Council Software Lead fix — plan v1 wrote `actions: ...` literal which would have serialized as `undefined`
+- [x] `failed_actions:queue` ZSET deferred to Phase 4 — the events ZSET already records `ok: false` per action, which the dashboard surfaces. No retry primitive needed before MVP demo
+- [x] Pushes compact event record to `events:recent50` ZSET via `recordEvent` (brought forward from Step 3.5; `v:1` + crypto.randomUUID nonce; trimmed to last 50 via `zRemRangeByRank` with rank `-51`)
+- [x] Tests: no-config no-op, regex→remove happy path, action error→`ok:false` recorded, no-trigger no-event, multi-run ordering, global `dryRun` records `ok: false`
+- [x] Commit: `9532cf4`
 
-### Task 2.4 — onPostSubmit handler (Vinh, 1–2h)
+### Task 2.4 — onPostSubmit handler (Vinh, 1–2h) — ✅ 2026-05-16
 
-**Files:** Modify `src/server/routes/triggers.ts`
+**Files:** Modified `src/routes/triggers.ts`. Local payload shapes live in `src/shared/normalize.ts` (`PostSubmitPayload`) — verified 2026-05-15 against real Devvit v0.12.23 runtime payload (PowerShell log capture).
 
-- [ ] Replace `/post-submit` stub with real impl
-- [ ] Parse `OnPostSubmitRequest` → map `PostV2` to internal `Item` shape (id, title, body, url, isSelf, over18, score=0, age=0, removed/approved/locked/stickied=false, linkFlairText)
-- [ ] Map `UserV2` → internal `Author` (basic fields from payload)
-- [ ] Enrich author via `reddit.getUserByUsername` w/ 1h cache via `authorProfile` Redis key
-- [ ] Call `handleActivity({item, author, subreddit}, deps)`
-- [ ] Return `c.json({}, 200)` always — never throw back to Devvit gateway
-- [ ] Playtest smoke: post in r/cm_devvit_test, verify pipeline executes via logs
-- [ ] Commit: `feat(triggers): onPostSubmit real handler`
+- [x] Replaced `/post-submit` stub with full pipeline routing through `handleActivity`
+- [x] **Reality-correction:** `OnPostSubmitRequest` is NOT exported from `@devvit/web/server` (the barrel re-exports `@devvit/reddit` etc.; the shared types live in `@devvit/shared-types` which the barrel does not re-export). Using local `PostSubmitPayload` instead, defined inline at the top of `normalize.ts`
+- [x] **Reality-correction:** Devvit payload field is `author.name`, NOT `author.username` (the plan's "Verified API Surface" was wrong). Author ID lives at `post.authorId` not `author.id` when present at the post level
+- [x] **Reality-correction:** `reddit.getCurrentSubredditName()` does NOT exist on the `@devvit/reddit` RedditClient (TS catches it). Using `(await reddit.getCurrentSubreddit()).name` instead
+- [x] Guard order: null-safety bail (no `post.id`) → recursion guard (`reddit.getAppUser()` null-checked) → `firstSeen(post.id, subName)` → `normalizePost(input, config)` → `handleActivity(item, author, subName)`
+- [x] If `authorName` is missing (Devvit anomaly), the recursion guard is SKIPPED rather than bailing — worst case the bot reacts to its own post on a private test sub, which is harmless; bailing kills all trigger work
+- [x] Returns `c.json({status: 'ok'})` on all paths (never throws back to the Devvit gateway)
+- [x] **Live playtest gate:** submitted "free crypto giveaway" on `r/contextmod_vinh_dev` → post removed → bot replied with "Hi Outside-Research-772, your post 'free crypto giveaway' was removed as suspected spam." Markdown escaper rendered the hyphenated username correctly (Reddit treats escaped `\-` as a literal dash). All logged on playtest v0.0.1.30+
+- [x] Commit: `9532cf4`
 
-### Task 2.5 — onCommentSubmit handler (Vinh, 1h)
+### Task 2.5 — onCommentSubmit handler (Vinh, 1h) — ✅ 2026-05-16
 
-Mirror 2.4 for `OnCommentSubmitRequest`. Comment-specific fields: depth (from CommentV2), op (compare `comment.author.id === post.author.id`), parentId.
+Mirrors 2.4 for `CommentSubmitPayload`. Same guard order + same `handleActivity` dispatch; `normalizeComment` produces a flat `Item` with `title: ''` and `body: comment.body`.
 
-- [ ] Implement w/ same shape as 2.4
-- [ ] Playtest smoke
-- [ ] Commit: `feat(triggers): onCommentSubmit real handler`
+- [x] Implemented w/ same shape as 2.4 (null-gate on `comment.id`; recursion guard; `firstSeen(comment.id, subName)`)
+- [x] `depth` / `op` / `parentId` fields from V2 CommentV2 are not yet exposed on the `CommentSubmitPayload` shape — `depth?` / `op?` on `Item` stay optional. Defer to Phase 4 if a rule actually needs them
+- [x] Live playtest covered via the existing seed config — comment-submit handler was not exercised in the gate because the playtest sub had no comment-targeting rules yet (the spam-removal rule fires on post-submit). Comment-side path is unit-tested via the same handleActivity tests; live coverage will land naturally in Phase 3 when wiki-loaded configs include comment rules
+- [x] Commit: `9532cf4`
+
+### Task 2.5.1 — URL-dedupe Repost rule (Vinh, ~1h, Council Expansionist promotion) — ✅ 2026-05-16
+
+**Files:** Shipped at `src/rules/repost.ts` + `tests/rules/repost.test.ts` (7 tests). Schema: added `RepostRule` to `src/schema/app.schema.json`.
+
+Promoted from PLAN.md Phase 4 task 4.1 to MVP because it's the "screenshot moment" that judges remember (council 2026-05-14 second pass). Ship-time non-negotiables (council SRE + Security) baked in:
+
+- [x] FNV-1a64 hash of `item.url` → 30d-TTL Redis seen-marker. First submission sets, second triggers
+- [x] **Sub-scoped key** (`cm:{sub}:repost:url:{hash}`) — threaded an optional `sub` parameter through `runRule` → `runCheck` → `runRun` → `runRuleSet` so the rule can read the subreddit context without ripping up the existing rule call signature
+- [x] TTL **refresh** on hit so an active repost loop doesn't expire mid-window and re-allow itself
+- [x] **Fail-OPEN** on Redis error (no mass false-positives during outage — repost is a soft signal, not a safety gate)
+- [x] Empty/missing URL → no-op (regex rules can chain for non-link posts)
+- [x] **Live playtest gate:** submitted "https://example.com/repost-test" twice on `r/contextmod_vinh_dev` → first set marker, third submission triggered with `redis.get = t3_1tem8bs` (correct prior activity ID), `runAction` hit dry-run branch with `wouldHaveCalled: remove`, no Reddit side-effect
+- [x] Commit: `9532cf4`
+
+### Task 2.5.2 — `dryRun` config flag (Vinh, ~15min, NON-NEGOTIABLE per Council SRE) — ✅ 2026-05-16
+
+**Files:** Logic lives in `src/core/runAction.ts` (gate); type contract in `src/shared/types.ts` (`AppConfig.dryRun`, per-action `dryRun?` on every action interface, `ActionContext.config` REQUIRED).
+
+Repost rule blast radius is high — false positives nuke legitimate crossposts, news threads, weekly recurring posts. Ship behind `dryRun: true` until mods watch the dry-run feed for a few days.
+
+- [x] Per-action `action.dryRun ?? ctx.config.dryRun ?? false` — per-action overrides config (allows opting one specific action live while keeping the rest dry-run)
+- [x] Gate branch returns `{status: 'dry-run', wouldHaveCalled: action.kind}` BEFORE `reserveAction` so flipping to live mode in a later event can still fire
+- [x] `ActionContext.config` REQUIRED on the type — `tsc --noEmit` fails if dropped, so the gate cannot silently regress (Council Software Lead — the v1 plan's omission would have made `ctx.config.dryRun` evaluate to `undefined → false`, the OPPOSITE of the claimed safety contract)
+- [x] Schema: every action variant in `app.schema.json` accepts an optional `dryRun: boolean` field
+- [x] Unit test: `runAction({...}, {ctx with config.dryRun: true}) → status === 'dry-run'` (per Council 23:00 — without the test the safety gate is never demonstrated, only asserted)
+- [x] Live playtest gate covered as part of Task 2.5.1 — dry-run remove fired, no Reddit side-effect
+- [x] Commit: `9532cf4`
+
+### Task 2.5.3 — Mustache markdown-injection sanitizer (Vinh, ~30min, NON-NEGOTIABLE per Council Security) — ✅ 2026-05-16
+
+**Files:** `escapeMarkdown` ships in `src/core/template.ts` (Phase 1, Step 1.5 row). Phase 2 added the 4 mandatory fixture tests + live playtest coverage. Per-rule plumbing in `src/shared/normalize.ts` produces `safe: {authorName, itemTitle, itemBody}` for templates.
+
+User-controlled fields embedded in a bot's `submitComment` are an XSS-equivalent surface (Reddit strips HTML but renders markdown live): ping-storms (`u/x u/y u/z`), fake mod quotes (`> as a mod, I...`), deceptive `[click](malicious)` links.
+
+- [x] General regex escapes the markdown-active char set: `[\\` `*_{}[\]()#+\-.!|>]`
+- [x] `\b`-anchored `u\/` and `r\/` defang — anchors u/ and r/ to a word boundary so `https://youtu.be/...` does NOT mangle to `yo*u\/*tu.be/...` (a v1 bug that the v2 council caught and fixed)
+- [x] Goal pinned to "Reddit renders the link correctly," NOT "string is byte-identical" — escaped `.` in URLs renders as a literal dot via Reddit's auto-linker
+- [x] 4 mandatory fixture unit tests under `tests/core/template.test.ts > Phase 2.5 mandatory fixtures`:
+  - `https://youtu.be/abc` → `https://youtu\.be/abc` (auto-link survives)
+  - `u/spammer pinged you` → `u\/spammer pinged you` (defanged)
+  - `check r/funny` → `check r\/funny` (defanged)
+  - `[click](javascript:alert(1))` → brackets + parens escaped (link-injection neutralized)
+- [x] Empty input → empty string, no crash
+- [x] Template README direction: **always use `{{author.nameSafe}}` not `{{author.name}}` in any field that goes back to Reddit via `submitComment`**
+- [x] **Live playtest verification:** bot's reply to "free crypto giveaway" rendered `Outside-Research-772` and `"free crypto giveaway"` as plain text. The hyphenated username's `\-` was rendered by Reddit as a literal dash (auto-linker behavior). Confirms "Reddit renders correctly" goal holds in production renderer, not just unit tests
+- [x] Commit: `9532cf4`
 
 ---
 
