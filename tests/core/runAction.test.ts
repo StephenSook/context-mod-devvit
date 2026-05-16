@@ -121,15 +121,17 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     expect(reserveAction).not.toHaveBeenCalled();
   });
 
-  it('per-action dryRun=false does NOT override config.dryRun=true (per-action only overrides UPWARD to dry-run)', async () => {
-    // Documented semantics: nullish-coalescing means dryRun=false (per-action) actually
-    // takes effect because false !== nullish. This test pins that behavior so we notice
-    // if the gate's truthiness logic ever changes.
-    reserveAction.mockResolvedValueOnce(true);
-    redditRemove.mockResolvedValueOnce(undefined);
+  it('per-action dryRun=false does NOT override config.dryRun=true (global is authoritative — safety gate)', async () => {
+    // Codex HIGH 2026-05-16: global dry-run must be authoritative.
+    // A config-level dryRun: true is the SRE non-negotiable safety setting;
+    // a per-action dryRun: false trying to override it would be a catastrophic
+    // bypass (mod sets the whole bot to dry-run, one rule still fires live).
+    // Per-action can ONLY ELEVATE to dry-run, never demote to live.
     const liveAction: RemoveAction = { kind: 'remove', dryRun: false };
     const dryCtx: ActionContext = { ...ctx, config: { runs: [], dryRun: true } };
     const res = await runAction(liveAction, dryCtx);
-    expect(res.status).toBe('ok');
+    expect(res.status).toBe('dry-run');
+    expect(reserveAction).not.toHaveBeenCalled();
+    expect(redditRemove).not.toHaveBeenCalled();
   });
 });

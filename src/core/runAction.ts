@@ -49,9 +49,11 @@ function payloadDigest(a: Action): string {
 }
 
 export async function runAction(action: Action, ctx: ActionContext): Promise<ActionResult> {
-  // Dry-run gate (Phase 2.5). Per-action overrides config. We bail BEFORE
-  // reserving the action so a flipped-to-live config can still fire later.
-  const dry = action.dryRun ?? ctx.config.dryRun ?? false;
+  // Dry-run gate (Phase 2.5). Global config.dryRun is AUTHORITATIVE — per-action
+  // can only ELEVATE to dry-run, never demote a globally-safe config to live.
+  // Codex HIGH 2026-05-16: previous `??` semantics let per-action dryRun: false
+  // override config.dryRun: true (catastrophic safety-gate bypass).
+  const dry = ctx.config.dryRun === true || action.dryRun === true;
   if (dry) {
     return { status: 'dry-run', kind: action.kind, wouldHaveCalled: action.kind };
   }
