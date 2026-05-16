@@ -64,6 +64,7 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
     return { status: 'skipped-locked', kind: action.kind };
   }
 
+  let sideEffectDone = false;
   try {
     switch (action.kind) {
       case 'remove':    await runRemove(action, ctx); break;
@@ -74,9 +75,19 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
       case 'ban':       await runBan(action, ctx); break;
       case 'userFlair': await runUserFlair(action, ctx); break;
     }
+    sideEffectDone = true;
     await commitAction(aid, ctx.subredditName);
     return { status: 'ok', kind: action.kind };
   } catch (err) {
+    if (sideEffectDone) {
+      // Codex CRITICAL fix: side-effect succeeded but commitAction threw on
+      // done-marker write failure. Pending lease was NOT released by
+      // commitAction (intentional — prevents instant double-action). Surface
+      // as 'error' so dashboard shows red + mod investigates. NOT releaseAction:
+      // releasing would reopen the gate and cause double-action on retry.
+      console.error('[cm/runAction] side-effect succeeded but idempotency commit failed:', action.kind, ctx.item.id, err);
+      return { status: 'error', kind: action.kind };
+    }
     await releaseAction(aid, ctx.subredditName);
     console.error('[cm/runAction] action failed, released for retry:', action.kind, ctx.item.id, err);
     return { status: 'error', kind: action.kind };

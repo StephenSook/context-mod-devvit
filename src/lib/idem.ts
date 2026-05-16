@@ -91,16 +91,54 @@ export async function reserveAction(actionId: string, sub?: string): Promise<boo
 }
 
 /**
- * Commit a successful action: write the 7d done marker and clear the pending lease.
+ * Commit a successful action: write the 7d done marker, then clear the pending lease.
+ *
+ * Codex CRITICAL 2026-05-16: if the done-marker write fails AND we delete the
+ * pending lease, the next retry sees neither marker and fires the action AGAIN
+ * (double mod-action: ban twice, comment twice, etc). Fix: retry done-write
+ * with backoff, throw on persistent failure, NEVER delete the pending lease
+ * unless the done marker was actually written. Pending TTL (5 min) caps the
+ * worst-case wait — better double-action 5 min later than instantly.
  */
 export async function commitAction(actionId: string, sub?: string): Promise<void> {
+  const doneKey = K.actionDone(actionId, sub);
+  const pendingKey = K.actionPending(actionId, sub);
+  const doneExpiration = new Date(Date.now() + DONE_TTL_SEC * 1000);
+
+  const backoffsMs = [100, 300, 1000];
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < backoffsMs.length; attempt++) {
+    try {
+      await redis.set(doneKey, '1', { expiration: doneExpiration });
+      lastErr = null;
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < backoffsMs.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, backoffsMs[attempt]!));
+      }
+    }
+  }
+
+  if (lastErr) {
+    console.error(
+      '[cm/idem/commitAction/DONE_WRITE_FAIL]',
+      'side-effect already happened — idempotency marker NOT written after 3 retries. ' +
+      'Pending lease intentionally NOT released to prevent immediate double-action; ' +
+      'pending TTL will expire in 5 min then retry path can re-execute. Investigate this actionId:',
+      actionId,
+      lastErr,
+    );
+    throw lastErr;
+  }
+
+  // Done marker is durable. Pending delete is best-effort — if it fails the
+  // pending TTL (5 min) will reap it; reserveAction's lock-then-check pattern
+  // means a concurrent caller in that window will see done==true and skip.
   try {
-    await redis.set(K.actionDone(actionId, sub), '1', {
-      expiration: new Date(Date.now() + DONE_TTL_SEC * 1000),
-    });
-    await redis.del(K.actionPending(actionId, sub));
+    await redis.del(pendingKey);
   } catch (err) {
-    console.error('[cm/idem/commitAction] redis err (action already succeeded):', actionId, err);
+    console.error('[cm/idem/commitAction/PENDING_DEL_FAIL]', '(harmless, TTL reaps in 5min):', actionId, err);
   }
 }
 
