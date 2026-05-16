@@ -57,20 +57,25 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
 **Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below tells you which boxes are wired today vs which land Phase 1-3.
 
-| Component | State today | Lands |
+| Component | State today | Notes |
 |-----------|-------------|-------|
-| Observatory dashboard (React + Vite + Tailwind, 24h sparkline + event stream + dry-run mod menu) | **Production** (renders against `?demo=1` synthetic; production zero-state surfaces when API returns empty) | shipped |
-| Idempotency primitives (`src/lib/idem.ts`, FNV-1a + BigInt + 3-stage Redis keys + 60s cron lock) | **Production** (150 LOC + 9 unit tests passing) | shipped |
-| Devvit configuration (`devvit.json`, fetch allowlist, post entry, scheduler tasks, menu items, forms) | **Production** | shipped |
-| Hono server routing (`src/index.ts`, `/api/*`, `/internal/*`) | **Production** | shipped |
-| `routes/menu.ts` recent-actions menu (opens custom post) | **Production** (handler wired) | shipped |
-| `routes/api.ts` `/api/recent` + `/api/stats` | **Scaffolded** (returns `{events:[]}` / `{}` today; live ZRANGE wiring lands Phase 3) | Phase 3 |
-| `routes/scheduler.ts` cron handlers (`refresh-config`, `stats-rollup`) | **Scaffolded** (TODO comments; lock-and-log stubs) | Phase 3 |
-| `routes/triggers.ts` (`onPostSubmit`, `onCommentSubmit`, `onAppInstall`) | **Scaffolded** (minimal stubs; handler wiring lands Phase 2) | Phase 1+2 |
-| `routes/forms.ts` dry-run form result handler | **Scaffolded** (TODO; lands Phase 3) | Phase 3 |
-| Rule engine — `handleActivity` → `runRun` → `runCheck` → `runRule` (regex / author / ruleSet) | **Pending** (Vinh's lane; types + schema defined, evaluation code lands Phase 1) | Phase 1 |
-| Action handlers (`remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`) | **Pending** (Phase 2 — Mustache templating + idempotency wrap) | Phase 2 |
-| Phase 4 stretch rules (`history`, `attribution`, `recentActivity`, `repost`) | **Deferred** (post-hackathon) | Phase 4 |
+| Observatory dashboard (React + Vite + Tailwind, 24h sparkline + event stream + dry-run mod menu) | **Production** | Renders against live `/api/recent` ZSET + falls back to `?demo=1` synthetic for screenshots. Wave A–F shipped. |
+| Rule engine — `handleActivity` → `runRun` → `runCheck` → `runRule` (regex / author / ruleSet) | **Production** | Vinh's Phase 1 — 11 steps, 93 tests. Filters (authorIs + itemIs), Mustache templates, named-rule expansion, AND/OR combinators, postBehavior state machine w/ 100-iter safety. |
+| Action handlers (`remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`) | **Production** | Vinh's Phase 2 — 7 MVP actions, Reddit-API signatures verified live. Markdown sanitizer (u/r-ping defang + link-injection guard) for `comment` action. |
+| `handleActivity` orchestrator + `runAction` w/ idempotency wrap | **Production** | Vinh's Phase 2.3 — reads config rev once at event start (D5), aggregates ActionResult into events:recent ZSET. Codex-hardened (CRITICAL+HIGH fixes shipped 2026-05-16). |
+| Idempotency primitives (`src/lib/idem.ts` — FNV-1a + BigInt + lease owner tokens + 3-stage Redis keys + 60s cron lock) | **Production** | 13 unit tests. Codex-hardened: commitAction retries done-write 3x and never releases pending on failure (prevents double-action); lease owner-token compare-and-delete (prevents third-execution race on slow worker). |
+| Dry-run rule tester (mod menu "Test rules on this item" → form → toast) | **Production** | Stephen's Step 3.6 — non-contract `dryRunActivity` sibling. Mod right-clicks any post/comment, gets eval trace + would-have-called list, zero Reddit side-effects. |
+| URL-dedupe repost rule (`cm:{sub}:repost:url:{hash}`, 30d TTL) | **Production** | Vinh's Phase 2.5.1 (promoted from Phase 4). FNV-1a hash, race-safe `SET NX` (Codex hardened), fail-OPEN on Redis outage. |
+| Config UX — wiki loader cron + reload-config menu + onAppInstall default-config seed + onAppUpgrade migrations | **Production** | Vinh's Phase 3 — `loadFromWiki()` cron polls every 5 min, no-op on unchanged wiki revisionId, atomic config publish via rev pointer. |
+| `routes/api.ts` `/api/recent` + `/api/stats` | **Production for `/api/recent`** (live ZRANGE wired Phase 3.4) · **Scaffolded for `/api/stats`** (Phase 4 stretch) | Versioned events drop corrupt/future members loudly. |
+| `routes/scheduler.ts` cron (`refresh-config`, `stats-rollup`, `image-hash-worker`) | **Production for `refresh-config`** · **Scaffolded** for `stats-rollup` + `image-hash-worker` | Stats rollup Phase 4; image-hash-worker gated on 0.10 spike (not run yet — likely NO-GO). |
+| Devvit configuration (`devvit.json`, fetch allowlist, post entry, scheduler tasks, menu items, forms) | **Production** | All 3 menu items + dry-run form declared. |
+| Hono server routing (`src/index.ts`, `/api/*`, `/internal/*`) | **Production** | |
+| Phase 4 stretch rules (`history`, `attribution`, `recentActivity`) | **Pending** | Vinh's queue. May ship pre-deadline or defer post-hackathon depending on capacity. |
+| Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
+| MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
+
+162 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite); `tsc --build` clean.
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
