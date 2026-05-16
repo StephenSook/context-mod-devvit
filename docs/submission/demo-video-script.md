@@ -59,21 +59,17 @@
 - Cut to the Observatory dashboard (already pinned)
 - New event row appears at top: REMOVE + COMMENT chips for the spam-filter rule
 
-**VO:** "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions."
+**VO:** "Every trigger runs through a three-stage idempotency gate — Devvit's at-least-once delivery never double-applies actions. Lease tokens prevent third-execution races on slow workers."
 
-> Note: if Phase 1 backend isn't live by recording day, swap this beat for `?demo=1` synthetic-data dashboard tour + this VO line: *"This is the dashboard and event model rendering seeded demo data. The live trigger pipeline — `handleActivity` → rule engine → action → `events:recent` — ships in Phase 1 post-hackathon. The truth caption stays on-screen from this beat through the dashboard tour."* The synthetic-data truth caption (`captions.srt` N=4 per `demo-video-runbook.md`) MUST arrive at the 36s mark — not delayed to the 50s wedge — so the disclosure starts the moment seeded data is shown.
+> Note (was a Phase-1-slip fallback): Phase 1+2+3 shipped 2026-05-16 so this beat now captures LIVE action data via `handleActivity` → rule engine → `events:recent` ZSET → dashboard. The `?demo=1` synthetic path remains as a backup if the test sub is rate-limited during recording, but the canonical capture is live.
 
-**Beat 4 (43-50s) — Dashboard tour:**
-- Pan across stat cards (Actions today, Mod time saved, Active rules, Top rule)
+**Beat 4 (43-50s) — Dashboard tour + dry-run mod menu:**
+- Pan across stat cards (Actions today, Mod time saved, Active rules, Top rule) reading LIVE values
 - Sparkline drawing
-- Mention the "Test rules on this item" dry-run mod menu
-- Mention image-hash repost detection (if Phase 4 shipped — gated on Day-2 spike)
+- Right-click a borderline post → "Test rules on this item" → form pre-fills thingId → click "Run dry-run" → toast bullets show `spam-removal / crypto-giveaway → remove, comment` w/ ZERO Reddit side-effects
+- (Skip image-hash beat — 0.10 spike not run, feature deferred post-hackathon)
 
-**VO:** "Telemetry stream: stats, recent actions, hourly volume. Plus a dry-run rule tester for testing config before it goes live."
-
-> If Phase 3 dashboard wiring is shipped by recording day, swap "Telemetry stream" → "Live telemetry" — claim live only when the dashboard is reading real `events:recent` ZSET data, not `?demo=1` synthetic. If Phase 3 isn't shipped, the synthetic-data fallback from Beat 3 carries through here too.
->
-> If Phase 4's image-hash repost detection ships before recording day, append: *"And perceptual-hash repost detection — image blockhash in pure JS within Devvit's 30-second execution window."* Otherwise leave out — don't claim what isn't running.
+**VO:** "Live telemetry: stats, recent actions, hourly volume. Plus a dry-run rule tester — right-click any post, see exactly which rules would fire before they fire."
 
 ---
 
