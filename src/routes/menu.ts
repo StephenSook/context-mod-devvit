@@ -90,6 +90,29 @@ menu.post('/recent-actions', async (c) => {
 menu.post('/test-rules', async (c) => {
   const evt = await c.req.json<MenuItemRequest>();
   console.log(`[cm/menu/test-rules] targetId=${evt.targetId}`);
-  // TODO Phase 3 Task 32: dry-run pipeline against the target, show UiResponse.showForm
-  return c.json({ showToast: 'Dry-run rule tester — Phase 3' });
+  if (!evt.targetId) {
+    return c.json({
+      showToast: 'Right-click a post or comment to select it, then re-open this menu to test rules.',
+    });
+  }
+  return c.json({
+    showForm: {
+      name: 'testRules',
+      form: {
+        title: 'ContextMod — Dry-run rules',
+        description: 'Evaluate the live rule set against this item. No Reddit actions will fire.',
+        fields: [
+          {
+            type: 'string',
+            name: 'thingId',
+            label: 'Thing ID',
+            defaultValue: evt.targetId,
+            disabled: true,
+          },
+        ],
+        acceptLabel: 'Run dry-run',
+        cancelLabel: 'Cancel',
+      },
+    },
+  });
 });
