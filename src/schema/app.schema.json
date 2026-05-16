@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://context-mod-devvit/schemas/app.schema.json",
+  "title": "ContextMod AppConfig (MVP trim of FoxxMD upstream Schema/App.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runs"],
+  "properties": {
+    "dryRun": { "type": "boolean" },
+    "needsAuthorEnrichment": { "type": "boolean" },
+    "namedRules": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/Rule" }
+    },
+    "runs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Run" }
+    }
+  },
+  "definitions": {
+    "Run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "checks"],
+      "properties": {
+        "name": { "type": "string" },
+        "checks": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Check" }
+        }
+      }
+    },
+    "Check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "combinator", "rules"],
+      "properties": {
+        "name": { "type": "string" },
+        "combinator": { "enum": ["AND", "OR"] },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Rule" }
+        },
+        "filters": { "$ref": "#/definitions/FilterSpec" },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Action" }
+        },
+        "postBehavior": {
+          "oneOf": [
+            { "enum": ["next", "stop"] },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["goto"],
+              "properties": { "goto": { "type": "string" } }
+            }
+          ]
+        }
+      }
+    },
+    "Rule": {
+      "oneOf": [
+        { "$ref": "#/definitions/RegexRule" },
+        { "$ref": "#/definitions/AuthorRule" },
+        { "$ref": "#/definitions/RuleSetRule" },
+        { "$ref": "#/definitions/NamedRuleRef" }
+      ]
+    },
+    "RegexRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "pattern"],
+      "properties": {
+        "kind": { "const": "regex" },
+        "name": { "type": "string" },
+        "pattern": { "type": "string" },
+        "flags": { "type": "string" },
+        "target": { "enum": ["title", "body", "url"] }
+      }
+    },
+    "AuthorRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "filter"],
+      "properties": {
+        "kind": { "const": "author" },
+        "name": { "type": "string" },
+        "filter": { "$ref": "#/definitions/AuthorFilter" }
+      }
+    },
+    "RuleSetRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "combinator", "rules"],
+      "properties": {
+        "kind": { "const": "ruleset" },
+        "name": { "type": "string" },
+        "combinator": { "enum": ["AND", "OR"] },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Rule" }
+        }
+      }
+    },
+    "NamedRuleRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "named" },
+        "name": { "type": "string" }
+      }
+    },
+    "FilterSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authorIs": { "$ref": "#/definitions/AuthorFilter" },
+        "itemIs":   { "$ref": "#/definitions/ItemFilter" }
+      }
+    },
+    "AuthorFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "nameIn":           { "type": "array", "items": { "type": "string" } },
+        "nameNotIn":        { "type": "array", "items": { "type": "string" } },
+        "flairTextIn":      { "type": "array", "items": { "type": "string" } },
+        "flairTextNotIn":   { "type": "array", "items": { "type": "string" } },
+        "ageMinSec":        { "type": "number" },
+        "ageMaxSec":        { "type": "number" },
+        "linkKarmaMin":     { "type": "number" },
+        "linkKarmaMax":     { "type": "number" },
+        "commentKarmaMin":  { "type": "number" },
+        "commentKarmaMax":  { "type": "number" },
+        "isMod":            { "type": "boolean" },
+        "isContributor":    { "type": "boolean" },
+        "verified":         { "type": "boolean" },
+        "shadowBanned":     { "type": "boolean" }
+      }
+    },
+    "ItemFilter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "over18":           { "type": "boolean" },
+        "locked":           { "type": "boolean" },
+        "stickied":         { "type": "boolean" },
+        "removed":          { "type": "boolean" },
+        "approved":         { "type": "boolean" },
+        "isSelf":           { "type": "boolean" },
+        "scoreMin":         { "type": "number" },
+        "scoreMax":         { "type": "number" },
+        "linkFlairTextIn":     { "type": "array", "items": { "type": "string" } },
+        "linkFlairTextNotIn":  { "type": "array", "items": { "type": "string" } },
+        "titleMatches":     { "type": "string" },
+        "bodyMatches":      { "type": "string" },
+        "urlMatches":       { "type": "string" }
+      }
+    },
+    "Action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "remove" },
+            "isSpam": { "type": "boolean" },
+            "dryRun": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "approve" },
+            "dryRun": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "template"],
+          "properties": {
+            "kind": { "const": "comment" },
+            "template": { "type": "string" },
+            "dryRun": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "lock" },
+            "dryRun": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "reason"],
+          "properties": {
+            "kind": { "const": "report" },
+            "reason": { "type": "string" },
+            "dryRun": { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "ban" },
+            "duration": { "type": "number" },
+            "reason":   { "type": "string" },
+            "note":     { "type": "string" },
+            "message":  { "type": "string" },
+            "dryRun":   { "type": "boolean" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": { "const": "userFlair" },
+            "text":     { "type": "string" },
+            "cssClass": { "type": "string" },
+            "dryRun":   { "type": "boolean" }
+          }
+        }
+      ]
+    }
+  }
+}

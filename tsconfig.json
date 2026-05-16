@@ -27,6 +27,6 @@
     "outDir": "dist/types",
     "tsBuildInfoFile": "dist/types/tsconfig.tsbuildinfo"
   },
-  "include": ["src/**/*", "vite.config.ts"],
+  "include": ["src/**/*", "src/**/*.json", "vite.config.ts"],
   "exclude": []
 }

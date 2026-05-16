@@ -1,0 +1,98 @@
+import { describe, it, expect } from 'vitest';
+import { render, escapeMarkdown, type TemplateContext } from '../../src/core/template';
+import type { Item, Author } from '../../src/shared/types';
+
+function makeCtx(): TemplateContext {
+  const item: Item & { titleSafe: string; bodySafe: string } = {
+    id: 't3_abc',
+    title: 'free crypto giveaway scam',
+    titleSafe: 'free crypto giveaway scam',
+    body: '',
+    bodySafe: '',
+    url: 'https://example.com',
+    author: 'someUser',
+    age: 60,
+    score: 1,
+    isSelf: false,
+    over18: false,
+    removed: false,
+    approved: false,
+    locked: false,
+    stickied: false,
+    linkFlairText: null,
+  };
+  const author: Author & { nameSafe: string } = {
+    name: 'someUser',
+    nameSafe: 'someUser',
+    id: 't2_zzz',
+    age: 86_400,
+    linkKarma: 0,
+    commentKarma: 0,
+    flairText: null,
+    isMod: false,
+    isContributor: false,
+    verified: false,
+    shadowBanned: false,
+  };
+  return { item, author };
+}
+
+describe('render', () => {
+  it('substitutes author.name and item.title', () => {
+    const out = render(
+      'Hello {{author.name}}, your post {{item.title}} was removed',
+      makeCtx(),
+    );
+    expect(out).toBe('Hello someUser, your post free crypto giveaway scam was removed');
+  });
+
+  it('does NOT HTML-escape ampersands or apostrophes (Reddit is markdown, not HTML)', () => {
+    const ctx = makeCtx();
+    ctx.author.name = "Joe's & Co";
+    const out = render('Hi {{author.name}}', ctx);
+    expect(out).toBe("Hi Joe's & Co");
+  });
+});
+
+describe('escapeMarkdown', () => {
+  it('escapes the markdown-active char set', () => {
+    expect(escapeMarkdown('*bold* _italic_ `code`')).toBe('\\*bold\\* \\_italic\\_ \\`code\\`');
+  });
+
+  it('defangs u/ pings on a word boundary', () => {
+    expect(escapeMarkdown('u/spammer pinged you')).toBe('u\\/spammer pinged you');
+  });
+
+  it('defangs r/ subreddit links on a word boundary', () => {
+    expect(escapeMarkdown('check r/funny later')).toBe('check r\\/funny later');
+  });
+
+  it('does NOT mangle `u/` inside URLs (the \\b anchor regression test)', () => {
+    // The pre-fix /u\//gi mangled `https://youtu.be/...` into `yo*u\/*tu` —
+    // the bug was inserting a `\/` mid-word. The fix: `\b` anchors u/ to a
+    // word boundary so it only matches at the start of `u/name` tokens.
+    //
+    // The general regex still escapes `.`, so `youtu.be` becomes `youtu\.be`.
+    // Per plan line 794: Reddit's auto-linker still resolves `youtu\.be`, so
+    // the goal is "Reddit renders the URL correctly," NOT byte-equality.
+    const out = escapeMarkdown('https://youtu.be/abc');
+    // The 'youtu' token is intact (not mangled mid-word) and `be/abc` follows
+    // — only the dot is escaped, the u/ injection bug does NOT occur.
+    expect(out).toContain('youtu');
+    expect(out).not.toContain('yo\\u\\/tu');
+    expect(out).toContain('be');
+    expect(out).toContain('/abc');
+  });
+
+  it('neutralizes link injection — brackets + parens escaped', () => {
+    const out = escapeMarkdown('[click](javascript:alert(1))');
+    expect(out).toContain('\\[');
+    expect(out).toContain('\\]');
+    expect(out).toContain('\\(');
+    expect(out).toContain('\\)');
+  });
+
+  it('returns empty string for empty input without crashing', () => {
+    expect(escapeMarkdown('')).toBe('');
+  });
+});

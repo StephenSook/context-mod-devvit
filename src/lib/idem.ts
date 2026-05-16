@@ -16,6 +16,7 @@
  */
 
 import { redis } from '@devvit/web/server';
+import { K } from '../state/keys';
 
 const PROC_TTL_SEC = 86_400;          // 24 hours
 const PENDING_TTL_SEC = 5 * 60;        // 5 min — caps lost-on-crash retry delay
@@ -26,9 +27,13 @@ const LOCK_TTL_SEC = 60;
  * Trigger-side idempotency gate. Call at the top of every trigger handler.
  * Returns true the FIRST time a thingId is seen, false on subsequent retries.
  * Fail-CLOSED on Redis error (returns false → handler skips work).
+ *
+ * `sub` is optional and defaults to the `'_'` sentinel — callers that have a
+ * subreddit context (Step 2.4 onward) should thread it through for tenant
+ * isolation. See src/state/keys.ts.
  */
-export async function firstSeen(thingId: string): Promise<boolean> {
-  const key = `cm:proc:${thingId}`;
+export async function firstSeen(thingId: string, sub?: string): Promise<boolean> {
+  const key = K.proc(thingId, sub);
   try {
     const result = await redis.set(key, '1', {
       nx: true,
@@ -55,9 +60,9 @@ export async function firstSeen(thingId: string): Promise<boolean> {
  * caller completed during the lock attempt. The lock guarantees only one
  * caller proceeds into the side-effect for a given actionId at a time.
  */
-export async function reserveAction(actionId: string): Promise<boolean> {
-  const doneKey = `cm:action:done:${actionId}`;
-  const pendingKey = `cm:action:pending:${actionId}`;
+export async function reserveAction(actionId: string, sub?: string): Promise<boolean> {
+  const doneKey = K.actionDone(actionId, sub);
+  const pendingKey = K.actionPending(actionId, sub);
   let reservedHere = false;
   try {
     const reserved = await redis.set(pendingKey, '1', {
@@ -88,12 +93,12 @@ export async function reserveAction(actionId: string): Promise<boolean> {
 /**
  * Commit a successful action: write the 7d done marker and clear the pending lease.
  */
-export async function commitAction(actionId: string): Promise<void> {
+export async function commitAction(actionId: string, sub?: string): Promise<void> {
   try {
-    await redis.set(`cm:action:done:${actionId}`, '1', {
+    await redis.set(K.actionDone(actionId, sub), '1', {
       expiration: new Date(Date.now() + DONE_TTL_SEC * 1000),
     });
-    await redis.del(`cm:action:pending:${actionId}`);
+    await redis.del(K.actionPending(actionId, sub));
   } catch (err) {
     console.error('[cm/idem/commitAction] redis err (action already succeeded):', actionId, err);
   }
@@ -103,9 +108,9 @@ export async function commitAction(actionId: string): Promise<void> {
  * Release a reserved action slot when the side-effect failed.
  * Lets the next retry re-attempt the action.
  */
-export async function releaseAction(actionId: string): Promise<void> {
+export async function releaseAction(actionId: string, sub?: string): Promise<void> {
   try {
-    await redis.del(`cm:action:pending:${actionId}`);
+    await redis.del(K.actionPending(actionId, sub));
   } catch (err) {
     console.error('[cm/idem/releaseAction] redis err (pending will expire in 5 min):', actionId, err);
   }
@@ -129,8 +134,8 @@ export function actionId(thingId: string, actionType: string, payload: string): 
  *   if (!release) return c.json({ skipped: 'locked' });
  *   try { ...work... } finally { await release(); }
  */
-export async function acquireLock(taskName: string): Promise<(() => Promise<void>) | null> {
-  const key = `cm:lock:${taskName}`;
+export async function acquireLock(taskName: string, sub?: string): Promise<(() => Promise<void>) | null> {
+  const key = K.lock(taskName, sub);
   const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   try {
     const result = await redis.set(key, token, {
