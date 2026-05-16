@@ -65,10 +65,13 @@ export async function dryRunActivity(
         rev: current.rev,
         config: current.config,
       });
-      actions.push({
-        kind: action.kind,
-        wouldHaveCalled: res.status === 'dry-run' ? res.wouldHaveCalled : undefined,
-      });
+      // Spread guard avoids exactOptionalPropertyTypes incompatibility — only
+      // include wouldHaveCalled when it's a defined string.
+      actions.push(
+        res.status === 'dry-run' && res.wouldHaveCalled
+          ? { kind: action.kind, wouldHaveCalled: res.wouldHaveCalled }
+          : { kind: action.kind },
+      );
     }
 
     runs.push({
