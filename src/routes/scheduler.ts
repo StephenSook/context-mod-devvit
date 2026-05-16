@@ -11,11 +11,24 @@
  */
 
 import { Hono } from 'hono';
-import type { TaskRequest, TaskResponse } from '@devvit/web/server';
+import { redis, type TaskRequest, type TaskResponse } from '@devvit/web/server';
 import { acquireLock } from '../lib/idem';
+import { K } from '../state/keys';
+import * as configStore from '../state/configStore';
+import { loadFromWiki } from '../core/configSource';
 
 export const scheduler = new Hono();
 
+/**
+ * Refresh-config cron (Step 3.3). Every 5 min:
+ *   1. Single-flight via cm:lock:refresh-config (60s NX).
+ *   2. Resolve sub from installId pointer — `reddit.getCurrentSubredditName()`
+ *      doesn't work in scheduler context (no inbound Reddit request).
+ *      Stash from /app-install + read here.
+ *   3. Load wiki page. Compare its revisionId to cfg:last-wiki-rev. If
+ *      unchanged, skip — saves a config publish + ZSET allocation per tick.
+ *   4. Publish + stamp the new wiki rev.
+ */
 scheduler.post('/refresh-config', async (c) => {
   const release = await acquireLock('refresh-config');
   if (!release) {
@@ -23,9 +36,32 @@ scheduler.post('/refresh-config', async (c) => {
     return c.json<TaskResponse>({ status: 'ignored' }, 200);
   }
   try {
-    console.log('[cm/cron/refresh-config] tick');
-    // TODO Phase 3 Task 28: fetch wiki page, parse JSON5, AJV validate,
-    // write to cfg:rev:{n} + bump cfg:current_rev (atomic publish per Codex H4)
+    const installId = await redis.get(K.currentInstallId());
+    if (!installId) {
+      console.log('[cm/cron/refresh-config] skipped — no installId pointer (pre-install or wiped)');
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+    const subName = await redis.get(K.installSubname(installId));
+    if (!subName) {
+      console.log(`[cm/cron/refresh-config] skipped — no subname for installId=${installId}`);
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+
+    const loaded = await loadFromWiki(subName);
+    if (!loaded.ok) {
+      console.log(`[cm/cron/refresh-config] skipped sub=${subName}: ${loaded.reason}`);
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+
+    const last = await redis.get(K.cfgLastWikiRev(subName));
+    if (last === loaded.revisionId) {
+      console.log(`[cm/cron/refresh-config] no change for sub=${subName} (rev=${loaded.revisionId})`);
+      return c.json<TaskResponse>({ status: 'success' }, 200);
+    }
+
+    const rev = await configStore.publish(loaded.config, subName);
+    await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
+    console.log(`[cm/cron/refresh-config] published rev=${rev} from wiki revision=${loaded.revisionId} sub=${subName}`);
   } finally {
     await release();
   }

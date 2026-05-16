@@ -1,18 +1,19 @@
 /**
- * Client-facing API for the dashboard custom post (Phase 3 Task 30).
+ * Client-facing API for the dashboard custom post.
  *
- * Stubs return empty shapes today; live ZRANGE wiring lands Phase 3.
+ * `?demo=1` returns seeded synthetic fixtures (src/lib/demo-fixtures.ts) so
+ * the dashboard can be screenshotted / recorded end-to-end without depending
+ * on real backend traffic. Production (no query param) returns real ZSET data;
+ * fabricated data never auto-shows (Codex review M6).
  *
- * `?demo=1` query parameter returns seeded synthetic fixtures
- * (src/lib/demo-fixtures.ts) so the dashboard can be screenshotted /
- * recorded end-to-end without depending on Phase 1+2+3 backend.
- * Production (no query param) always returns the empty shape until
- * the real ZSET reads land — per Codex review M6, fabricated data
- * never auto-shows.
+ * The wire shape omits the server-internal `v` and `nonce` fields — those
+ * exist for storage versioning + ZSET-member uniqueness, not for the dashboard.
  */
 
 import { Hono } from 'hono';
+import { reddit } from '@devvit/web/server';
 import { demoEvents, DEMO_STATS } from '../lib/demo-fixtures';
+import { readRecent, type RecentEvent } from '../state/recentEvents';
 
 export const api = new Hono();
 
@@ -21,9 +22,24 @@ api.get('/recent', async (c) => {
     console.log('[cm/api/recent] demo=1 — serving synthetic fixtures (not real ZSET)');
     return c.json({ events: demoEvents() });
   }
-  // TODO Phase 3 Task 29: ZRANGE events:recent 0 49 REV, return parsed JSON list
-  return c.json({ events: [] });
+
+  let subName: string | undefined;
+  try {
+    subName = (await reddit.getCurrentSubreddit()).name;
+  } catch (err) {
+    console.error('[cm/api/recent] could not resolve current sub:', err);
+    return c.json({ events: [] });
+  }
+
+  const events = await readRecent(subName);
+  return c.json({ events: events.map(stripServerFields) });
 });
+
+function stripServerFields(e: RecentEvent) {
+  // v + nonce are storage-internal — drop before sending to the client.
+  const { v: _v, nonce: _nonce, ...wire } = e;
+  return wire;
+}
 
 api.get('/stats', async (c) => {
   if (c.req.query('demo') === '1') {

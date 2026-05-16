@@ -21,23 +21,109 @@
  */
 
 import { Hono } from 'hono';
-import { reddit } from '@devvit/web/server';
+import { reddit, redis } from '@devvit/web/server';
 import { firstSeen } from '../lib/idem';
 import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
 import { handleActivity } from '../core/handleActivity';
 import * as configStore from '../state/configStore';
+import { parseConfig } from '../core/config';
+import { DEFAULT_CONFIG_JSON5 } from '../config/default-config';
+import { runMigrations, SCHEMA_VERSION } from '../state/migrations';
+import { K } from '../state/keys';
 import type { AppConfig } from '../shared/types';
 
 export const triggers = new Hono();
 
-triggers.post('/app-install', (c) => {
-  console.log('[cm] app-install fired');
-  return c.json({}, 200);
+/**
+ * App-install (Step 3.1). Two responsibilities:
+ *   1. Stash the install→subname pointer so cron handlers — which have no
+ *      inbound request context — can resolve which sub to fetch the wiki for.
+ *   2. Seed the default config on FIRST install only. Re-install (existing
+ *      `cfg:current_rev` for this sub) is a no-op so a reinstall doesn't
+ *      clobber a mod's wiki-edited config.
+ *
+ * `OnAppInstallRequest` is NOT exported from `@devvit/web/server` (same
+ * pattern as PostSubmitPayload — barrel-export confusion). Local payload
+ * interface keeps the type-check honest. The V2 trigger payload does NOT
+ * include an installId (plan was wrong — verified in playtest 2026-05-16),
+ * so we synthesize one from the subname inside stashInstallPointer().
+ */
+interface AppInstallPayload {
+  subreddit?: { name?: string };
+}
+
+/**
+ * Stash the installId→subname pointer used by the cron (which has no inbound
+ * request context). Reality check from playtest 2026-05-16: the V2 trigger
+ * payload does NOT carry installId — the plan's original snippet assumed it.
+ * For the hackathon single-install case, synthesize a stable installId of
+ * `sub:<subname>` so the existing K.installSubname / K.currentInstallId
+ * key shape keeps working without a schema change. Re-running this is a no-op
+ * (idempotent SET), so both /app-install and /app-upgrade can call it.
+ */
+async function stashInstallPointer(subName: string): Promise<void> {
+  const installId = `sub:${subName}`;
+  await redis.set(K.installSubname(installId), subName);
+  await redis.set(K.currentInstallId(), installId);
+}
+
+triggers.post('/app-install', async (c) => {
+  const input = await c.req.json<AppInstallPayload>();
+  const subName = input.subreddit?.name;
+  console.log(`[cm/app-install] sub=${subName}`);
+
+  if (subName) {
+    await stashInstallPointer(subName);
+  }
+
+  if (!subName) {
+    console.warn('[cm/app-install] subreddit.name missing — skipping default-config seed');
+    return c.json({ status: 'ok' });
+  }
+
+  const existing = await redis.get(K.cfgCurrentRev(subName));
+  if (existing) {
+    console.log(`[cm/app-install] sub=${subName} already has cfg:current_rev=${existing} — skip seed`);
+    return c.json({ status: 'ok' });
+  }
+
+  const parsed = parseConfig(DEFAULT_CONFIG_JSON5);
+  if (!parsed.ok) {
+    console.error('[cm/app-install] default config failed to parse:', parsed.errors);
+    return c.json({ status: 'ok' });
+  }
+  const rev = await configStore.publish(parsed.config, subName);
+  console.log(`[cm/app-install] seeded default config rev=${rev} for sub=${subName}`);
+  return c.json({ status: 'ok' });
 });
 
-triggers.post('/app-upgrade', (c) => {
-  console.log('[cm] app-upgrade fired');
-  return c.json({}, 200);
+/**
+ * App-upgrade (Step 3.6). Two responsibilities:
+ *   1. BACKFILL the install→subname pointer so the cron has somewhere to look
+ *      even when the app was installed before Step 3.1 shipped — install fires
+ *      once, upgrade fires on every redeploy, so this self-heals existing
+ *      installs that never ran the v0.0.1 install handler. Idempotent SET.
+ *   2. Compare stored schema version to current — if different, run migrations
+ *      and stamp the new version. v0.1 → v0.1 is a no-op today; the seam exists
+ *      so a future shape change can land without leaving old installs broken.
+ */
+triggers.post('/app-upgrade', async (c) => {
+  const input = await c.req.json<AppInstallPayload>();
+  const subName = input.subreddit?.name;
+  if (subName) {
+    await stashInstallPointer(subName);
+    console.log(`[cm/app-upgrade] backfilled install pointer for sub=${subName}`);
+  }
+
+  const stored = (await redis.get(K.schemaVersion())) ?? '0';
+  if (stored === SCHEMA_VERSION) {
+    console.log(`[cm/app-upgrade] schema version up-to-date (${stored})`);
+    return c.json({ status: 'ok' });
+  }
+  console.log(`[cm/app-upgrade] migrating ${stored} → ${SCHEMA_VERSION}`);
+  await runMigrations(stored, SCHEMA_VERSION);
+  await redis.set(K.schemaVersion(), SCHEMA_VERSION);
+  return c.json({ status: 'ok' });
 });
 
 triggers.post('/post-submit', async (c) => {
