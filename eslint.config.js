@@ -8,7 +8,16 @@ export default defineConfig([
   {
     // Server code — Node globals
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['src/server/**/*.{ts,tsx,mjs,cjs,js}', 'src/lib/**/*.{ts,tsx,mjs,cjs,js}', 'src/routes/**/*.{ts,tsx,mjs,cjs,js}', 'src/index.ts'],
+    files: [
+      'src/server/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/lib/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/routes/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/core/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/rules/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/shared/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/state/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/index.ts',
+    ],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.node,

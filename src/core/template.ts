@@ -50,7 +50,7 @@ export function render(template: string, ctx: TemplateContext): string {
 export function escapeMarkdown(s: string): string {
   if (!s) return s;
   return s
-    .replace(/([\\`*_{}\[\]()#+\-.!|>])/g, '\\$1')
+    .replace(/([\\`*_{}[\]()#+\-.!|>])/g, '\\$1')
     .replace(/\bu\//gi, 'u\\/')
     .replace(/\br\//gi, 'r\\/');
 }
