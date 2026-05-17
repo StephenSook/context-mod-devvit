@@ -10,31 +10,34 @@
 
 **Suggested opener** (Stephen's voice — rewrite):
 
-> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. Once Phase 1-3 wiring lands, the bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that. (v0.1.0 ships the rule engine + idempotency primitives + atomic config publish + Observatory dashboard demo mode; live trigger / action / dashboard wiring lands through Day 5-11 per the phase plan below.)
+> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. The bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that. v0.2.0 ships the full Phase 1+2+3 stack (rule engine + 7 action handlers + atomic config publish + wiki cron + live Observatory dashboard + dry-run rule tester) and is in Reddit App Directory review. Codex adversarial review applied — 2 CRITICAL + 10 HIGH safety findings shipped as atomic hotfixes before submission.
 
 > **Why now:** Reddit's CEO said on the Q1 2026 earnings call that they're "porting good bots to the developer platform." Reddit's own r/Devvit team is deprecating the older Blocks framework. The $1,000 App Migration Bounty is explicitly scoped to PRAW→Devvit moves — ContextMod is exactly that. FoxxMD's last ContextMod release was November 2022, weeks before Reddit's paid Data API tier launched in July 2023. The bot has been frozen at the pre-blackout boundary ever since, with 15+ operators stuck running it on dying infrastructure. This port unblocks all of them on the platform Reddit is actively recommending.
 
 > **What mods actually want:** The top-upvoted comment (94 upvotes, u/Aeroncastle) on the May 2026 r/modnews "Mod Monthly" thread is *"I want stronger tools to fight AI, not in person events"* (verified at [r/modnews/comments/1t6jggp](https://www.reddit.com/r/modnews/comments/1t6jggp/), top 6 sampled 2026-05-13). The next three top comments echo the same ask: u/critacle (34 upvotes) — *"Stop the AI bot spam. It's dominating /r/all. This is killing Reddit"*; u/GamingYouTube14 (21) — *"can you guys look into these new ai bots that adapt to the conversation? they're pretty much undetectable by any kind of algorithm"*; u/OMGWTFBBQUE (15) — *"If I have to remove another AI post I'm going to lose my shit. Fucking do something about it."* ContextMod is anti-AI-spam tooling by construction — `regex` catches the generic phrasings AI-generated spam reuses, `author` filters flag new-account / low-karma / no-verified-email patterns AI bot farms produce, `history` (Phase 4) detects cross-sub posting cadence that no human author would maintain. Plus the Observatory dashboard is the "reason-chain audit" r/TrustAndSafety asked for — every action chip surfaces the rule that fired, the activityId, and the context. ContextMod doesn't replace AutoMod (regex-only); it's the moderator's investigation workbench that runs alongside.
 
-**Capabilities (bullet list):**
+**Capabilities (bullet list — all SHIPPED in v0.2.0 unless flagged):**
 
-- **3 MVP rule kinds shipped** in v0.1.0: `regex` (multi-field threshold matching), `author` (basic criteria — age, karma, flair, isMod, isContributor, verified, shadowBanned), `ruleSet` (AND/OR composition).
-- **7 MVP actions**: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. All support Mustache templates over `{{item}}`, `{{author}}`, `{{rules.<name>.data}}` context.
-- **4 stretch rule kinds** in Phase 4: `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants). Upstream `mhs` toxicity classifier was **cut** from the Devvit port after Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider list to OpenAI + Gemini only — `api.moderatehatespeech.com` falls outside that carve-out.
-- **Filters** (`authorIs` / `itemIs`) gate Rule/Check/Action execution by author + item attributes. Same criteria set as upstream ContextMod.
-- **Flow control**: `postBehavior` per Check (`next` / `nextRun` / `stop` / `goto:<run>.<check>`).
-- **Named rules** for DRY composition.
-- **Observatory dashboard** (custom-post webview): action-telemetry surface with 24h sparkline, last 50 events with color-coded action chips, stat cards (actions today, mod time saved estimate, active rules, top rule). Ships in v0.1.0 against `?demo=1` synthetic data; live-data wiring lands at Phase 3 once Vinh's `events:recent` ZSET pipeline finishes.
-- **Wiki-based config** with 5-min refresh cron + manual reload from mod menu. Atomic publish via revision pointer so handleActivity always reads a consistent snapshot mid-event.
-- **Dry-run rule tester** mod menu action — point at any post/comment to see which rules would fire without taking action.
-- **Per-effect idempotency**: every action has a 5-min `pending` reservation + 7d `done` marker, so Devvit's at-least-once trigger delivery never double-applies the same mod action.
+- **3 MVP rule kinds shipped**: `regex` (`pattern` + `flags` + `target: 'title'|'body'|'url'`), `author` (`filter`: age + karma + flair + isMod + isContributor + verified + shadowBanned), `ruleset` (AND/OR composition with nested rules + named-rule references).
+- **URL-dedupe `repost` rule** promoted from Phase 4 to Phase 2.5.1 — atomic SET NX (Codex H7-hardened, no race), 30d TTL refresh on hit, fail-OPEN on Redis outage.
+- **7 MVP action handlers**: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. Reddit-API signatures verified against the actual `@devvit/reddit` surface in live playtest — caught 3 spec mismatches Vinh corrected (ban duration 0 ≠ permanent, lock routes via `getPostById().lock()`, `getCurrentSubredditName` doesn't exist).
+- **Mustache action templates** over `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context. Codex H4 hardening: `Mustache.escape` defaults to `escapeMarkdown` so raw `{{item.title}}` can't re-enable u/-ping or `[click](evil)` injection. Triple-stash `{{{...}}}` bypass for explicitly-raw moderator-authored fields.
+- **3 Phase 4 stretch rules in active development**: `history`, `attribution`, `recentActivity` (author-cache infrastructure backing all three). `repost` URL-dedupe variant shipped (above); image-hash repost (Phase 4.7) deferred post-hackathon (Day-0 feasibility spike never ran). Upstream `mhs` toxicity classifier **cut** from the Devvit port per Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist restricted to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out.
+- **Filters** (`authorIs` / `itemIs`) on Check short-circuit BEFORE rule evaluation — fast-fail when the post obviously can't trip the rule. Same predicate set as upstream ContextMod. Codex H5 fix: invalid regex in `titleMatches`/`bodyMatches`/`urlMatches` returns false instead of throwing.
+- **Flow control**: `postBehavior` per Check (`next` (default) / `stop` / `{goto: '<check-name>'}`). 100-iter safety break against circular goto.
+- **Named rules** for DRY composition. Declare once under top-level `namedRules`, reference via `{kind: 'named', name: '...'}`. Codex H6: unresolved name returns structured `{ok: false, errors}` not 500.
+- **Observatory dashboard** (custom-post webview): 4 stat cards (actions today, mod time saved estimate, active rules, top rule), 24h hourly sparkline, last 50 events with status-aware chips (green/blue/red/gray per `status: 'ok'|'dry-run'|'error'|'skipped-locked'`). Live data via `/api/recent` ZRANGE on the `events:recent50` ZSET. `?demo=1` synthetic-fixture path retained for screenshot capture.
+- **Wiki-based config** at `r/<sub>/wiki/botconfig/contextmod` with 5-min refresh cron + manual "Reload config from wiki" mod menu action. **Atomic publish via INCR-allocated revision pointer** — Codex H2 hardening closes the concurrent-publisher race that let two simultaneous writers silently overwrite each other's rev. Triggers pass the pre-read snapshot through to `handleActivity` (Codex H3 read-once invariant) so a publish between trigger normalization and rule execution cannot split a single event across revs.
+- **Dry-run rule tester** mod menu action — right-click any post/comment, modal pre-fills the thing ID, submit invokes the sibling `dryRunActivity()` pipeline that mirrors `handleActivity` but forces dry-run on every action. Toast bullets show which rules would fire. Zero Reddit side effects.
+- **Per-effect idempotency** (Devvit's trigger delivery is at-least-once): `cm:proc:{thingId}` 24h trigger dedupe + `cm:action:pending:{hash}` 5m reserve lease (with owner token, Codex CRITICAL #2) + `cm:action:done:{hash}` 7d done marker. **commitAction retries done-write 3× w/ backoff and refuses to release pending on persistent failure** (Codex CRITICAL #1) — prevents double mod-action when Redis hiccups mid-commit.
 
 **How mods use it:**
 
 1. Install via the App Directory (`developers.reddit.com/apps/cm-devvit`) → click "Add to community."
-2. Write JSON5 rules in `r/<sub>/wiki/contextmod`. Starter config seeded on install.
-3. View action telemetry via the Observatory dashboard post (created via mod menu). Renders with `?demo=1` synthetic data until Phase 3 wires live `events:recent` ZSET data.
-4. Dry-run rules on specific posts before letting them go live. Reload on every wiki edit (manual or 5-min auto).
+2. Write JSON5 rules in `r/<sub>/wiki/botconfig/contextmod`. Starter config auto-seeded on install. 3 example configs in repo `examples/` covering simple spam removal, fresh-account spam combo, and namedRules-based trusted-author auto-approve.
+3. From the mod menu: **ContextMod: Reload config from wiki** to publish edits — toast confirms rule count (`Loaded N rules (rev M).`). Or wait 5 min for cron auto-refresh.
+4. **ContextMod: Test rules on this item** (right-click any post or comment in mod overflow menu) → modal pre-fills thing ID → submit runs the full pipeline with dry-run forced → toast shows which rules would fire + which action chain would run. Zero side effects.
+5. **ContextMod: View recent actions** → Observatory custom post → dashboard renders live `events:recent50` ZSET data with status-aware action chips, 24h sparkline, stat cards.
 
 ---
 
@@ -75,13 +78,13 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 
 > **What Devpost asks:** "Describe any differences, improvements, or gaps between your new app and the original bot. Could this app be installed today and serve the original function of the app?"
 
-### Ported faithfully (rule engine + dashboard ship in v0.1.0)
+### Ported faithfully (Phase 1+2+3 ship in v0.2.0, in Reddit App Directory review)
 
 The concept model + rule semantics + wiki-config publish pipeline + dashboard all ship. Live-trigger wiring (`handleActivity` → rule pipeline → mod action) is the Phase 1 integration step Vinh is finishing through Day 5-8. What that means concretely:
 
 - Rule/Check/Action concept model + `postBehavior` flow control + `goto:` jumps — ported
 - Filter system (authorIs/itemIs) — ported
-- 3 MVP rule kinds + 7 MVP actions — ported as types + handlers; full integration lands Phase 2
+- 3 MVP rule kinds + 7 MVP action handlers — full integration shipped Phase 1+2 (Vinh's commits 6694109 + 9532cf4), Reddit-API signatures verified live in playtest
 - Wiki-based JSON5 config with AJV validation + atomic publish — working
 - Named rules + Mustache action templating — working
 - Per-effect idempotency (5min pending + 7d done) — improvement over upstream (CM didn't have explicit retry-safety primitives)
@@ -129,7 +132,7 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 1. `commitAction` swallowed Redis errors. If the Reddit side-effect succeeded but the `done` marker write failed, `releaseAction` deleted the `pending` lease and the next retry fired the same mod-action again. Fixed by adding 3x retry w/ backoff + throwing on persistent failure + never releasing pending unless done was actually written.
 2. `pending` lease had no owner token. If worker A's 5-min TTL expired and worker B took over, worker A's late `releaseAction` would delete worker B's valid lease, allowing a third execution. Fixed by storing a random token per reservation + compare-and-delete in commit/release.
 
-Four non-contract hotfixes shipped as separate atomic commits the same session (274aef6 dry-run authority, 8f6d608 repost SET NX, dafe050 commit retries, fc3851a lease token). 162 tests green, tsc clean.
+Four non-contract hotfixes shipped as separate atomic commits the same session (274aef6 dry-run authority, 8f6d608 repost SET NX, dafe050 commit retries, fc3851a lease token), plus 5 contract-touching fixes via ⚠️ CONTRACT commits (parseConfig wraps expandNamedRules, Mustache.escape default, filter regex try/catch, configStore atomic INCR, handleActivity ConfigSnapshot). 173 tests green, tsc clean. v0.2.0 submitted to Reddit App Directory review same-session.
 
 **Dry-run rule tester (Step 3.6) design choice.** The handleActivity contract was Vinh's; modifying its `void` return type to accept a `dryRun: true` option that returns structured results would have needed a `⚠️ CONTRACT` PR roundtrip per the team coordination protocol. Instead, shipped a sibling `src/core/dryRunActivity.ts` (~30 line duplication) that mirrors the pipeline but forces `dryRun: true` on every action and returns a structured `DryRunResult` for the form UI to render as toast bullets. Non-contract, no coordination needed, ships immediately.
 
