@@ -10,6 +10,7 @@ import { EmptyState } from './components/EmptyState';
 import { FilterChips, filterMatches, type EventFilter } from './components/FilterChips';
 import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -35,6 +36,7 @@ export default function App() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [filter, setFilter] = useState<EventFilter>({ kind: 'all' });
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState<boolean>(() => !hasSeenTour());
 
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
@@ -188,6 +190,7 @@ export default function App() {
       </div>
 
       <KeyboardOverlay open={overlayOpen} onClose={() => setOverlayOpen(false)} shortcuts={shortcuts} />
+      {tourOpen && <OnboardingTour onDone={() => setTourOpen(false)} />}
     </div>
   );
 }
