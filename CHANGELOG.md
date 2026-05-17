@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 (Items here have not yet shipped to Reddit App Directory. Promote to a versioned section on publish.)
 
+Forward-looking (post-v0.2.0, Phase 4+):
+- Phase 4 stretch rules: `history`, `attribution`, `recentActivity` (cache-backed; Vinh queue, capacity-permitting pre-deadline)
+- Phase 4.7 image-mode `repost` (gated on Day-0 perceptual-hash spike re-run; deferred from hackathon)
+- Tier 2/3 backlog (in-flight 2026-05-17): client API regression tests, CSV export pure-helper, README status-at-a-glance table, Mermaid refresh, examples expansion, Lighthouse audit
+- Operator outreach: r/Devvit progress post, 15+ third-party CM operator notifications post-App-Directory-approval
+
 ## [0.2.0] — 2026-05-16 / 2026-05-17
 
 Sprint sprint. Vinh shipped Phase 1+2+3 backend in a single day; Stephen shipped Step 3.6 dry-run rule tester + Codex CRITICAL/HIGH adversarial-review hotfixes + e2e screenshot captures + Devpost submission scaffolding. v0.2.0 submitted to Reddit App Directory review 2026-05-16 (email-on-approval within 1–7-day Reddit SLA).
@@ -71,27 +77,23 @@ Sprint sprint. Vinh shipped Phase 1+2+3 backend in a single day; Stephen shipped
 - "Best Ported App $10K" Devpost target. Form filled out as of 2026-05-17.
 - SampleOfNone Helper-nomination Discord ping scheduled 5/19 (T-8). FoxxMD fallback documented if she declines.
 
-### Added — Day 3 evening (post-0.1.0 polish, ~89 commits)
+## [0.1.5] — 2026-05-13 (pre-Phase-1 public-repo polish, ~89 commits)
+
+Day-3-evening dev polish work prior to Vinh's Phase 1 backend ship. Repo went public-flip-ready: docs + design tokens + governance files + Devpost gallery + Codex audit cycles + memory protocols locked. Phase 1+2+3 backend work landed afterwards as [0.2.0].
+
+### Added
 - `DESIGN.md` — brand + visual source-of-truth (Stitch open-source DESIGN.md spec format).
 - `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 + CC BY 4.0 attribution) + `SECURITY.md` (GitHub PVR + 90-day disclosure).
 - `.github/ISSUE_TEMPLATE/{bug_report,feature_request,config}.yml` + `.github/PULL_REQUEST_TEMPLATE.md` with Phase 1-6 scope checklist.
 - `src/client/lib/design-tokens.ts` — shared `SIGNAL` palette imported by both `tailwind.config.ts` + `EventRow.tsx` (single source of truth).
-- 5 Devpost gallery mockups (`assets/gallery-{dashboard,modmenu,wiki,install,trigger}.png`, 1200×800 3:2 Banana-generated). Matches the upload order in `docs/submission/devpost-form-cheat-sheet.md` Step 3 → dashboard / modmenu / wiki / install / trigger.
+- 5 Devpost gallery mockups (`assets/gallery-{dashboard,modmenu,wiki,install,trigger}.png`, 1200×800 3:2 Banana-generated). Superseded by live captures in [0.2.0].
 - `docs/superpowers/2026-05-13-research-deltas.md` — last-30-days Devvit + OSS-polish + Devpost-galleries intel capture from 3 parallel research agents.
 - `docs/superpowers/phase-3-ui-polish.md` — deferred frontend-design audit findings.
 - `docs/superpowers/foxxmd-kanban-seed.md` — 42-card seed plan for FoxxMD's Projects v2 board (added via GraphQL bulk).
 - `docs/submission/submission-day-runbook.md` — May 20 target / May 27 hard sequence Stephen executes top-to-bottom.
 - Synthetic-data demo recording plan added to `docs/submission/demo-video-runbook.md` (full beat-by-beat fallback if Phase 1 slips).
 
-### Phase scope (in flight)
-- **Phase 1** backend (Vinh's lane, finishing Day 5-8): `handleActivity` entry, `runRun` flow control, `runCheck` AND/OR composition, `runRule` dispatcher, filter system, named-rule resolver, Mustache action templating, atomic config-store revision pointer.
-- **Phase 2** (Day 5-8): 7 action handlers + 4 trigger routes.
-- **Phase 3** (Day 9-11): wire `/api/recent` + `/api/stats` to real `events:recent` ZSET, dashboard live data, mod-menu dry-run.
-- **Phase 4 stretch** (gated): `history` / `attribution` / `recentActivity` / `repost` rules + image-hash repost detection.
-- **Phase 5** (May 17-22): demo recording + Devpost form fill.
-- **Phase 6** (post-May 27): ship + open to FoxxMD's 15+ ContextMod operators.
-
-### Changed — Day 3 evening
+### Changed
 - Devvit dependency versions pinned exact (`@devvit/start`, `@devvit/web`, `devvit` all at `0.12.23`; no caret).
 - `tailwind.config.ts` `signal` palette now imports from `src/client/lib/design-tokens.ts`.
 - `StatsRow.tsx`: hardcoded hex `accent` prop refactored to typed `AccentToken` mapped to Tailwind utility classes; "Active rules" card wired to `pulse-dot` keyframe.
@@ -100,23 +102,23 @@ Sprint sprint. Vinh shipped Phase 1+2+3 backend in a single day; Stephen shipped
 - README v1.1: Phase-scope FAQ + Install troubleshooting section.
 - Writeup-draft "What mods actually want" paragraph added — anti-AI-spam framing per r/modnews top-upvoted thread (94 upvotes u/Aeroncastle + 3 reinforcing voices total +70 upvotes).
 
-### Fixed — Day 3 evening
+### Fixed
 - 6 Codex audit cycles caught + fixed: AI-tone scanner silent false-negative (`<<<"$out"` here-string in restricted-/tmp envs), README phase-framing contradictions, DESIGN.md 3 factual errors vs code (Lucide 1.5→1.6, Sparkline 1.5px→1.25px, EventRow row-height confusion), CHANGELOG hard date dropped for TBD, README `app.schema.json` path clarified as Phase-1 deliverable, CONTRIBUTING Redis primitives broadened (transactions + bitfield exist), PR template Phase-5+ split into P5 + P6, CODE_OF_CONDUCT CC BY 4.0 license reference explicit, bug_report dropdown `default: 0` for required-submission unblock.
 - Devpost elevator pitch trimmed 205 → 198 chars (200 cap).
 - WAU threshold disambiguated (Migration Bounty 1K vs hackathon 500 — separate programs).
 - Outreach drafts: `gh auth refresh -s` (adds scopes) corrected to `--remove-scopes` (removes scopes).
 - 4 absolute local paths in plan docs sanitized to `<upstream CM repo>` placeholders before public flip.
 
-### Security — Day 3 evening
+### Security
 - `.gitignore` excludes `docs/submission/_video-source/` (raw demo recordings).
 - Pre-flip secret audit: zero `.env`, API keys, GitHub PATs, AWS keys, or Devvit auth tokens in 100+-commit history.
 - `gh` CLI scope downgrade documented: `gh auth refresh --remove-scopes project` after kanban-board seeding stabilizes.
 
-### Docs — Day 3 evening
+### Docs
 - 6 Codex audit cycles + 3 parallel research-agent dispatches + Firecrawl-verified Reddit citations + Playwright-verified rendered surfaces.
 - Memory protocols locked: tool-inventory-audit-per-task + playwright-verification-protocol + commits-atomic-for-activity.
 
-## [0.1.0] - 2026-05-20 (target submission; hard deadline 2026-05-27)
+## [0.1.0] — 2026-05-13 (initial Devvit Web port, scaffold)
 
 Initial Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot, submitted to the Reddit Mod Tools and Migrated Apps Hackathon. Port permission granted via [FoxxMD/context-mod#152](https://github.com/FoxxMD/context-mod/issues/152).
 
