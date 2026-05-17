@@ -29,10 +29,16 @@ const DANGEROUS_PREFIXES = new Set(['=', '+', '-', '@', '\t', '\r']);
 //   \u2028-\u202F          line/paragraph sep + bidi controls + narrow no-break
 //   \u2060-\u206F          word joiner + invisible + deprecated formatting
 //   \uFEFF                  zero-width no-break space (BOM mid-string)
+//
+// C0 control range is INTENTIONAL per OWASP CSV-injection bypass coverage
+// (must strip these from cell front so an attacker can't smuggle a formula
+// behind invisible control chars).
+/* eslint-disable no-control-regex */
 const LEADING_STRIP_RE = new RegExp(
   '^[\\s\\u0000-\\u001F\\u200B-\\u200F\\u2028-\\u202F\\u2060-\\u206F\\uFEFF]+',
   'u',
 );
+/* eslint-enable no-control-regex */
 
 export function actionMarker(
   status: 'ok' | 'skipped-locked' | 'dry-run' | 'error' | undefined,
