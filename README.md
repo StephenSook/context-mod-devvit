@@ -3,7 +3,7 @@
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
-> Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, and Observatory dashboard all ship live in v0.1.0 (Phase 1+2+3 complete 2026-05-16). Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
+> Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, and Observatory dashboard all ship live in v0.2.0 (Phase 1+2+3 complete 2026-05-16, in Reddit App Directory review). Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
@@ -52,6 +52,23 @@ The `dev:web` script chains `vite build` → `node scripts/dev/mock-server.cjs`.
 
 To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
+## Status at a glance
+
+| Phase | State | Notes |
+|-------|-------|-------|
+| **Phase 0** — Scaffold | ✅ Shipped | `devvit.json` + routes + idempotency primitives + Observatory dashboard chrome |
+| **Phase 1** — Rule engine | ✅ Shipped | regex + author + ruleSet + named rules + Mustache + filters + run state machine (93 tests) |
+| **Phase 2** — Actions + handleActivity | ✅ Shipped | 7 MVP actions + handleActivity orchestrator + URL-dedupe repost rule (promoted from Phase 4) |
+| **Phase 3** — Config UX + live dashboard | ✅ Shipped | wiki loader cron + reload-config menu + onAppInstall seed + onAppUpgrade migrations + live `/api/recent` ZRANGE |
+| **Step 3.6** — Dry-run rule tester | ✅ Shipped | mod menu → form → toast bullets; non-contract `dryRunActivity` sibling preserves read-once config invariant |
+| **Codex adversarial hardening** | ✅ Shipped | 2 CRITICAL + 10 HIGH safety findings closed (idempotency double-action, dry-run authority, repost `SET NX`, atomic INCR config publish, read-once invariant, Mustache markdown injection, filter regex try/catch, parsed-config invariant) |
+| **v0.2.0** | 🟡 In review | Reddit App Directory review submitted 2026-05-16; 1–7 day SLA, email-on-approval |
+| **Phase 4** — `history` / `attribution` / `recentActivity` rules | 🟡 In progress | Vinh's stretch queue, capacity-permitting pre-deadline; may defer post-hackathon |
+| **Phase 4.7** — Image-mode `repost` (perceptual blockhash) | ⏸ Deferred | Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission |
+| **MHS** (ModerateHateSpeech HTTP fetch) | ✂️ Cut | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech |
+
+For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.md).
+
 ## Status — what's production vs scaffolded vs Phase-N pending
 
 **Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below shows the per-component ship state. Phase 1+2+3 complete; Phase 4 stretch rules in progress.
@@ -74,7 +91,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-162 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite); `tsc --build` clean.
+186 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite + status-aware chip + CSV export helper); `tsc --build` clean.
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
