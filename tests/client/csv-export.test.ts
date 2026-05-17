@@ -172,12 +172,18 @@ describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () 
     expect(neutralizeCsvFormula('@SUM(A1)')).toBe("'@SUM(A1)");
   });
 
-  it('prefixes tab with single quote', () => {
+  it('prefixes leading-tab-then-= with single quote (formula after strip)', () => {
     expect(neutralizeCsvFormula('\t=cmd')).toBe("'\t=cmd");
   });
 
-  it('prefixes CR with single quote', () => {
-    expect(neutralizeCsvFormula('\rmalicious')).toBe("'\rmalicious");
+  it('does NOT prefix bare CR + non-formula content (no formula visible after strip — Q2 semantics)', () => {
+    // Old behavior over-aggressive: flagged any CR-prefixed content. New (Q2)
+    // strips CR + checks visible char — "malicious" is not a formula, no neutralize.
+    expect(neutralizeCsvFormula('\rmalicious')).toBe('\rmalicious');
+  });
+
+  it('prefixes CR-then-= with single quote (formula after strip)', () => {
+    expect(neutralizeCsvFormula('\r=cmd')).toBe("'\r=cmd");
   });
 
   it('leaves safe values unchanged', () => {
@@ -188,6 +194,61 @@ describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () 
 
   it('leaves empty string unchanged', () => {
     expect(neutralizeCsvFormula('')).toBe('');
+  });
+
+  describe('OWASP bypass-class hardening (Codex second-pass BLOCKER)', () => {
+    it('prefixes when leading single ASCII space hides the =', () => {
+      const out = neutralizeCsvFormula(' =cmd|"/c calc"!A1');
+      expect(out.charAt(0)).toBe("'");
+      expect(out).toBe('\' =cmd|"/c calc"!A1');
+    });
+
+    it('prefixes when leading multiple spaces hide the =', () => {
+      expect(neutralizeCsvFormula('   =HYPERLINK("evil","x")')).toBe(
+        '\'   =HYPERLINK("evil","x")',
+      );
+    });
+
+    it('prefixes when leading tab + space mix hides the +', () => {
+      expect(neutralizeCsvFormula('\t +cmd')).toBe("'\t +cmd");
+    });
+
+    it('prefixes when leading U+202E RLO (bidi) hides the =', () => {
+      const evil = '‮=HYPERLINK("https://attacker.test","click")';
+      const out = neutralizeCsvFormula(evil);
+      expect(out.charAt(0)).toBe("'");
+      expect(out).toBe("'" + evil);
+    });
+
+    it('prefixes when leading U+200B ZWSP (zero-width) hides the +', () => {
+      const out = neutralizeCsvFormula('​+SUM(A1)');
+      expect(out.charAt(0)).toBe("'");
+    });
+
+    it('prefixes when leading U+FEFF (BOM mid-string position 0) hides the =', () => {
+      const out = neutralizeCsvFormula('﻿=DDE("cmd","/c calc","")');
+      expect(out.charAt(0)).toBe("'");
+    });
+
+    it('prefixes when leading U+202D LRO hides the @', () => {
+      const out = neutralizeCsvFormula('‭@SUM(A1)');
+      expect(out.charAt(0)).toBe("'");
+    });
+
+    it('prefixes when leading C0 control char (U+0001 SOH) hides the =', () => {
+      const out = neutralizeCsvFormula('=cmd');
+      expect(out.charAt(0)).toBe("'");
+    });
+
+    it('leaves all-whitespace value unchanged (no formula present)', () => {
+      expect(neutralizeCsvFormula('   ')).toBe('   ');
+      expect(neutralizeCsvFormula('\t\t')).toBe('\t\t');
+    });
+
+    it('leaves all-bidi-control value unchanged (no visible content)', () => {
+      const out = neutralizeCsvFormula('‮​﻿');
+      expect(out).toBe('‮​﻿');
+    });
   });
 
   it('eventsToCsv integration: malicious activityId neutralized in output', () => {
