@@ -194,10 +194,63 @@ thanks to:
 
 ---
 
+## 6. r/Devvit MID-HACKATHON progress post (2026-05-17, T-10)
+
+**Context:** Now that v0.2.0 is in Reddit App Directory review + Phase 1+2+3 shipped, post to r/Devvit before submission day to (a) get eyes on the build w/ time to iterate on feedback, (b) plant a "this is a real port" signal vs the eventual AI-marketing wave that hits r/Devvit during hackathon week, (c) recruit playtesters from the active sub before May 27. Different post from §3 (early "is this the right path" check) and §5 (post-submission announcement).
+
+**Send:** May 17–20 window (T-10 to T-7). After is too late to iterate; before is too early (we didn't have v0.2.0 in review then). Skip if r/Devvit moderator policy disallows project posts.
+
+**Pre-paraphrase draft (~500 words; Stephen cuts ~50% per outreach paraphrase pattern):**
+
+```
+title: ContextMod (PRAW → Devvit Web port) v0.2.0 in App Directory review — looking for playtest feedback before mod tools hackathon submit
+
+body:
+
+mid-hackathon update on the ContextMod Devvit Web port my teammate and i have been building. v0.2.0 went into Reddit App Directory review yesterday (2026-05-16), 1–7 day SLA. wanted to share before submission day in case anyone has playtest feedback worth iterating on.
+
+what shipped in v0.2.0:
+- Phase 1 rule engine: regex / author / ruleSet rules, named rules, Mustache action templates, filters (authorIs / itemIs), AND/OR combinators, postBehavior state machine with 100-iter safety break
+- Phase 2: 7 MVP actions (remove / approve / lock / comment / report / ban / userFlair) + handleActivity orchestrator + URL-dedupe repost rule (promoted from Phase 4 to Phase 2 via SET NX atomic)
+- Phase 3: wiki config loader + 5-min refresh cron + reload-config mod menu + onAppInstall seed + onAppUpgrade migrations + live Observatory dashboard reading from events:recent50 ZSET
+- Step 3.6 dry-run rule tester (mod right-clicks → "Test rules on this item" → form → toast with would-have-fired bullets, zero Reddit side-effects)
+- Codex adversarial review caught + fixed 2 CRITICAL + 10 HIGH safety findings BEFORE submission (idempotency double-action, dry-run authority, repost SET NX, atomic INCR config publish, read-once invariant, Mustache markdown injection, filter regex try/catch, parsed-config invariant, lease owner tokens, status-aware ActionResult propagation)
+- 223 tests passing, tsc clean, lint clean
+
+what worked great about devvit:
+- per-sub install model + per-install Redis isolation means we got rid of the original CM's central server + token management entirely. install is one click; uninstall is one click.
+- type-safe trigger payloads + the Hono routing model made the rule pipeline a clean transformation chain
+- AJV validation on wiki config means bad config doesn't kill the bot — last known-good revision stays active + dashboard chip surfaces the parse error
+
+what we hit limits on (these are honest feedback, not complaints):
+- Devvit Redis primitives are strings + hashes + sorted sets only — no Lists, no Sets, no Lua/transactions. We hand-rolled atomic-across-key patterns (idempotency leases with owner tokens, atomic config publish via INCR-allocated rev, ZSET ring buffers) around the constraint. A first-party "Devvit-Redis-patterns" doc would close this gap.
+- vite plugin blocks vite dev / vite preview by default — had to chain vite build → mock node http server for the dashboard's local-dev story
+- Devvit form submit envelope is FLAT (`{thingId}`) not nested (`{values: {thingId}}`) per doc convention — caught this only in playtest, defensive multi-shape parse now covers both
+- HTTP fetch policy AI-provider allowlist (PR #96 2026-05-08) excluded ModerateHateSpeech, which is what the original CM uses for hate-speech filtering — we cut that rule and documented why in CHANGELOG + writeup. A moderation-classifier allowlist carve-out would unblock anti-AI-spam tooling, which is the loudest demand on r/modnews right now.
+
+what's deferred:
+- Phase 4 stretch: history, attribution, recentActivity rules (cache-backed; on the post-hackathon roadmap)
+- Phase 4.7 image-mode repost (perceptual blockhash — Day-0 spike not run; gated post-hackathon)
+
+repo: github.com/StephenSook/context-mod-devvit (MIT, public, CI green, 223 tests)
+app: developers.reddit.com/apps/cm-devvit (v0.2.0 in review)
+permission: github.com/FoxxMD/context-mod/issues/152
+
+if you mod a sub + have an itch to playtest before submission, dm me and i'll send the install link. happy for feedback / bug reports / "this is dumb" notes before submission day.
+
+thanks to everyone in the r/Devvit Discord who answered questions through this build.
+```
+
+**AI-tone scan:** clear (no trigger words from `./scripts/check-ai-tone.sh` blocklist).
+
+**Stephen paraphrase pre-cut:** drop ~50% of the bulleted "shipped in v0.2.0" + "limits we hit" sections (per [[outreach-paraphrase-pattern]]). Concrete prediction: Stephen will cut the Codex hardening bullet list to a single sentence, drop the named-list lengths, and add one personal-voice line at the top.
+
+---
+
 ## Stephen's editorial pass (before sending any of these)
 
 For each message:
 1. Read the full draft aloud. If any line makes you wince, rewrite it.
-2. Replace at least one phrase per message with your own wording — it should not sound like the same writer wrote all five.
+2. Replace at least one phrase per message with your own wording — it should not sound like the same writer wrote all six.
 3. Re-run `./scripts/check-ai-tone.sh` against the literal text you're about to paste (the scanner now covers this file too).
 4. Don't include the AI-tone scan footers in the actual send.
