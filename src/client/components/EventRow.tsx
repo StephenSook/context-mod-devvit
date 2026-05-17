@@ -1,6 +1,7 @@
 import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle, type LucideIcon } from 'lucide-react';
 import type { ActionKind, EventRecord } from '../lib/types';
 import { SIGNAL } from '../lib/design-tokens';
+import { chipColorForStatus, chipMarkerForStatus } from '../lib/chip';
 
 const KIND_ICON: Record<ActionKind, LucideIcon> = {
   remove: Trash2,
@@ -12,9 +13,8 @@ const KIND_ICON: Record<ActionKind, LucideIcon> = {
   userFlair: Tag,
 };
 
-// Source-of-truth: SIGNAL palette in src/client/lib/design-tokens.ts.
-// Tailwind config + this map both import the same constants — change a
-// value once, both update.
+// First-action icon color uses kind color for ok results; chip variant
+// rendering moved to src/client/lib/chip.ts (Codex H2 status propagation).
 const KIND_COLOR: Record<ActionKind, string> = {
   remove: SIGNAL.err,
   approve: SIGNAL.ok,
@@ -60,19 +60,24 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
       </div>
 
       <div className="flex items-center gap-1.5">
-        {event.actions.map((a, i) => (
-          <span
-            key={`${a.kind}-${i}`}
-            className="telemetry text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm"
-            style={{
-              color: a.ok ? KIND_COLOR[a.kind] : SIGNAL.err,
-              background: `${a.ok ? KIND_COLOR[a.kind] : SIGNAL.err}14`,
-              border: `1px solid ${a.ok ? KIND_COLOR[a.kind] : SIGNAL.err}33`,
-            }}
-          >
-            {a.kind}{!a.ok ? '✗' : ''}
-          </span>
-        ))}
+        {event.actions.map((a, i) => {
+          const color = chipColorForStatus(a.status, a.kind, a.ok);
+          const marker = chipMarkerForStatus(a.status, a.ok);
+          return (
+            <span
+              key={`${a.kind}-${i}`}
+              className="telemetry text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-sm"
+              style={{
+                color,
+                background: `${color}14`,
+                border: `1px solid ${color}33`,
+              }}
+              title={a.status ? `status: ${a.status}` : a.ok ? 'ok' : 'failed'}
+            >
+              {a.kind}{marker}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
