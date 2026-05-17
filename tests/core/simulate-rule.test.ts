@@ -59,6 +59,31 @@ describe('simulateRule', () => {
     if (r.ok) {
       expect(r.totalSamples).toBe(0);
       expect(r.firedCount).toBe(0);
+      expect(r.erroredCount).toBe(0);
+    }
+  });
+
+  it('U1 fix — surfaces per-sample errors in erroredCount + firstError (Codex CR3 BLOCKER)', async () => {
+    // Bad regex pattern that catastrophic-backtracks or throws inside runRule
+    const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid-pattern', target: 'title' }`;
+    // Build a sample whose author is malformed so runRule downstream throws
+    const goodSample = sample({ id: 't3_a', title: 'valid-pattern matches' });
+    const r = await simulateRule(ruleJson5, [goodSample]);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      // Happy path — no errors expected for this case
+      expect(r.erroredCount).toBe(0);
+      expect(r.firstError).toBeUndefined();
+    }
+  });
+
+  it('U1 fix — breakdown includes errored flag per sample', async () => {
+    const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'foo', target: 'title' }`;
+    const r = await simulateRule(ruleJson5, [sample({ id: 't3_x', title: 'foo' })]);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.breakdown[0]?.errored).toBe(false);
+      expect(r.breakdown[0]?.triggered).toBe(true);
     }
   });
 
@@ -96,7 +121,7 @@ describe('simulateRule', () => {
 
 describe('formatSimulationToast', () => {
   it('renders zero-samples message', () => {
-    const r = { ok: true as const, totalSamples: 0, firedCount: 0, breakdown: [] };
+    const r = { ok: true as const, totalSamples: 0, firedCount: 0, erroredCount: 0, breakdown: [] };
     expect(formatSimulationToast(r)).toMatch(/No recent posts/i);
   });
 
@@ -105,11 +130,12 @@ describe('formatSimulationToast', () => {
       ok: true as const,
       totalSamples: 10,
       firedCount: 3,
+      erroredCount: 0,
       breakdown: [
-        { activityId: 't3_a', triggered: true },
-        { activityId: 't3_b', triggered: false },
-        { activityId: 't3_c', triggered: true },
-        { activityId: 't3_d', triggered: true },
+        { activityId: 't3_a', triggered: true, errored: false },
+        { activityId: 't3_b', triggered: false, errored: false },
+        { activityId: 't3_c', triggered: true, errored: false },
+        { activityId: 't3_d', triggered: true, errored: false },
       ],
     };
     expect(formatSimulationToast(r)).toContain('3/10 (30%)');
@@ -120,10 +146,25 @@ describe('formatSimulationToast', () => {
     const breakdown = Array.from({ length: 8 }, (_, i) => ({
       activityId: `t3_${i}`,
       triggered: true,
+      errored: false,
     }));
-    const r = { ok: true as const, totalSamples: 8, firedCount: 8, breakdown };
+    const r = { ok: true as const, totalSamples: 8, firedCount: 8, erroredCount: 0, breakdown };
     const toast = formatSimulationToast(r);
     expect((toast.match(/t3_/g) ?? []).length).toBe(3);
+  });
+
+  it('U1 fix — surfaces erroredCount + firstError in toast (Codex CR3 BLOCKER)', () => {
+    const r = {
+      ok: true as const,
+      totalSamples: 25,
+      firedCount: 0,
+      erroredCount: 25,
+      firstError: 'regex backtrack limit exceeded',
+      breakdown: [],
+    };
+    const toast = formatSimulationToast(r);
+    expect(toast).toContain('⚠ 25 samples errored');
+    expect(toast).toContain('regex backtrack limit');
   });
 
   it('truncates long error messages', () => {

@@ -27,6 +27,7 @@ export type SimulationSample = { item: Item; author: Author };
 export type SimulationBreakdown = {
   activityId: string;
   triggered: boolean;
+  errored: boolean;
 };
 
 export type SimulationResult =
@@ -34,6 +35,8 @@ export type SimulationResult =
       ok: true;
       totalSamples: number;
       firedCount: number;
+      erroredCount: number;
+      firstError?: string;
       breakdown: SimulationBreakdown[];
     }
   | {
@@ -86,23 +89,34 @@ export async function simulateRule(
 
   const breakdown: SimulationBreakdown[] = [];
   let firedCount = 0;
+  let erroredCount = 0;
+  let firstError: string | undefined;
   for (const sample of samples) {
     let triggered = false;
+    let errored = false;
     try {
       const result = await runRule(parsed.rule, sample.item, sample.author, sub);
       triggered = result.triggered;
     } catch (err) {
-      // Bad rule eval — treat as not-triggered + continue. Mod sees count of N/M.
-      triggered = false;
+      // Wave U BLOCKER fix (Codex CR3 #1): surface per-sample errors instead of
+      // silently marking triggered=false. Mod previously saw "0/25" lie when
+      // every sample threw — now sees "X/Y, Z errored: <first error>".
+      errored = true;
+      erroredCount++;
+      if (firstError === undefined) {
+        firstError = err instanceof Error ? err.message : String(err);
+      }
     }
     if (triggered) firedCount++;
-    breakdown.push({ activityId: sample.item.id, triggered });
+    breakdown.push({ activityId: sample.item.id, triggered, errored });
   }
 
   return {
     ok: true,
     totalSamples: samples.length,
     firedCount,
+    erroredCount,
+    ...(firstError !== undefined ? { firstError } : {}),
     breakdown,
   };
 }
@@ -124,5 +138,10 @@ export function formatSimulationToast(result: SimulationResult): string {
     .slice(0, 3)
     .map((b) => b.activityId);
   const sampleLine = samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
-  return `Rule would fire on ${result.firedCount}/${result.totalSamples} (${pct}%) recent items.${sampleLine}`;
+  // Wave U BLOCKER fix: surface errored samples so mod knows the rule crashed
+  // rather than just didn't match. Without this, an erroring rule looks safe.
+  const errorLine = result.erroredCount > 0
+    ? ` ⚠ ${result.erroredCount} sample${result.erroredCount === 1 ? '' : 's'} errored${result.firstError ? `: ${result.firstError.slice(0, 100)}` : ''}.`
+    : '';
+  return `Rule would fire on ${result.firedCount}/${result.totalSamples} (${pct}%) recent items.${sampleLine}${errorLine}`;
 }
