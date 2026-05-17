@@ -1,0 +1,68 @@
+name: "Config help"
+description: "Get help debugging a ContextMod JSON5 config"
+title: "[CONFIG HELP] "
+labels: ["config-help", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Config Help
+
+        Stuck on a JSON5 config? Use this template — paste your wiki config + the toast/error you see + what you expected to happen. The `triage` label routes this to the operator-support queue.
+
+        Before filing: check [`examples/README.md`](https://github.com/StephenSook/context-mod-devvit/tree/main/examples) for working configs + the schema quick-reference, and [`docs/migration-compatibility.md`](https://github.com/StephenSook/context-mod-devvit/blob/main/docs/migration-compatibility.md) if you're porting from upstream PRAW-era ContextMod.
+  - type: input
+    id: subname
+    attributes:
+      label: Subreddit (or N/A if you don't want to share)
+      description: Helps us reproduce against your install state. Leave blank if private.
+      placeholder: "r/your-sub"
+    validations:
+      required: false
+  - type: textarea
+    id: config
+    attributes:
+      label: Your JSON5 config (paste content of `r/<sub>/wiki/botconfig/contextmod`)
+      description: Strip anything sensitive before pasting (usernames in nameIn lists, internal mod-team names, etc).
+      render: json5
+    validations:
+      required: true
+  - type: textarea
+    id: toast
+    attributes:
+      label: What toast / error message did you see?
+      description: Verbatim toast text from "Reload config from wiki" OR dashboard parse-error chip.
+      placeholder: "Loaded 0 rules (rev 3). — but I expected 5 rules"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      description: Describe the intended moderation behavior — what should the bot do on a specific post/comment?
+    validations:
+      required: true
+  - type: dropdown
+    id: kinds
+    attributes:
+      label: Which rule kind(s) are involved?
+      multiple: true
+      options:
+        - regex
+        - author
+        - ruleSet
+        - named-rule reference
+        - repost (URL mode)
+        - I'm not sure
+    validations:
+      required: true
+  - type: checkboxes
+    id: tried
+    attributes:
+      label: What have you already tried?
+      options:
+        - label: "Read `examples/README.md` for the schema quick-reference"
+        - label: "Ran `ContextMod: Test rules on this item` (dry-run mod menu) — pasted the toast above"
+        - label: "Checked the wiki page exists at `r/<sub>/wiki/botconfig/contextmod` (NOT just `wiki/contextmod`)"
+        - label: "Looked at one of the working example configs in `examples/`"
+        - label: "Checked `docs/migration-compatibility.md` if migrating from upstream PRAW ContextMod"
