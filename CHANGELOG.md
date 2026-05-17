@@ -6,6 +6,71 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
+(Items here have not yet shipped to Reddit App Directory. Promote to a versioned section on publish.)
+
+## [0.2.0] — 2026-05-16 / 2026-05-17
+
+Sprint sprint. Vinh shipped Phase 1+2+3 backend in a single day; Stephen shipped Step 3.6 dry-run rule tester + Codex CRITICAL/HIGH adversarial-review hotfixes + e2e screenshot captures + Devpost submission scaffolding. v0.2.0 submitted to Reddit App Directory review 2026-05-16 (email-on-approval within 1–7-day Reddit SLA).
+
+### Added
+
+- **Phase 1 — Core engine** (Vinh, commit 6694109, 93 tests). Redis key schema (`src/state/keys.ts`, multi-tenant), JSON5+AJV config loader + named-rule expansion (`src/core/{config,namedRules}.ts`), atomic config publish (`src/state/configStore.ts`), filter evaluation (`src/core/filters.ts`), Mustache renderer (`src/core/template.ts`), rule dispatcher + 3 MVP rule kinds — regex / author / ruleSet (`src/core/runRule.ts`, `src/rules/*`), check evaluation w/ short-circuit (`src/core/runCheck.ts`), run state machine w/ postBehavior + 100-iter safety (`src/core/runRun.ts`).
+- **Phase 2 — Actions + handleActivity** (Vinh, commit 9532cf4, 137 tests total). Action dispatcher w/ per-action idempotency wrap (`src/core/runAction.ts`), 7 MVP actions — remove / approve / lock / comment / report / ban / userFlair (`src/actions/*.ts`), handleActivity orchestrator (`src/core/handleActivity.ts`), onPostSubmit + onCommentSubmit trigger wire-up (`src/routes/triggers.ts`), URL-dedupe Repost rule promoted from Phase 4 to Phase 2.5.1 (`src/rules/repost.ts`), dry-run config flag (Phase 2.5.2), Mustache markdown-injection sanitizer (Phase 2.5.3).
+- **Phase 3 — Config UX + live dashboard data** (Vinh, commit 983c949, 147 tests). onAppInstall default-config seed (`src/routes/triggers.ts`, `src/config/default-config.ts`), wiki config loader + refresh-config cron (`src/core/configSource.ts`, `src/routes/scheduler.ts`), reload-config mod menu action, recent events ZSET + `/api/recent` read path w/ migrate() forward-compat shape (`src/state/recentEvents.ts`, `src/routes/api.ts`), onAppUpgrade migrations (`src/state/migrations.ts`).
+- **Step 3.6 — Dry-run rule tester** (Stephen). Non-contract sibling `src/core/dryRunActivity.ts` that mirrors handleActivity's eval pipeline but forces dryRun on every action + returns structured `DryRunResult` instead of writing to ZSET. Wired through `src/routes/menu.ts` `/test-rules` (showForm) + `src/routes/forms.ts` `/test-rules-submit` (toast bullets). 8 new tests across dryRunActivity + menu + form routes.
+- **Live e2e scenario captures** (`docs/screenshots/scenario-{g-reload-toast,f-dryrun-form,f-dryrun-toast,h-dashboard-empty}.png`) — Scenarios G + F + H captured against playtest v0.2.0.8 running on `r/cm_devvit_test`. Stephen used Cmd-Shift-4 during the live trigger sequence; live captures preferred over banana mockups for image gallery.
+- **`docs/screenshots/CAPTURE-CHECKLIST.md`** — 8 scenario-by-scenario OBS + Cmd-Shift-4 capture plan tied to e2e-scenarios.md, with the "Playwright MCP can't reach mod-auth views" honest caveat.
+- **Devpost submission cheat sheet** (`docs/submission/devpost-form-cheat-sheet.md`) refreshed for v0.2.0 reality. Paste-ready Project name + Elevator pitch + About-the-project Markdown + Tool overview + Project Impact + Port Completion + Helper nomination drafts + 5 image gallery captions + "Try locally in 3 commands" judge-friction block.
+- **Vinh external identifiers memory** — GitHub `vinhbin`, Reddit `u/Outside-Research-772` (confirmed 2026-05-17).
+- **Status-aware ActionResult propagation** — `RecentEvent.actions[]` carries `status: 'ok' | 'dry-run' | 'error' | 'skipped-locked'` + optional `wouldHaveCalled`. Dashboard renders status-aware chip variants (green/blue/red/gray).
+- **`docs/superpowers/codex-reviews/`** audit-trail directory — Vinh Phase 1+2 review, full-session retrospective, 2026-05-17 enhancement audit. Stored for post-hackathon reference.
+
+### Changed
+
+- **Mustache.escape now defaults to escapeMarkdown** (`src/core/template.ts`, Codex H4 hardening). Raw `{{item.title}}` no longer re-enables u/-ping or `[click](evil)` injection. Triple-stash `{{{...}}}` bypass for explicitly-raw moderator-authored fields. Action templates updated to treat Safe field aliases as identical to raw.
+- **Global config.dryRun is authoritative** (`src/core/runAction.ts`, Codex H1 hardening). Per-action `dryRun: false` can no longer demote a globally-safe config to live; only ELEVATE to dry-run.
+- **configStore.publish allocates rev via atomic INCR** (`src/state/configStore.ts` + new `src/state/keys.ts:cfgRevCounter`, Codex H2 hardening). Closes the read-modify-write race that let concurrent publishers silently overwrite each other's rev.
+- **handleActivity accepts optional `ConfigSnapshot` param** (`src/core/handleActivity.ts`, Codex H3 hardening). Triggers pass the pre-read snapshot through so a publish between trigger normalization and rule execution cannot split a single event across revs.
+- **forms `/test-rules-submit` routes via normalizePost/normalizeComment** (`src/routes/forms.ts`, Codex session HIGH-1). Was hand-building Author with all defaults, which silently disagreed with live moderation for author-aware rules.
+- **RecentEvent.actions carries full ActionResult shape** (`src/state/recentEvents.ts` + `src/core/handleActivity.ts` + `src/client/lib/types.ts`, Codex session HIGH-2). `status` + optional `wouldHaveCalled` propagate; `ok: boolean` retained for back-compat.
+- **filter regex try/catch** (`src/core/filters.ts`, Codex H5 partial). Bad pattern → false instead of throw (mirrors rule regex behavior). Parse-time catastrophic-backtracking validator deferred post-hackathon.
+- **parseConfig wraps expandNamedRules** (`src/core/config.ts`, Codex H6). ParseResult invariant holds even when a named-rule ref is unresolved — returns `{ok:false, errors}` not 500.
+- **repost rule uses atomic SET NX** (`src/rules/repost.ts`, Codex H7). Race-eliminated concurrent same-URL dedupe; fail-OPEN on Redis outage preserved.
+- **App slug renamed back to `cm-devvit`** for public Devpost submission (Vinh's dev sub keeps `contextmod_vinh_dev` unchanged).
+- **Devpost cheat sheet refreshed** for Phase 1+2+3 shipped + Codex-hardened + v0.2.0 review reality (commit 3aec7ab + 1df1d3b).
+- **`package.json` version `0.0.2` → `0.2.0`** — synced with Devvit-published version.
+- **PLAN.md 3.5 + 3.6 flipped ✅** with Wave A–F + dryRunActivity citations.
+- **README Status table refreshed** to 13 Production rows (was 6) — Phase 1+2+3 + Codex hotfixes baked in.
+- **README stale "Phase N pending" prose** purged across 11 references (commit a40dbe0).
+
+### Fixed
+
+- **commitAction retries done-write 3× w/ backoff + refuses to release pending on failure** (`src/lib/idem.ts`, Codex CRITICAL #1). Prevents double-action when Redis hiccups: if the side-effect succeeds but the done-marker write fails, the pending lease is NOT released (would re-open the gate). 5-min TTL on pending caps the worst-case wait.
+- **Pending lease carries owner token** (`src/lib/idem.ts`, Codex CRITICAL #2). Compare-and-delete so a slow worker can't accidentally delete a successor's valid lease (third-execution race on slow-worker timeout).
+- **Devvit form submit envelope is FLAT** (`src/routes/forms.ts`, live-playtest catch 2026-05-16). Was assuming `{values: {thingId}}` nested shape per doc convention; actual envelope is `{thingId}` flat. Defensive multi-shape parse now covers both.
+- **`disabled: true` on form thingId field dropped from submission** (`src/routes/menu.ts`, live-playtest catch). Disabled fields don't submit per Devvit/HTML spec.
+- **examples/ schema drift** — wiki path (`wiki/contextmod` → `wiki/botconfig/contextmod`), schema path (`src/server/schema/...` → `src/schema/...`), field names (`condition`→`combinator`, `criteria`→`filter`, `testOn`→`target`, `patterns`→`pattern`, `named_rules`→`namedRules`, `body`→`template`, `spam`→`isSpam`), `postBehavior` valid values, `{kind:'named'}` ref shape, `schema_version` removal (not a valid AJV key). All 3 example configs now AJV-validate cleanly (Codex enhancement-audit 2026-05-17 catch, commit 9fabd46).
+
+### Shipped to Reddit App Directory
+
+- **v0.2.0 submitted for review** 2026-05-16. Track at https://developers.reddit.com/apps/cm-devvit/app-versions. Review SLA 1–7 days; email-on-approval. Codex CRITICAL+HIGH hotfixes baked in before submission.
+
+### Tests
+
+- **173 passing** (up from 9 pre-Phase-1, 162 pre-Codex-H2-status-field). 22 test files. `tsc --build` clean. Vitest config isolated from `@devvit/start` plugin via `vitest.config.ts`.
+
+### Repo activity
+
+- **45 atomic commits in df05b37..v0.2.0** range, 17,210 line additions.
+- Vinh: 6 commits (Phase 1 + 2 + 3 + plan flips + chore-rename).
+- Stephen: 39 commits (Codex hotfixes, Step 3.6, schema drift fix, docs/submission, cheat sheet refresh, status-aware chips, version sync, screenshot captures, plan files).
+
+### Notes
+
+- Codex adversarial review ran THREE times this session: once on Vinh's Phase 1+2 ship (`docs/superpowers/codex-reviews/2026-05-16-vinh-phase-1-2.md`), once on the full-session retrospective (`docs/superpowers/codex-reviews/2026-05-16-session-full-review.md`), once as a 2026-05-17 enhancement audit (`docs/superpowers/codex-reviews/2026-05-17-enhancement-audit.md`). All CRITICAL + HIGH closed within the session.
+- "Best Ported App $10K" Devpost target. Form filled out as of 2026-05-17.
+- SampleOfNone Helper-nomination Discord ping scheduled 5/19 (T-8). FoxxMD fallback documented if she declines.
+
 ### Added — Day 3 evening (post-0.1.0 polish, ~89 commits)
 - `DESIGN.md` — brand + visual source-of-truth (Stitch open-source DESIGN.md spec format).
 - `CONTRIBUTING.md` + `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1 + CC BY 4.0 attribution) + `SECURITY.md` (GitHub PVR + 90-day disclosure).
