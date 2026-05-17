@@ -57,17 +57,24 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 | Phase | State | Notes |
 |-------|-------|-------|
 | **Phase 0** — Scaffold | ✅ Shipped | `devvit.json` + routes + idempotency primitives + Observatory dashboard chrome |
-| **Phase 1** — Rule engine | ✅ Shipped | regex + author + ruleSet + named rules + Mustache + filters + run state machine (93 tests) |
+| **Phase 1** — Rule engine | ✅ Shipped | regex + author + ruleSet + named rules + Mustache + filters + run state machine |
 | **Phase 2** — Actions + handleActivity | ✅ Shipped | 7 MVP actions + handleActivity orchestrator + URL-dedupe repost rule (promoted from Phase 4) |
 | **Phase 3** — Config UX + live dashboard | ✅ Shipped | wiki loader cron + reload-config menu + onAppInstall seed + onAppUpgrade migrations + live `/api/recent` ZRANGE |
 | **Step 3.6** — Dry-run rule tester | ✅ Shipped | mod menu → form → toast bullets; non-contract `dryRunActivity` sibling preserves read-once config invariant |
-| **Codex adversarial hardening** | ✅ Shipped | 2 CRITICAL + 10 HIGH safety findings closed (idempotency double-action, dry-run authority, repost `SET NX`, atomic INCR config publish, read-once invariant, Mustache markdown injection, filter regex try/catch, parsed-config invariant) |
-| **v0.2.0** | 🟡 In review | Reddit App Directory review submitted 2026-05-16; 1–7 day SLA, email-on-approval |
-| **Phase 4** — `history` / `attribution` / `recentActivity` rules | 🟡 In progress | Vinh's stretch queue, capacity-permitting pre-deadline; may defer post-hackathon |
+| **Codex hardening** (initial) | ✅ Shipped | 2 CRITICAL + 10 HIGH safety findings closed (idempotency double-action, dry-run authority, repost `SET NX`, atomic INCR config publish, read-once invariant, Mustache markdown injection, filter regex try/catch, parsed-config invariant) |
+| **Wave S + T mod UX** | ✅ Shipped (v0.3.0) | filter chips · mobile responsive · keyboard shortcuts (`?`/`r`/`h`/`a`/`esc`) · per-event drill-down click-to-expand · onboarding tour · per-rule stats table · mod activity attribution feed · config rev diff viewer modal |
+| **S1 Rule simulation against history** | ✅ Shipped (v0.3.0) | **demo money shot** — mod pastes rule JSON5 → fires "would have fired N/25 (X%)" against last 25 posts. Demo gold. |
+| **S5 AI rule explainer** | ✅ Shipped (v0.3.0) | OpenAI gpt-4o-mini via Devvit HTTP allowlist (PR #96 AI-provider scope). Mod pastes JSON5 → plain-English explanation. |
+| **S10 Mute/unmute rule MVP** | ✅ Shipped (v0.3.0) | Redis hash store + 3 API endpoints w/ mod-auth gate. v0 soft-mute; Vinh wires hard-mute against this storage shape in Phase 4. |
+| **V7 AI summary per event** | ✅ Shipped (v0.3.0) | drill-down panel "Explain with AI" button — OpenAI summarizes why this event fired in 2 sentences. |
+| **S12 E2E Playwright CI** | ✅ Shipped (v0.3.0) | 7 dashboard scenarios in headless chromium via GitHub Actions. Trace + artifact upload on failure. |
+| **Wave U code review hardening** | ✅ Shipped (v0.3.0) | 5 BLOCKERs + 1 CRITICAL + 11 WARNs closed from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). |
+| **v0.3.0** | 🟡 Pending publish | CHANGELOG locked, `npm run launch` queued. v0.2.0 still in App Directory review (submitted 2026-05-16). |
+| **Phase 4** — `history` / `attribution` / `recentActivity` rules | 🟡 In progress | Authorized 2026-05-17 (Wave S16). Vinh's queue — target ship 2026-05-25 (T-2). Author-cache substrate first. |
 | **Phase 4.7** — Image-mode `repost` (perceptual blockhash) | ⏸ Deferred | Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission |
 | **MHS** (ModerateHateSpeech HTTP fetch) | ✂️ Cut | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech |
 
-For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.md).
+For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.md) + [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## Status — what's production vs scaffolded vs Phase-N pending
 
@@ -91,7 +98,7 @@ For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-245 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite + status-aware chip + CSV export helper w/ formula-injection neutralization + client API regression + Header live-tick); `tsc --build` clean.
+**324 tests passing** (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review fixes + V7 AI event summary). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 3 jobs (validate + ai-tone + e2e Playwright).
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
