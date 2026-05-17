@@ -36,18 +36,17 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
 
-## Run the dashboard locally (for judges + devs)
+## Try locally in 3 commands (for judges + devs)
 
-To see the Observatory dashboard without installing the app or having Devvit credentials:
+See the Observatory dashboard render without installing the app, no Devvit credentials needed:
 
 ```bash
-git clone https://github.com/StephenSook/context-mod-devvit
+git clone https://github.com/StephenSook/context-mod-devvit.git
 cd context-mod-devvit
-npm install
-npm run dev:web
+npm ci && npm run dev:web
 ```
 
-Then open [`http://localhost:5173/?demo=1`](http://localhost:5173/?demo=1). The `?demo=1` query parameter seeds the dashboard with synthetic events (per the production-safety pattern — fabricated data never auto-shows). Remove the flag to see the empty-state zero-state with a copy-to-clipboard starter config.
+Then open [`http://localhost:5173/?demo=1`](http://localhost:5173/?demo=1). The `?demo=1` query parameter seeds the dashboard with synthetic events (per the production-safety pattern — fabricated data never auto-shows). Remove the flag to see the empty-state with a copy-to-clipboard starter config.
 
 The `dev:web` script chains `vite build` → `node scripts/dev/mock-server.cjs`. The mock server is pure Node stdlib (no Express, no extra deps) and binds 127.0.0.1 only — local loopback, no LAN exposure.
 

@@ -39,6 +39,18 @@ FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 wiki rules, live Obser
 
 **Sookra anchors:** Pillar 1 (FoxxMD) + Pillar 2 (no shared bottleneck) + Pillar 5 (15+ communities).
 
+### Try locally (judge-friction reducer)
+
+Any technical judge can verify the dashboard renders in <2 min — paste this into the public-facing About-the-project Markdown or surface it as the second paragraph after the elevator pitch:
+
+```bash
+git clone https://github.com/StephenSook/context-mod-devvit.git
+cd context-mod-devvit
+npm ci && npm run dev:web
+```
+
+Then `http://localhost:5173/?demo=1` in a browser. Renders the Observatory dashboard against synthetic seed data — exercises every component (stat cards, sparkline, event stream, status-aware action chips, ApiResult discriminated union) without needing a Devvit playtest install. No Reddit auth required. Zero risk to anyone's sub.
+
 ### Thumbnail (3:2 ratio, JPG/PNG/GIF, ≤5MB)
 
 **Spec:** 1200×800 PNG. Generate via Banana with the Observatory aesthetic (warm-dark + concentric rings + green accent + thin overlay text "ContextMod · Devvit Web port"). Adds to Wave H of [day-3 plan](../superpowers/plans/2026-05-13-day3-submission-prep.md).
