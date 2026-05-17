@@ -56,8 +56,17 @@ function asPayloadTimestamp(t?: number | Date | string): number | string | undef
 }
 
 forms.post('/test-rules-submit', async (c) => {
-  const body = await c.req.json<{ values?: { thingId?: string } }>();
-  const thingId = body.values?.thingId;
+  // Diagnostic: log raw body shape — live-playtest showed thingId=undefined
+  // even after dropping disabled:true. Devvit form submission envelope may
+  // nest values differently than {values: {thingId}}.
+  const body = await c.req.json<Record<string, unknown>>();
+  console.log(`[cm/forms/test-rules-submit] RAW BODY:`, JSON.stringify(body));
+  // Try every reasonable parse path Devvit might use:
+  const thingId =
+    (body as { values?: { thingId?: string } }).values?.thingId ??
+    (body as { thingId?: string }).thingId ??
+    (body as { payload?: { values?: { thingId?: string } } }).payload?.values?.thingId ??
+    (body as { form?: { values?: { thingId?: string } } }).form?.values?.thingId;
   console.log(`[cm/forms/test-rules-submit] thingId=${thingId}`);
 
   if (!thingId) {
