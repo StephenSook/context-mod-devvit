@@ -27,7 +27,19 @@ export interface RecentEvent {
   runName: string;
   checkName: string;
   triggered: boolean;
-  actions: { kind: string; ok: boolean }[];
+  /**
+   * Codex session-review HIGH 2026-05-16: extended actions[] to carry full
+   * ActionResult shape (`status` + optional `wouldHaveCalled`) so the
+   * dashboard can distinguish dry-run vs error vs skipped-locked vs ok.
+   * Keep `ok: boolean` for back-compat with existing client renderers;
+   * client can opt into status-aware rendering when ready.
+   */
+  actions: {
+    kind: string;
+    ok: boolean;
+    status?: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
+    wouldHaveCalled?: string;
+  }[];
 }
 
 export async function recordEvent(

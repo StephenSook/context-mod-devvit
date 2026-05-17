@@ -96,17 +96,17 @@ describe('handleActivity', () => {
     expect(event.runName).toBe('main');
     expect(event.checkName).toBe('spam-title');
     expect(event.triggered).toBe(true);
-    expect(event.actions).toEqual([{ kind: 'remove', ok: true }]);
+    expect(event.actions).toEqual([{ kind: 'remove', ok: true, status: 'ok' }]);
   });
 
-  it('records ok:false when the action errors', async () => {
+  it('records ok:false + status:error when the action errors', async () => {
     getCurrentRev.mockResolvedValueOnce({ rev: 0, config });
     redditRemove.mockRejectedValueOnce(new Error('reddit down'));
 
     await handleActivity(item, author, 'sub');
 
     const event = recordEvent.mock.calls[0]![0] as Record<string, unknown>;
-    expect(event.actions).toEqual([{ kind: 'remove', ok: false }]);
+    expect(event.actions).toEqual([{ kind: 'remove', ok: false, status: 'error' }]);
   });
 
   it('does not record an event when no run triggered', async () => {
@@ -174,8 +174,12 @@ describe('handleActivity', () => {
     expect(redditRemove).not.toHaveBeenCalled();
     expect(recordEvent).toHaveBeenCalledTimes(1);
     const event = recordEvent.mock.calls[0]![0] as Record<string, unknown>;
-    // dry-run is not "ok" (we didn't actually do the thing)
-    expect(event.actions).toEqual([{ kind: 'remove', ok: false }]);
+    // dry-run is not "ok" (we didn't actually do the thing). Codex session-HIGH
+    // 2026-05-16: now carries status:'dry-run' + wouldHaveCalled so dashboard
+    // can render distinct chip.
+    expect(event.actions).toEqual([
+      { kind: 'remove', ok: false, status: 'dry-run', wouldHaveCalled: 'remove' },
+    ]);
   });
 
   it('Codex H3 — uses provided snapshot, skips internal getCurrentRev call (read-once invariant)', async () => {

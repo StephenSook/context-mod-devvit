@@ -13,7 +13,18 @@ export type EventRecord = {
   runName?: string;
   checkName?: string;
   triggered: boolean;
-  actions: { kind: ActionKind; ok: boolean }[];
+  /**
+   * Server propagates status + optional wouldHaveCalled per Codex session
+   * HIGH 2026-05-16 so a future dashboard pass can render distinct chips
+   * for dry-run / skipped-locked / error / ok. Today the client renders
+   * on `ok` boolean only — both shapes co-exist.
+   */
+  actions: {
+    kind: ActionKind;
+    ok: boolean;
+    status?: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
+    wouldHaveCalled?: string;
+  }[];
 };
 
 export type StatsRollup = {

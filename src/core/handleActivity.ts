@@ -46,7 +46,15 @@ export async function handleActivity(
     const result = await runRun(run, item, author, subredditName);
     if (!result.triggered) continue;
 
-    const actionResults: { kind: string; ok: boolean }[] = [];
+    // Codex session-review HIGH 2026-05-16: propagate full ActionResult
+    // status + wouldHaveCalled so the dashboard can distinguish dry-run vs
+    // error vs skipped-locked vs ok. `ok` remains for back-compat.
+    const actionResults: {
+      kind: string;
+      ok: boolean;
+      status: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
+      wouldHaveCalled?: string;
+    }[] = [];
     for (const action of result.actions) {
       const res = await runAction(action, {
         item,
@@ -55,7 +63,11 @@ export async function handleActivity(
         rev: current.rev,
         config: current.config,
       });
-      actionResults.push({ kind: action.kind, ok: res.status === 'ok' });
+      actionResults.push(
+        res.wouldHaveCalled
+          ? { kind: action.kind, ok: res.status === 'ok', status: res.status, wouldHaveCalled: res.wouldHaveCalled }
+          : { kind: action.kind, ok: res.status === 'ok', status: res.status },
+      );
     }
 
     await recordEvent({
