@@ -6,13 +6,76 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-(Items here have not yet shipped to Reddit App Directory. Promote to a versioned section on publish.)
-
-Forward-looking (post-v0.2.0, Phase 4+):
-- Phase 4 stretch rules: `history`, `attribution`, `recentActivity` (cache-backed; Vinh queue, capacity-permitting pre-deadline)
+Forward-looking (post-v0.3.0):
+- Phase 4 stretch rules — Vinh's queue: `history`, `attribution`, `recentActivity` w/ author-cache substrate (authorized 2026-05-17 Wave S16, target ship 2026-05-25)
 - Phase 4.7 image-mode `repost` (gated on Day-0 perceptual-hash spike re-run; deferred from hackathon)
-- Tier 2/3 backlog (in-flight 2026-05-17): client API regression tests, CSV export pure-helper, README status-at-a-glance table, Mermaid refresh, examples expansion, Lighthouse audit
-- Operator outreach: r/Devvit progress post, 15+ third-party CM operator notifications post-App-Directory-approval
+- Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
+- Post-hackathon operator outreach to 15+ FoxxMD operator pool
+
+## [0.3.0] — 2026-05-17
+
+WOW push wave. Wave S + T shipped 15 user-facing features (filter chips, mobile responsive, keyboard shortcuts, per-event drill-down, onboarding tour, rule simulation, AI rule explainer, per-rule stats, config rev diff viewer, mod activity attribution, mute/unmute MVP, E2E Playwright CI, operator blog + migration docs, Vinh Phase 4 authorize). Wave U code-review hardening closed 5 BLOCKERs + 1 CRITICAL + 11 WARNs from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). Wave V Category-A pre-submit holdback flush + AI summary per event feature.
+
+### Added — Wave S + T (15 user-facing features)
+
+- **S6 Filter chips on event stream** (`src/client/components/FilterChips.tsx`, 8 tests) — narrow feed by remove/comment/approve/lock/report/failed/dry-run + "show all" reset. Active chip styled w/ signal-ok border. Counter shows "N of M events" when filtered.
+- **S7 Mobile-responsive pass** — EventRow grid 44/60 → 32/48 sub-sm + drop activityId text. ActionBar flex-col on sub-sm. Devvit custom-post webviews render on mobile.
+- **S8 Keyboard shortcuts** (`src/client/hooks/useKeyboardShortcuts.ts` + `KeyboardOverlay.tsx`, 5 tests) — `?` overlay · `r` reload · `a` clear-filter · `h` config history · `escape` close. Ignored when focus in INPUT/TEXTAREA + modifier keys held.
+- **S2 Per-event drill-down click-to-expand** (`src/client/components/EventDetails.tsx`) — click row to expand rule context (run/check/matchedRule/runPath/matchedSubstring), full action breakdown w/ status markers + wouldHaveCalled, raw event JSON in collapsible.
+- **S4 Onboarding 3-step tour** (`src/client/components/OnboardingTour.tsx`, 9 tests) — first-visit walkthrough w/ localStorage gate + in-memory session flag for restricted iframes. ARIA dialog modal, arrow nav, escape skip.
+- **S14 Operator quickstart blog draft** (`docs/submission/blog-post-draft.md`) — dev.to / hashnode pre-paraphrase draft for Stephen to publish (~30% cut expected).
+- **S15 Migration-from-upstream-cm doc** (`docs/migration-from-upstream-cm.md`) — 5-step practical walkthrough for 15+ FoxxMD operator pool, schema-rename table, what-to-delete list, verification flow.
+- **S16 Phase 4 authorize for Vinh** (`PLAN.md`) — history/attribution/recentActivity rule ladder green-lit w/ Discord-ping coordination note. Target ship 2026-05-25.
+- **S1 Rule simulation against history** (`src/core/simulateRule.ts` + new `/menu/simulate-rule` + `/forms/simulate-rule-submit`, 11 tests) — **THE killer demo feature**. Mod pastes a rule JSON5, dashboard reports "Would fire on N/25 (X%) recent items. Examples: t3_a, t3_b, t3_c." Reuses parseConfig for AJV errors + normalizePost for parity w/ live trigger path.
+- **S5 AI rule explainer via OpenAI** (`src/core/explainRule.ts` + `/menu/explain-rule` + `/forms/explain-rule-submit`, 9 tests) — mod pastes JSON5 → OpenAI gpt-4o-mini returns 2-3 sentence plain-English explanation. Devvit HTTP allowlist updated for api.openai.com per PR #96.
+- **S11 Per-rule statistics table** (`src/client/components/RuleStatsTable.tsx`, 6 tests) — top-8 rules aggregated client-side from events:recent50: fired count / ok / err / dry-run columns. Sortable desc by count then by lastFiredTs.
+- **S9 Config rev diff viewer** (`src/state/configStore.ts:getRecentRevs` + `/api/config-history` + `src/client/components/ConfigDiffViewer.tsx`, 7 tests) — `h` shortcut opens modal w/ last 10 revs + LCS-based positional diff between rev N and N-1.
+- **S3 Mod activity attribution** (`src/state/modActivity.ts` + `/api/mod-activity` + `src/client/components/ModActivityFeed.tsx`) — captures mod-menu actions (reload-config, recent-actions, test-rules, simulate-rule, explain-rule, mute-rule, unmute-rule) into 50-deep ZSET ring buffer. Dashboard renders top-5 "u/X ran reload-config 5m ago" provenance feed.
+- **S10 Mute/unmute rule MVP** (`src/state/muteSet.ts` + `/api/mute-rule` + `/api/unmute-rule` + `/api/muted-rules`) — Redis hash store + 3 endpoints. v0 soft-mute (dashboard-side filter); hard-mute follow-up for Vinh's runCheck integration.
+- **S12 E2E Playwright tests + CI** (`tests/e2e/dashboard.spec.ts` + `playwright.config.ts` + `.github/workflows/ci.yml e2e job`) — 7 dashboard scenarios (page loads, 5 demo rows, filter chip narrows count, ? opens overlay, expand row, header time pattern, no console errors). Headless chromium in GitHub Actions w/ artifact upload on failure.
+
+### Added — Wave V
+
+- **V7 AI summary per event** (`src/core/explainEvent.ts` + `/api/explain-event` + button in `EventDetails.tsx`) — drill-down expanded panel now includes "Explain with AI" button. Click → OpenAI summarizes why the event fired in 2 sentences. Mod-auth gated (only mods can burn the API key quota).
+
+### Changed
+
+- **Header self-ticks 1s + glow-pulse on data arrival** (R5 RTL component lifecycle tests, 13 cases). Wave R added @testing-library/react + jsdom + per-file env directive.
+- **OnboardingTour fail-OPEN on localStorage exception** (U4 BUG fix) — restricted iframes (Safari/Firefox enhanced tracking + 3rd-party storage blocks) now see tour on first visit instead of being silently suppressed.
+- **CSV export** — status-aware markers (◆ dry-run / ⊘ skipped-locked / ✗ error) + status-aware row coloring + filename safety + UTF-8 BOM for Excel locale + CRLF per RFC 4180. Wave R bypass-hardening covers OWASP leading-whitespace + Unicode bidi/control before-trigger neutralization.
+- **All Wave S+T routes** — mod-auth gate on /mute-rule + /unmute-rule (Wave U BLOCKER), API endpoints return HTTP 500 on infra failure instead of empty arrays, mute/unmute return Result types so UI doesn't lie on Redis errors.
+
+### Fixed — Wave U (code review)
+
+- **CR1 BLOCKER**: `/api/mute-rule` + `/api/unmute-rule` lacked moderator authorization. requireModerator() helper queries reddit.getModerators(sub).all() + verifies current username, returns 401/403/500.
+- **CR3 BLOCKER #1**: `simulateRule.ts` per-sample try/catch silently set `triggered=false`. Now surfaces `erroredCount + firstError` in SimulationResult + toast shows ⚠ marker.
+- **CR3 BLOCKER #2**: `muteSet.muteRule + unmuteRule` swallowed Redis errors + returned void. Now return `MuteResult = {ok:true} | {ok:false,error}`. Route returns 500 + error on failure.
+- **CR3 BLOCKER #3**: 4 GET endpoints returned HTTP 200 + empty array on getCurrentSubreddit fail. Now return HTTP 500 + actionable error so dashboard ApiResult.ok=false fires error banner.
+- **CR3 BUG #9**: OnboardingTour.hasSeenTour returned `true` (suppress) on localStorage exception. Now returns `false` (show tour) + in-memory session flag suppresses re-show even when localStorage.setItem fails.
+- **CR4 CRITICAL**: ConfigDiffViewer.simpleDiff was set-diff not line-diff — collapsed duplicates + showed reordered as "same". Replaced w/ O(n*m) LCS-based positional diff. 2 new tests covering duplicate-preserve + reorder-detect.
+- **CR3 WARN x6 + CR2 WARN x1**: OpenAI body envelope parse for actionable errors + AbortError/network branching + modActivity structured ops-warn + forms phase-prefix toast + ConfigDiff stack log + ModActivityFeed unavailable-caption + keyboard handler try/catch + dryRunActivity "always elevates" → "forces dry-run mode on" + configStore.getRecentRevs gap-walk continue-not-break.
+
+### Fixed — Wave R (CI hotfixes + dep hygiene)
+
+- **CI lint blocker**: `src/client/lib/csv-export.ts` `no-control-regex` ESLint flagged the intentional ` -` C0 control range strip. Added eslint-disable block w/ OWASP-mitigation rationale. Restored CI green.
+- **hono 4.11.7 → 4.12.19**: 3 transitive CVEs (basicAuth timing / setCookie attribute injection / writeSSE CR-LF injection) closed in dep tree. Zero exposure for us (verified zero usage of vulnerable APIs) but `npm audit` is now clean.
+- **RTL Header component tests**: added @testing-library/react + jsdom devDeps + per-file env directive. 4 component lifecycle tests + 9 relTime tests = 13 total.
+
+### Repo health
+
+- **Tests**: 260 → 319 (+59 across Wave S+T+U)
+- **CI**: 3 jobs (validate + ai-tone + e2e) all green
+- **npm audit (prod)**: 0 vulnerabilities
+- **Open issues**: 0 · **Open PRs**: 0 (7 Dependabot triaged in Wave R — 2 merged + 5 closed)
+- **AI-tone**: 0 hits
+- **repo-sentinel pre-submit**: clean across secrets/CI/deps/licenses/gitignore (5 surfaces)
+- **Lint**: enforced as part of pre-commit triplet (Edit → tests → tsc → lint → commit → push) per memory rule
+
+### v0.2.0 → v0.3.0 atomic commits
+
+~50 atomic commits across 4 waves (S, T, U, V). All Codex CRITICAL + HIGH findings closed pre-publish. All parallel-review findings closed before this release entry was written.
+
+
 
 ## [0.2.0] — 2026-05-16 / 2026-05-17
 
