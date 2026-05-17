@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Header } from './components/Header';
 import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
@@ -7,6 +7,7 @@ import { ActionBar } from './components/ActionBar';
 import { ErrorBanner } from './components/ErrorBanner';
 import { RuleCountChips } from './components/RuleCountChips';
 import { EmptyState } from './components/EmptyState';
+import { FilterChips, filterMatches, type EventFilter } from './components/FilterChips';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -30,6 +31,7 @@ export default function App() {
   const [refreshedAt, setRefreshedAt] = useState<number>(Date.now());
   const [usingDemo, setUsingDemo] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<EventFilter>({ kind: 'all' });
 
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
@@ -77,6 +79,11 @@ export default function App() {
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('subreddit') ?? 'cm_devvit_test'
       : 'cm_devvit_test';
+
+  const visibleEvents = useMemo(
+    () => events.filter((e) => filterMatches(e, filter)),
+    [events, filter],
+  );
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col bg-ink-950 grain">
@@ -127,9 +134,13 @@ export default function App() {
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
               recent <span className="font-serif italic normal-case tracking-normal text-bone-200/80">actions</span>
             </h2>
-            <span className="telemetry text-[10px] text-bone-300/70">{events.length} events</span>
+            <span className="telemetry text-[10px] text-bone-300/70">
+              {visibleEvents.length}
+              {visibleEvents.length !== events.length ? ` of ${events.length}` : ''} events
+            </span>
           </div>
           <RuleCountChips events={events} />
+          {events.length > 0 && <FilterChips filter={filter} onChange={setFilter} />}
 
           <div
             className="flex-1 min-h-0 overflow-y-auto border-t border-line"
@@ -140,8 +151,21 @@ export default function App() {
           >
             {events.length === 0 ? (
               <EmptyState subreddit={subreddit} />
+            ) : visibleEvents.length === 0 ? (
+              <div className="px-5 py-6 text-center">
+                <p className="telemetry text-[11px] text-bone-300/80 mb-2">
+                  No events match the current filter.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setFilter({ kind: 'all' })}
+                  className="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border border-signal-info/60 text-signal-info hover:bg-signal-info/10 transition-colors"
+                >
+                  show all
+                </button>
+              </div>
             ) : (
-              events.map((ev, i) => <EventRow key={`${ev.activityId}-${ev.ts}`} event={ev} idx={i} />)
+              visibleEvents.map((ev, i) => <EventRow key={`${ev.activityId}-${ev.ts}`} event={ev} idx={i} />)
             )}
           </div>
         </div>
