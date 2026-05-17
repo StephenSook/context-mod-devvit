@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "contextmod-vinh",
+  "name": "cm-devvit",
   "version": "0.0.2",
   "description": "Devvit Web port of FoxxMD's ContextMod rule-engine moderation bot",
   "license": "MIT",
