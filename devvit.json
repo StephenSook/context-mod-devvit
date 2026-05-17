@@ -104,9 +104,9 @@
       "type": "string",
       "name": "openai_api_key",
       "label": "OpenAI API key",
-      "helpText": "Required only for 'Explain a rule with AI' menu. Get at platform.openai.com/api-keys. Stored encrypted per Devvit install.",
+      "helpText": "Required for 'Explain a rule with AI' menu + 'Explain with AI' button on event drill-down. App-scope (shared across all installs of cm-devvit). Set via 'npx devvit settings set openai_api_key' — app owner pays OpenAI billing. Get at platform.openai.com/api-keys.",
       "isSecret": true,
-      "scope": "installation"
+      "scope": "app"
     }
   ],
   "scripts": {
