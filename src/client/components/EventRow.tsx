@@ -39,7 +39,7 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
   const firstColor = event.actions[0] ? KIND_COLOR[event.actions[0].kind] ?? '#71717A' : '#71717A'; // bone.300 fallback
   return (
     <div
-      className="cm-event-arrive group grid grid-cols-[44px_60px_1fr_auto] items-center gap-3 px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
+      className="cm-event-arrive group grid grid-cols-[32px_48px_1fr_auto] sm:grid-cols-[44px_60px_1fr_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
       style={{ animationDelay: `${0.05 * idx + 0.4}s` }}
     >
       <div className="flex items-center gap-1.5">
@@ -56,10 +56,10 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
 
       <div className="min-w-0 flex items-baseline gap-2">
         <span className="text-[12px] text-bone-50 truncate font-medium">{event.checkName ?? '—'}</span>
-        <span className="telemetry text-[10.5px] text-bone-300 truncate">{event.activityId}</span>
+        <span className="telemetry text-[10.5px] text-bone-300 truncate hidden sm:inline">{event.activityId}</span>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-end">
         {event.actions.map((a, i) => {
           const color = chipColorForStatus(a.status, a.kind, a.ok);
           const marker = chipMarkerForStatus(a.status, a.ok);

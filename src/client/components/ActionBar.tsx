@@ -55,10 +55,10 @@ export function ActionBar({
 
   return (
     <div
-      className="cm-fade-up flex items-center justify-between px-5 py-3 border-t border-line"
+      className="cm-fade-up flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-5 py-3 border-t border-line"
       style={{ animationDelay: '0.7s' }}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={handleReload}
           disabled={busy}
@@ -87,7 +87,7 @@ export function ActionBar({
         </button>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <a
           href={wikiUrl}
           target="_top"
