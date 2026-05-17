@@ -1,52 +1,52 @@
 // ContextMod Devvit — example: catch low-effort spam from fresh accounts.
 //
-// Combines an `author` filter (account age + karma signals) with a
-// `regex` rule (typical spam phrasings). Both must trip for the
-// remove action to fire — reduces false positives on legitimate
+// Combines an `author` rule (account age + karma signals) with a
+// `regex` rule (typical spam phrasings). Both must trip (AND) for
+// the remove action to fire — reduces false positives on legitimate
 // new users posting genuine content.
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes:
+//   - `author` rule shape: `{kind: 'author', name?, filter: AuthorFilter}`.
+//     The `filter` field is NOT `criteria`.
+//   - AuthorFilter uses age in SECONDS (`ageMaxSec`, `ageMinSec`), karma split
+//     between `linkKarmaMax`/`linkKarmaMin` + `commentKarmaMax`/`commentKarmaMin`,
+//     and exact boolean fields `isMod` / `isContributor` / `verified` / `shadowBanned`.
+//   - 14 days = 14 * 86400 = 1,209,600 seconds.
 {
-  schema_version: 1,
   runs: [
     {
       name: 'fresh-account-spam',
       checks: [
         {
           name: 'new-low-karma-spam-regex',
-          condition: 'AND',
+          // Logical AND: both author (new+low-karma+unverified) AND regex
+          // (spam phrase match) must pass for actions to fire.
+          combinator: 'AND',
           rules: [
             {
               kind: 'author',
-              criteria: {
-                // Account younger than 14 days.
-                age: { lessThan: '14d' },
-                // Combined karma under 50.
-                karma: { lessThan: 50 },
-                // Account is not verified-email.
-                verified: false,
+              name: 'new-low-karma-unverified',
+              filter: {
+                ageMaxSec: 1209600,         // account younger than 14 days
+                linkKarmaMax: 50,            // link karma under 50
+                commentKarmaMax: 50,         // comment karma under 50
+                verified: false,             // unverified email
               },
             },
             {
               kind: 'regex',
-              testOn: ['title', 'body'],
-              patterns: [
-                '(?i)check\\s+out\\s+my\\s+(channel|stream|link)',
-                '(?i)dm\\s+me\\s+for',
-                '(?i)\\b(discount|promo)\\s+code\\s*[:=]',
-              ],
-              threshold: 1,
+              name: 'spam-phrase-title',
+              pattern: '(?i)(check\\s+out\\s+my\\s+(channel|stream|link)|dm\\s+me\\s+for|\\b(discount|promo)\\s+code\\s*[:=])',
+              target: 'title',
             },
           ],
           actions: [
-            {
-              kind: 'remove',
-              reason: 'fresh-account spam pattern',
-              spam: true,
-            },
+            { kind: 'remove', isSpam: true },
             {
               kind: 'comment',
-              body: 'Hey {{author}}, this was caught by our new-account spam filter (account age + karma + spam-phrase combo). Real new users get false-positive sometimes — modmail r/{{subreddit}} if so.',
-              distinguish: true,
-              sticky: true,
+              template: 'Hi {{author.name}}, this post was caught by our new-account spam filter (account age + low karma + spam-phrase match). Real new users sometimes false-positive — modmail us if you think this was wrong.',
             },
           ],
         },

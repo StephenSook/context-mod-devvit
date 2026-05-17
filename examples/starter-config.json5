@@ -1,47 +1,43 @@
 // ContextMod Devvit — starter config (seeded on install).
 //
-// Mods edit this at r/<your-sub>/wiki/contextmod after install.
-// The app polls the wiki every 5 minutes; "Reload config" from the
-// mod overflow menu triggers an immediate refresh.
+// Mods edit this at r/<your-sub>/wiki/botconfig/contextmod after install.
+// The app polls the wiki every 5 minutes; "ContextMod: Reload config from
+// wiki" from the mod overflow menu triggers an immediate refresh.
 //
-// Reference: ../README.md "Config schema" + AJV schema at
-// (Phase 1 deliverable) src/server/schema/app.schema.json.
+// Reference: ../README.md "Config schema" + AJV schema at src/schema/app.schema.json
+// (shipped Phase 1 — Vinh's commit 6694109, 2026-05-16).
+//
+// Schema notes:
+//   - Top-level keys: dryRun, needsAuthorEnrichment, namedRules, runs.
+//     `schema_version` is NOT a valid top-level key (AJV strict mode rejects it).
+//   - Checks use `combinator: 'AND' | 'OR'` (NOT `condition`).
+//   - Check filters: `filters: { authorIs: {...}, itemIs: {...} }` short-circuit
+//     before rule eval — saves the run loop a lookup when the post obviously
+//     can't trip the rule (e.g., mod-authored).
+//   - Rules: `regex` / `author` / `ruleset` / `named` / `repost`.
+//   - `regex` shape: `{kind, pattern: string, flags?, target: 'title'|'body'|'url'}`.
+//   - Actions: `remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`.
+//     Comment uses `template:` (NOT `body:`). Remove uses `isSpam:` (NOT `spam:`).
+//   - Mustache template context: {{item.title}}, {{author.name}}, etc.
+//     Render-time escapeMarkdown defaults on per Codex H4 — raw {{...}} is safe.
 {
-  schema_version: 1,
   runs: [
     {
-      name: 'safety',
+      name: 'spam-removal',
       checks: [
         {
-          name: 'block-obvious-spam',
-          // Logical AND: ALL rules must pass for actions to fire.
-          condition: 'AND',
+          name: 'crypto-giveaway',
+          combinator: 'OR',
+          // Don't fire on posts authored by mods or approved contributors.
+          filters: { authorIs: { isMod: false, isContributor: false } },
           rules: [
-            {
-              kind: 'regex',
-              testOn: ['title', 'body'],
-              patterns: [
-                '(?i)\\bfree\\s+(crypto|bitcoin|nft|airdrop)\\b',
-                '(?i)\\b(onlyfans|premium\\s+account)\\b',
-                '(?i)visit\\s+my\\s+(bio|profile|telegram)',
-              ],
-              // Fire if any pattern matches at least once.
-              threshold: 1,
-            },
+            { kind: 'regex', name: 'scam-words', pattern: 'crypto|giveaway|scam|free\\s+nft', flags: 'i' },
           ],
           actions: [
-            {
-              kind: 'remove',
-              reason: 'AutoMod-style spam regex',
-              spam: true,
-            },
+            { kind: 'remove', isSpam: true },
             {
               kind: 'comment',
-              // Mustache templating — see ../README.md "Templating".
-              body: 'Hi {{author}}, your post was removed because it matched our spam-pattern filter. If this was a mistake, please modmail r/{{subreddit}}.',
-              distinguish: true,
-              lock: true,
-              sticky: true,
+              template: 'Hi {{author.name}}, your post "{{item.title}}" was removed as suspected spam. Mod team will review on appeal.',
             },
           ],
         },

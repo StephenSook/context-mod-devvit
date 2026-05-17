@@ -1,25 +1,37 @@
 // ContextMod Devvit — example: auto-approve posts from trusted contributors.
 //
-// Names a `trusted-mods-and-contributors` author allowlist and uses
-// it from a check. Demonstrates `ruleSet` composition + named-rule
-// reuse — declare once, reference many checks.
+// Demonstrates:
+//   - Top-level `namedRules` map (camelCase, NOT `named_rules`).
+//   - Reference via `{kind: 'named', name: '...'}` from a check's rules array
+//     (NOT `{kind: 'ruleSet', name: '...'}` — that would be a `ruleset` rule
+//     which is for inline AND/OR composition, NOT a named-rule reference).
+//   - `combinator: 'OR'` so EITHER trusted-mod OR verified-old-account passes.
+//   - `postBehavior: 'stop'` to halt the run after this check fires
+//     (skip remaining checks for this thing).
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes (vs older example drift):
+//   - `criteria` → `filter` on author rules.
+//   - `condition` → `combinator` on checks.
+//   - `named_rules` → `namedRules`.
+//   - `{kind: 'ruleSet', name: 'X'}` (reference attempt) → `{kind: 'named', name: 'X'}`.
+//   - `postBehavior: 'continue'` is NOT valid — default behavior is 'next'.
 {
-  schema_version: 1,
-  // Named rules are defined here and referenced by name in checks below.
-  named_rules: {
-    'trusted-mods-and-contributors': {
+  namedRules: {
+    'trusted-mod-or-contributor': {
       kind: 'author',
-      criteria: {
-        // Subreddit's mods always pass.
+      filter: {
         isMod: true,
       },
     },
     'verified-old-account': {
       kind: 'author',
-      criteria: {
+      filter: {
         verified: true,
-        age: { greaterThan: '365d' },
-        karma: { greaterThan: 5000 },
+        ageMinSec: 31536000,       // older than 365 days
+        linkKarmaMin: 2500,
+        commentKarmaMin: 2500,
       },
     },
   },
@@ -29,19 +41,18 @@
       checks: [
         {
           name: 'approve-on-trusted-author',
-          // ruleSet composition: ANY of these named rules must pass.
-          condition: 'OR',
+          // OR: EITHER trusted-mod-or-contributor OR verified-old-account passes.
+          combinator: 'OR',
           rules: [
-            { kind: 'ruleSet', name: 'trusted-mods-and-contributors' },
-            { kind: 'ruleSet', name: 'verified-old-account' },
+            { kind: 'named', name: 'trusted-mod-or-contributor' },
+            { kind: 'named', name: 'verified-old-account' },
           ],
           actions: [
-            {
-              kind: 'approve',
-            },
+            { kind: 'approve' },
           ],
-          // Tell the run-pipeline to skip remaining checks for this thing.
-          // (Phase 1 postBehavior — see runRun spec in master plan.)
+          // Halt the run after this check fires — skip remaining checks for
+          // this thing. Valid values: 'next' (default), 'stop', or
+          // `{goto: '<check-name>'}` (jump within the same run).
           postBehavior: 'stop',
         },
       ],
