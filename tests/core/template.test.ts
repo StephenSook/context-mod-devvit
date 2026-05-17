@@ -52,6 +52,31 @@ describe('render', () => {
     const out = render('Hi {{author.name}}', ctx);
     expect(out).toBe("Hi Joe's & Co");
   });
+
+  // Codex H4 2026-05-16: Mustache.escape now defaults to escapeMarkdown so
+  // that mods using `{{item.title}}` (instead of `{{item.titleSafe}}`)
+  // can't be exploited via u/-pings, r/-pings, or link-injection.
+  it('Codex H4 — defangs u/-pings in raw {{author.name}} (default escape now escapeMarkdown)', () => {
+    const ctx = makeCtx();
+    ctx.author.name = 'u/evilbot';
+    const out = render('Hello {{author.name}}', ctx);
+    expect(out).toBe('Hello u\\/evilbot');
+  });
+
+  it('Codex H4 — neutralizes link injection in raw {{item.title}}', () => {
+    const ctx = makeCtx();
+    ctx.item.title = '[click](javascript:alert(1))';
+    const out = render('Title: {{item.title}}', ctx);
+    expect(out).toContain('\\[click\\]');
+    expect(out).toContain('\\(javascript');
+  });
+
+  it('Codex H4 — triple-stash {{{ }}} bypass for explicitly-raw moderator-authored fields', () => {
+    const ctx = makeCtx();
+    ctx.item.title = 'u/somebody'; // would normally be defanged
+    const out = render('Raw: {{{item.title}}}', ctx);
+    expect(out).toBe('Raw: u/somebody');
+  });
 });
 
 describe('escapeMarkdown', () => {

@@ -2,27 +2,30 @@
  * Comment-reply action. Renders the Mustache template against the item/author
  * context, then posts as the app via reddit.submitComment.
  *
- * The template MUST reference `{{author.nameSafe}}`, `{{item.titleSafe}}`,
- * `{{item.bodySafe}}` for any user-controlled field — see template.ts:33 for
- * the rationale (markdown injection: ping-storms, fake mod quotes, deceptive
- * links). The Safe variants are populated by normalize.ts.
+ * Codex H4 2026-05-16 hardening: Mustache.escape now defaults to escapeMarkdown
+ * (template.ts:18). Both `{{author.name}}` and `{{author.nameSafe}}` render
+ * identically — single escape via render-time pass. The `*Safe` fields remain
+ * exposed as aliases so older configs that explicitly reference them keep
+ * working. Mods who want truly raw content use Mustache triple-stash
+ * `{{{author.name}}}` (explicit bypass).
  */
 
 import { reddit } from '@devvit/web/server';
 import type { CommentAction, ActionContext } from '../shared/types';
 import { render, type TemplateContext } from '../core/template';
-import { escapeMarkdown } from '../core/template';
 
 export async function runComment(action: CommentAction, ctx: ActionContext): Promise<void> {
+  // Safe fields are now aliases to raw — render-time escape (Codex H4)
+  // produces the single-pass escape they used to need pre-rendering.
   const tplCtx: TemplateContext = {
     item: {
       ...ctx.item,
-      titleSafe: escapeMarkdown(ctx.item.title),
-      bodySafe: escapeMarkdown(ctx.item.body),
+      titleSafe: ctx.item.title,
+      bodySafe: ctx.item.body,
     },
     author: {
       ...ctx.author,
-      nameSafe: escapeMarkdown(ctx.author.name),
+      nameSafe: ctx.author.name,
     },
   };
   const text = render(action.template, tplCtx);

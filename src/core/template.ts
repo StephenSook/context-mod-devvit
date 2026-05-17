@@ -13,9 +13,17 @@
 import Mustache from 'mustache';
 import type { Item, Author } from '../shared/types';
 
-// Disable HTML escaping globally — Mustache treats this as a mutable side door.
-// Reddit comments are markdown, not HTML; default escape would mangle '&' and "'".
-Mustache.escape = (s: string) => s;
+// Codex H4 2026-05-16: Mustache.escape now defaults to escapeMarkdown
+// (defined below). Previous identity function let `{{item.title}}` re-enable
+// u/-pings, r/-pings, and link-injection on every raw render, defeating the
+// `*Safe` field pattern any time a mod wrote a template without the Safe
+// suffix. Triple-stash `{{{...}}}` bypasses for explicitly-raw fields a mod
+// authors themselves (Mustache convention).
+//
+// IMPORTANT: escapeMarkdown is declared below in this same module — the
+// circular-self-reference is fine because Mustache.escape is read lazily at
+// render time, not at module-load time.
+Mustache.escape = (s: string) => escapeMarkdown(s);
 
 export interface TemplateContext {
   item: Item & { titleSafe: string; bodySafe: string };
