@@ -39,7 +39,18 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
     void fetchModActivity().then(setState);
   }, [refreshedAt]);
 
-  if (!state.ok) return null;
+  if (!state.ok) {
+    // Wave U WARN fix (Codex CR3 #8): render a small caption on infra failure
+    // so mods see "activity feed unavailable" instead of silent null (which is
+    // visually identical to genuinely-empty activity).
+    return (
+      <div className="cm-fade-up px-5 py-2 border-t border-line/40" style={{ animationDelay: '0.6s' }}>
+        <p className="telemetry text-[10px] text-bone-300/60">
+          mod activity feed unavailable: {state.error}
+        </p>
+      </div>
+    );
+  }
   if (state.empty) return null;
 
   return (

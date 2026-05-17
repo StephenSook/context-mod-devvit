@@ -84,12 +84,16 @@ export async function getRecentRevs(sub: string | undefined, limit = 10): Promis
     const rev = currentRev - i;
     if (rev < 0) break;
     const payload = await redis.get(K.cfgRev(rev, sub));
-    if (payload == null) break;
+    // Wave U WARN fix (Codex CR4): on missing payload mid-window, CONTINUE
+    // (rev might have been GC'd or never published) instead of breaking. Old
+    // behavior dropped revs 4-0 if rev 5 was missing. continue walks past
+    // the gap to surface available history.
+    if (payload == null) continue;
     try {
       const config = JSON.parse(payload) as AppConfig;
       out.push({ rev, config });
-    } catch {
-      // skip corrupt rev, continue
+    } catch (err) {
+      console.warn('[cm/configStore] corrupt cfg payload at rev', rev, err);
     }
   }
   return out;

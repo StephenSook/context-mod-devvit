@@ -11,7 +11,7 @@
  *
  * Codex H1 (2026-05-16) fixed: global config.dryRun=true now blocks per-action
  * dryRun=false. Since this function ALWAYS sets action.dryRun=true, that gate
- * always elevates, regardless of config.dryRun setting. No safety bypass.
+ * always forces dry-run mode on, regardless of config.dryRun setting. No safety bypass.
  */
 
 import type { Item, Author, Action } from '../shared/types';

@@ -55,7 +55,23 @@ export async function explainRule(
       }),
     });
     if (!res.ok) {
-      return { ok: false, error: `OpenAI HTTP ${res.status}: ${res.statusText}` };
+      // Wave U WARN fix (Codex CR3 #5): parse OpenAI error envelope for actionable msg
+      // (invalid_api_key / insufficient_quota / rate_limit_exceeded).
+      let serverMsg = res.statusText;
+      try {
+        const body = await res.json();
+        if (body && typeof body === 'object' && 'error' in body) {
+          const e = (body as { error: { message?: string; code?: string } }).error;
+          if (e.message) serverMsg = e.message;
+          else if (e.code) serverMsg = e.code;
+        }
+      } catch {
+        // body not JSON — fall through to statusText
+      }
+      const hint =
+        res.status === 401 ? ' (check the openai_api_key app setting)' :
+        res.status === 429 ? ' (rate-limited or billing exhausted)' : '';
+      return { ok: false, error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}` };
     }
     const data: unknown = await res.json();
     const text = extractCompletionText(data);
@@ -64,7 +80,11 @@ export async function explainRule(
     }
     return { ok: true, explanation: text };
   } catch (err) {
+    // Wave U WARN fix (Codex CR3 #5): branch on error class for actionable msg.
+    const name = err instanceof Error ? err.name : 'Error';
     const msg = err instanceof Error ? err.message : String(err);
+    if (name === 'AbortError') return { ok: false, error: 'OpenAI request aborted (timeout). Retry.' };
+    if (msg.toLowerCase().includes('fetch')) return { ok: false, error: `OpenAI network failure: ${msg}` };
     return { ok: false, error: `OpenAI fetch failed: ${msg}` };
   }
 }

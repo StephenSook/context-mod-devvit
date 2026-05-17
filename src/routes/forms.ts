@@ -215,9 +215,18 @@ forms.post('/simulate-rule-submit', async (c) => {
     const result = await simulateRule(ruleJson5, samples, sub.name);
     return c.json({ showToast: formatSimulationToast(result) });
   } catch (err) {
+    // Wave U WARN fix (Codex CR3 #7): prefix toast w/ failure phase so mod
+    // knows whether to retry (network/reddit), fix their rule (parse), or
+    // contact support (unexpected).
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/forms/simulate-rule-submit] failed:', err);
-    return c.json({ showToast: `Simulation failed: ${msg}` });
+    const name = err instanceof Error ? err.name : 'Error';
+    console.error('[cm/forms/simulate-rule-submit] failed:', name, msg);
+    const phase = msg.includes('getCurrentSubreddit') || msg.includes('getNewPosts')
+      ? 'reddit-api'
+      : msg.includes('parse') || msg.includes('AJV')
+        ? 'rule-parse'
+        : 'unexpected';
+    return c.json({ showToast: `Simulation failed (${phase}): ${msg}` });
   }
 });
 

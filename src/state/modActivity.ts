@@ -36,7 +36,14 @@ export async function logModActivity(sub: string | undefined, entry: ModActivity
     await redis.zAdd(key, { score: entry.ts, member: JSON.stringify(entry) });
     await redis.zRemRangeByRank(key, 0, -(RING_SIZE + 1));
   } catch (err) {
-    console.warn('[cm/modActivity] log failed (non-fatal):', err);
+    // Wave U WARN fix (Codex CR3 #6): structured warn for ops visibility while
+    // keeping the soft-fail (audit log is non-critical telemetry).
+    console.warn('[cm/modActivity] log failed (non-fatal):', {
+      sub,
+      kind: entry.kind,
+      actor: entry.actor,
+      err: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 

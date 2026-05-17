@@ -4,33 +4,86 @@ import type { ApiResult } from '../lib/types';
 export type ConfigRev = { rev: number; config: unknown };
 
 async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
+  const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+  const url = `/api/config-history${demo ? '?demo=1' : ''}`;
   try {
-    const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
-    const res = await fetch(`/api/config-history${demo ? '?demo=1' : ''}`);
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const res = await fetch(url);
+    if (!res.ok) {
+      // Wave U WARN fix: try to parse server error envelope for actionable msg
+      let serverErr: string | null = null;
+      try {
+        const body = await res.json();
+        if (body && typeof body === 'object' && 'error' in body) {
+          serverErr = String((body as { error: unknown }).error);
+        }
+      } catch {
+        // body not JSON — fall through to HTTP status
+      }
+      return { ok: false, error: serverErr ?? `HTTP ${res.status}` };
+    }
     const data = await res.json();
     const revs = Array.isArray(data?.revs) ? (data.revs as ConfigRev[]) : [];
     if (revs.length === 0) return { ok: true, empty: true };
     return { ok: true, empty: false, data: revs };
   } catch (err) {
+    // Wave U WARN fix (Codex CR3 #7): log url + stack for repro before mapping to user-facing string
+    console.error('[cm/config-diff] fetch failed', url, err);
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
+/**
+ * Wave U CRITICAL fix (Codex CR4): replace set-diff with positional LCS-based
+ * line diff. Old set-diff collapsed duplicate lines + showed reordered lines as
+ * "same" — silently wrong for any config where order matters (postBehavior +
+ * check-order do matter in ContextMod).
+ *
+ * Algorithm: classic LCS DP table, then walk back to emit add/del/same tags in
+ * the original order. O(n*m) for n+m lines which is fine for sub-100-line
+ * configs (typical wiki config = 20-60 lines).
+ */
 export function simpleDiff(a: string, b: string): { line: string; tag: 'add' | 'del' | 'same' }[] {
   const aLines = a.split('\n');
   const bLines = b.split('\n');
-  const aSet = new Set(aLines);
-  const bSet = new Set(bLines);
-  const lines: { line: string; tag: 'add' | 'del' | 'same' }[] = [];
-  for (const line of aLines) {
-    if (bSet.has(line)) lines.push({ line, tag: 'same' });
-    else lines.push({ line, tag: 'del' });
+  const n = aLines.length;
+  const m = bLines.length;
+  // DP table of LCS lengths
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      if (aLines[i] === bLines[j]) {
+        dp[i]![j] = (dp[i + 1]?.[j + 1] ?? 0) + 1;
+      } else {
+        dp[i]![j] = Math.max(dp[i + 1]?.[j] ?? 0, dp[i]?.[j + 1] ?? 0);
+      }
+    }
   }
-  for (const line of bLines) {
-    if (!aSet.has(line)) lines.push({ line, tag: 'add' });
+  // Walk forward emitting tags
+  const out: { line: string; tag: 'add' | 'del' | 'same' }[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (aLines[i] === bLines[j]) {
+      out.push({ line: aLines[i]!, tag: 'same' });
+      i++;
+      j++;
+    } else if ((dp[i + 1]?.[j] ?? 0) >= (dp[i]?.[j + 1] ?? 0)) {
+      out.push({ line: aLines[i]!, tag: 'del' });
+      i++;
+    } else {
+      out.push({ line: bLines[j]!, tag: 'add' });
+      j++;
+    }
   }
-  return lines;
+  while (i < n) {
+    out.push({ line: aLines[i]!, tag: 'del' });
+    i++;
+  }
+  while (j < m) {
+    out.push({ line: bLines[j]!, tag: 'add' });
+    j++;
+  }
+  return out;
 }
 
 export function ConfigDiffViewer({ open, onClose }: { open: boolean; onClose: () => void }) {
