@@ -101,7 +101,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | ⛔ 2026-05-16 | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Publish attempted — blocked by Reddit pre-flight: "Apps that use the http plugin must have terms & conditions and a privacy policy linked before publishing." Action: paste https://stephensook.github.io/context-mod-devvit/privacy/ + .../terms/ on https://developers.reddit.com/apps/cm-devvit/developer-settings, then re-run `npx devvit publish --public --bump minor`. Build pre-flight (vite build + bundle) succeeded. |
+| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | 🟡 IN REVIEW 2026-05-16 | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Terms + Privacy + Description filled on Dev Portal. **Version 0.2.0 submitted for review** 2026-05-16 — Reddit gates "Creates custom posts" + http fetch. Email-on-approval expected within 1–7d. Track status at https://developers.reddit.com/apps/cm-devvit/app-versions. |
 | 6.2 | Devpost submission filed | devpost.com | **Stephen** | ⬜ | 6.1 | Before May 27 6 PM PT |
 
 ---
