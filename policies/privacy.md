@@ -6,9 +6,9 @@ description: Privacy Policy for the cm-devvit Reddit Devvit app.
 
 # Privacy Policy — context-mod-devvit
 
-**Last updated:** May 12, 2026
+**Last updated:** May 16, 2026 (v0.2.0 — Reddit App Directory review)
 **App owner:** Stephen Sookra (stephensookra@gmail.com)
-**App name:** context-mod-devvit (a Reddit Devvit app)
+**App name:** context-mod-devvit (a Reddit Devvit app, `cm-devvit` slug)
 
 ## TL;DR
 

@@ -6,7 +6,7 @@ description: Terms of Service for the cm-devvit Reddit Devvit app.
 
 # Terms of Service — context-mod-devvit
 
-**Last updated:** May 12, 2026
+**Last updated:** May 16, 2026 (v0.2.0 — Reddit App Directory review)
 **App owner:** Stephen Sookra (stephensookra@gmail.com)
 
 ## Overview
