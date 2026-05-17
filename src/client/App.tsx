@@ -13,6 +13,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
 import { RuleStatsTable } from './components/RuleStatsTable';
 import { ConfigDiffViewer } from './components/ConfigDiffViewer';
+import { ModActivityFeed } from './components/ModActivityFeed';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -191,6 +192,8 @@ export default function App() {
             )}
           </div>
         </div>
+
+        <ModActivityFeed refreshedAt={refreshedAt} />
 
         <ActionBar subreddit={subreddit} onReload={refresh} events={events} />
       </div>

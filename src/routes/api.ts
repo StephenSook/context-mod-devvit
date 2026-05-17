@@ -15,6 +15,7 @@ import { reddit } from '@devvit/web/server';
 import { demoEvents, DEMO_STATS } from '../lib/demo-fixtures';
 import { readRecent, type RecentEvent } from '../state/recentEvents';
 import { getRecentRevs } from '../state/configStore';
+import { readModActivity } from '../state/modActivity';
 
 export const api = new Hono();
 
@@ -73,6 +74,33 @@ api.get('/config-history', async (c) => {
 
   const revs = await getRecentRevs(subName, limit);
   return c.json({ revs });
+});
+
+/**
+ * Wave S Phase S3 — Mod activity log endpoint.
+ * Returns last 50 mod-menu actions (reload-config, dry-run, etc) for the
+ * provenance feed on the dashboard.
+ */
+api.get('/mod-activity', async (c) => {
+  if (c.req.query('demo') === '1') {
+    const now = Date.now();
+    return c.json({
+      activity: [
+        { ts: now - 5 * 60_000, actor: 'CowSufficient3840', kind: 'reload-config', detail: '5 rules @ rev 3' },
+        { ts: now - 30 * 60_000, actor: 'CowSufficient3840', kind: 'simulate-rule' },
+        { ts: now - 2 * 3600_000, actor: 'vinhbin', kind: 'test-rules' },
+      ],
+    });
+  }
+
+  let subName: string | undefined;
+  try {
+    subName = (await reddit.getCurrentSubreddit()).name;
+  } catch {
+    return c.json({ activity: [] });
+  }
+  const activity = await readModActivity(subName);
+  return c.json({ activity });
 });
 
 function stripServerFields(e: RecentEvent) {

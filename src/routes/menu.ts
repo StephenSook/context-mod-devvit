@@ -14,6 +14,24 @@ import { reddit, redis } from '@devvit/web/server';
 import * as configStore from '../state/configStore';
 import { loadFromWiki, WIKI_PAGE } from '../core/configSource';
 import { K } from '../state/keys';
+import { logModActivity, type ModActivityKind } from '../state/modActivity';
+
+async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<void> {
+  try {
+    const [sub, user] = await Promise.all([
+      reddit.getCurrentSubreddit(),
+      reddit.getCurrentUser(),
+    ]);
+    await logModActivity(sub?.name, {
+      ts: Date.now(),
+      actor: user?.username ?? 'unknown',
+      kind,
+      ...(detail ? { detail } : {}),
+    });
+  } catch {
+    // best-effort, never blocks the menu action
+  }
+}
 
 export const menu = new Hono();
 
@@ -42,6 +60,7 @@ menu.post('/reload-config', async (c) => {
       .flatMap((r) => r.checks)
       .flatMap((ch) => ch.rules).length;
     console.log(`[cm/menu/reload-config] published rev=${rev} (wiki=${loaded.revisionId}) sub=${subName}`);
+    await logMenuAction('reload-config', `${ruleCount} rules @ rev ${rev}`);
     return c.json({ showToast: `Loaded ${ruleCount} rules (rev ${rev}).` });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -66,6 +85,7 @@ menu.post('/recent-actions', async (c) => {
       },
     });
     console.log(`[cm/menu/recent-actions] post created ${post.id}`);
+    await logMenuAction('recent-actions');
     return c.json({
       navigateTo: `https://reddit.com${post.permalink}`,
       showToast: 'Observatory dashboard pinned',
