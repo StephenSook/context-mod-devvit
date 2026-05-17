@@ -3,7 +3,7 @@
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
-> Write your moderation rules once in JSON5. The rule engine, idempotency primitives, atomic config publish, and Observatory dashboard (demo mode) ship in v0.1.0. Live trigger evaluation, action handlers, and dashboard live-data wiring land in Phase 1-3 — see "What's ported" below for the per-phase ship state. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest once Phase 1-3 wiring lands.
+> Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, and Observatory dashboard all ship live in v0.1.0 (Phase 1+2+3 complete 2026-05-16). Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
@@ -29,9 +29,9 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 ![3-panel install flow: (1) App Directory page with Add to community button highlighted, (2) Subreddit mod overflow menu listing the three ContextMod entries, (3) Observatory dashboard with stat cards and event stream.](./assets/install-flow.png)
 
 1. **Install** — Visit [developers.reddit.com/apps/cm-devvit](https://developers.reddit.com/apps/cm-devvit) and click **Add to community**, then pick your subreddit (you must be a mod with `posts` + `wiki` permissions).
-2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows mod-action telemetry (demo data until Phase 3 wires live events). Stickying it is optional but recommended.
+2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows mod-action telemetry — live data from the `events:recent50` ZSET (Phase 3 shipped). Stickying it is optional but recommended.
 3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; the [`examples/`](./examples) directory carries 3 working configs (starter + spam-fresh-account + approve-trusted-mod) you can paste and edit. See [Config schema](#config-schema) for the full surface.
-4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). The Observatory dashboard shows the rule count + actions taken once Phase 1-3 wiring lands.
+4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). Toast shows the rule count; the Observatory dashboard refreshes with the next rule firing.
 5. **Test a rule** — Right-click any post or comment, choose **ContextMod: Test rules on this item**. A dry-run shows which rules would fire without taking action.
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
@@ -55,7 +55,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
 ## Status — what's production vs scaffolded vs Phase-N pending
 
-**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below tells you which boxes are wired today vs which land Phase 1-3.
+**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below shows the per-component ship state. Phase 1+2+3 complete; Phase 4 stretch rules in progress.
 
 | Component | State today | Notes |
 |-----------|-------------|-------|
@@ -83,7 +83,7 @@ See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-
 
 ![Observatory dashboard rendered against `?demo=1` synthetic data: stat cards showing 47 actions today, 3h 8m mod time saved, 12 active rules, spam-filter as top rule; 24-hour hourly-actions sparkline; recent moderation events list with action chips (remove, comment, approve, lock); Reload config + Wiki + Docs links at the bottom.](./docs/screenshots/dashboard-desktop.png)
 
-> Captured 2026-05-14 via Playwright against the mock-server-backed `?demo=1` build. Production renders with the same chrome over real `events:recent` ZSET data once Phase 1+2+3 wire-up lands (see Status table above).
+> Captured 2026-05-14 via Playwright against the mock-server-backed `?demo=1` build. Production now renders the same chrome over real `events:recent50` ZSET data (Phase 1+2+3 shipped 2026-05-16) — `?demo=1` remains for screenshots + demo capture without depending on a live test sub.
 
 ## Architecture
 
@@ -146,7 +146,7 @@ flowchart TB
 
 **Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB. Strings + hashes + sorted sets only — no Lists, no Sets, per Devvit constraints.
 
-**Atomic config publish (Phase 1+3 scaffolded, full wiring pending):** the design is — mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the pointer once at event start so the entire pipeline runs against a consistent config snapshot — no mid-event tear under concurrent reload. The cron handler (`src/routes/scheduler.ts:20-33`) is a logging stub today; the rev-pointer write lands with Phase 1 (`runRun`) + Phase 3 (`refresh-config` loader).
+**Atomic config publish (D5, shipped Phase 1+3):** mod edits wiki → `refresh-config` cron parses + validates → writes immutable `cfg:rev:{n}` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the snapshot once at event start (Codex H3 hardened — triggers pass the snapshot to handleActivity to prevent split-rev events) and threads it through the rule pipeline. Codex H2 hardened: rev allocation uses atomic `INCR` on `cfg:rev-counter` so concurrent publishers get distinct rev numbers rather than racing for N+1.
 
 ### Request lifecycle
 
@@ -223,11 +223,11 @@ Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable exa
 - **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
 - **Named rules** — declare a rule once with `name:`, reference by string elsewhere — DRY composition.
 
-The canonical AJV schema lands at `src/server/schema/app.schema.json` in Phase 1 (Vinh's lane, finishing Day 5-8). Until then, the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) are the reference — concepts identical, surface trimmed per [migration guide](#migration-guide-for-existing-contextmod-operators).
+The canonical AJV schema lives at `src/schema/app.schema.json` (shipped Phase 1, 2026-05-16). See also the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) for concept-level reference — concepts identical, surface trimmed per [migration guide](#migration-guide-for-existing-contextmod-operators).
 
 ### Validation behavior + safety story
 
-**Designed behavior (lands Phase 1 — `src/server/schema/app.schema.json` + `routes/scheduler.ts:refresh-config`):** every config load runs the JSON5 source through AJV against the schema. Three outcomes:
+**Shipped behavior (Phase 1+3 — `src/schema/app.schema.json` + `src/routes/scheduler.ts:refresh-config`):** every config load runs the JSON5 source through AJV against the schema. Three outcomes:
 
 | Outcome | Behavior | What mods see |
 |---------|----------|---------------|
@@ -295,12 +295,13 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 
 - ✅ `Run` / `Check` / `Rule` / `Action` concept model + `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:`) — typed + scaffolded
 - ✅ Filters: `authorIs` / `itemIs` with the canonical criteria set (name, age, karma, flair, isMod, isContributor, verified, shadowBanned, removed, approved, locked, score, age, title, isSelf, over18, depth, op) — typed + scaffolded
-- ✅ Rules: `regex` (with multi-field `testOn` + threshold), `author`, `ruleSet` (AND/OR composition) — types ship; live evaluation lands Phase 1
-- ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — types + Mustache templating ship; handler wiring lands Phase 2
-- ✅ Named rules + composition by name reference — types ship; resolver lands Phase 1
-- ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — types + Hono routes scaffolded; loader implementation lands Phase 3 (`src/routes/menu.ts:15-20` currently returns a "Phase 3" toast)
-- ✅ Per-action idempotency primitives (`cm:proc` 24h + `cm:action:pending` 5m + `cm:action:done` 7d) — `src/lib/idem.ts` shipped
-- ✅ Observatory dashboard — renders against `?demo=1` synthetic data; live data wires up at Phase 3
+- ✅ Rules: `regex` (multi-field target), `author`, `ruleSet` (AND/OR composition) — live evaluation shipped Phase 1
+- ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — handlers shipped Phase 2 with Reddit-API signatures verified live + Mustache markdown sanitizer (escapeMarkdown default per Codex H4)
+- ✅ Named rules + composition by name reference — resolver shipped Phase 1
+- ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — shipped Phase 3 (`loadFromWiki()` short-circuits on unchanged wiki revisionId)
+- ✅ Per-action idempotency primitives (`cm:proc` 24h + `cm:action:pending` 5m owner-token + `cm:action:done` 7d) — shipped Phase 0.6 + Codex CRITICAL hardened (commitAction retries done-write 3x + lease compare-and-delete)
+- ✅ Observatory dashboard — renders live data via `/api/recent` ZRANGE (Phase 3.4) + `?demo=1` synthetic-fixture path retained for screenshots
+- ✅ URL-dedupe repost rule — shipped Phase 2.5.1 (promoted from Phase 4) with race-safe SET NX
 
 **What's deferred (Phase 4 stretch, not yet shipped):**
 - `history`, `attribution`, `recentActivity`, `repost` (URL + image-hash variants) rules — landing in Phase 4. `mhs` rule cut per Phase FAQ.
@@ -310,7 +311,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 **What's different from upstream:**
 - **No central server.** Every mod team installs their own instance — no shared rate limits, no central API token to manage.
 - **Per-subreddit Redis isolation.** Your data never leaves your sub. Mod-action history, image hashes, author cache — all scoped per-install by Devvit.
-- **Observatory dashboard.** Inline custom post showing mod-action telemetry (last 50 events + 24h sparkline + stat cards). Currently renders with `?demo=1` synthetic data; live wiring lands at Phase 3 after Vinh's Phase 1+2 backend ships.
+- **Observatory dashboard.** Inline custom post showing mod-action telemetry (last 50 events + 24h sparkline + stat cards). Renders live data via `/api/recent` (Phase 3.4 shipped); `?demo=1` retained for capture-without-test-sub.
 - **No `wikiLocation` config fragment hydration.** v1 reads one wiki page; `wiki:` + `url:` includes were dropped to simplify the threat model.
 
 **The grandfather case:** if you're FoxxMD or running CM in production with subscribers depending on it, [open an issue](https://github.com/StephenSook/context-mod-devvit/issues) — we'd love to talk about a graceful cutover.
@@ -334,13 +335,13 @@ Use the **ContextMod: Test rules on this item** mod menu entry on any post or co
 
 ![Mockup of the Test-rules-on-this-item dry-run result: 4 cards showing per-rule evaluation. (1) spam-filter: MATCHED, regex on title body, would fire REMOVE + COMMENT, dry-run skipped. (2) age-gate: MATCHED, authorIs filter passed, would fire REMOVE, dry-run skipped. (3) warn-rule: SKIPPED, authorIs karma > 100 failed, rule not evaluated. (4) mod-approve: NO MATCH, ruleSet trusted-mods-and-contributors returned false.](./assets/gallery-dryrun.png)
 
-Dry-run results live in `routes/forms.ts` — handler lands Phase 3.
+Dry-run results live in `src/routes/forms.ts` — shipped Step 3.6 via the non-contract `src/core/dryRunActivity.ts` sibling of `handleActivity`.
 
 **Does it work on iOS / Android?**
 The dashboard is mobile-responsive. Devvit custom posts render natively in the Reddit app's webview. Mod menu actions work on web only (per Devvit platform limits today).
 
 **Is this safe to install on my big sub?**
-This is hackathon-era MVP code with the trigger pipeline still being wired (Phase 1+2). Stable enough for a private test sub, not yet recommended for high-volume production. Watch the [App Versions page](https://developers.reddit.com/apps/cm-devvit/app-versions) for the v1.0 release.
+This is hackathon-era MVP code. Phase 1+2+3 shipped with Codex adversarial review applied (CRITICAL idempotency + HIGH safety-gate fixes baked in). Stable for a private test sub and small subs; not yet pressure-tested on high-volume production. Watch the [App Versions page](https://developers.reddit.com/apps/cm-devvit/app-versions) for the v1.0 release.
 
 **Why a separate slug, not `context-mod`?**
 Reddit's Devvit App Directory has a 16-character app-name limit. `cm-devvit` is the working slug — leaving `context-mod` open if FoxxMD eventually publishes his own official port.
