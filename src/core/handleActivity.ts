@@ -20,16 +20,26 @@
 
 import type { Item, Author } from '../shared/types';
 import * as configStore from '../state/configStore';
+import type { ConfigSnapshot } from '../state/configStore';
 import { runRun } from './runRun';
 import { runAction } from './runAction';
 import { recordEvent } from '../state/recentEvents';
 
+/**
+ * Codex H3 2026-05-16: optional `snapshot` param closes the
+ * "trigger reads config, then handleActivity reads config AGAIN" race.
+ * A publish between the two reads would normalize author enrichment
+ * against rev A and execute rules/actions from rev B. Fix: callers that
+ * already have a snapshot pass it in; handleActivity uses it. Callers
+ * that don't pass (back-compat) fall through to a fresh read.
+ */
 export async function handleActivity(
   item: Item,
   author: Author,
   subredditName: string,
+  snapshot?: ConfigSnapshot,
 ): Promise<void> {
-  const current = await configStore.getCurrentRev(subredditName);
+  const current = snapshot ?? await configStore.getCurrentRev(subredditName);
   if (!current) return;  // no config yet — nothing to do
 
   for (const run of current.config.runs) {

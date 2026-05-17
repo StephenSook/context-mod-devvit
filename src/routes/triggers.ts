@@ -157,12 +157,14 @@ triggers.post('/post-submit', async (c) => {
     return c.json({ status: 'skipped-already-seen' });
   }
 
-  // Read the config ONCE at the entry point so normalize sees the same rev
-  // handleActivity will. needsAuthorEnrichment is decided at publish time.
+  // Codex H3 2026-05-16: read the config ONCE here and PASS it to
+  // handleActivity. Previous code read here for normalize then handleActivity
+  // re-read — a publish between the two reads could split the event across
+  // two revs. Now both stages see the same snapshot.
   const current = await configStore.getCurrentRev(subName);
   const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
   const { item, author } = await normalizePost(input, config);
-  await handleActivity(item, author, subName);
+  await handleActivity(item, author, subName, current ?? undefined);
 
   return c.json({ status: 'ok' });
 });
@@ -192,10 +194,11 @@ triggers.post('/comment-submit', async (c) => {
     return c.json({ status: 'skipped-already-seen' });
   }
 
+  // Codex H3 2026-05-16 — same read-once invariant as /post-submit.
   const current = await configStore.getCurrentRev(subName);
   const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
   const { item, author } = await normalizeComment(input, config);
-  await handleActivity(item, author, subName);
+  await handleActivity(item, author, subName, current ?? undefined);
 
   return c.json({ status: 'ok' });
 });

@@ -177,4 +177,23 @@ describe('handleActivity', () => {
     // dry-run is not "ok" (we didn't actually do the thing)
     expect(event.actions).toEqual([{ kind: 'remove', ok: false }]);
   });
+
+  it('Codex H3 — uses provided snapshot, skips internal getCurrentRev call (read-once invariant)', async () => {
+    // Previous bug: trigger reads config for normalize → handleActivity reads
+    // config AGAIN for rule eval. A publish between the two reads splits the
+    // event across two revs. Fix: pass snapshot in, handleActivity uses it.
+    await handleActivity(item, author, 'cm_devvit_test', { rev: 7, config });
+
+    expect(getCurrentRev).not.toHaveBeenCalled();
+    expect(redditRemove).toHaveBeenCalledWith('t3_abc', true);
+    const event = recordEvent.mock.calls[0]![0] as Record<string, unknown>;
+    expect(event.activityId).toBe('t3_abc');
+    expect(event.triggered).toBe(true);
+  });
+
+  it('Codex H3 — back-compat: snapshot-less call still reads via getCurrentRev', async () => {
+    getCurrentRev.mockResolvedValueOnce({ rev: 9, config });
+    await handleActivity(item, author, 'sub');
+    expect(getCurrentRev).toHaveBeenCalledTimes(1);
+  });
 });
