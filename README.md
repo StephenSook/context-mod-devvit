@@ -91,7 +91,7 @@ For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-186 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite + status-aware chip + CSV export helper); `tsc --build` clean.
+245 tests green (Vinh Phase 1+2+3 + Stephen 3.6 + Codex regression suite + status-aware chip + CSV export helper w/ formula-injection neutralization + client API regression + Header live-tick); `tsc --build` clean.
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
