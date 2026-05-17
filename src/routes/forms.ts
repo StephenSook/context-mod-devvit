@@ -56,15 +56,14 @@ function asPayloadTimestamp(t?: number | Date | string): number | string | undef
 }
 
 forms.post('/test-rules-submit', async (c) => {
-  // Diagnostic: log raw body shape — live-playtest showed thingId=undefined
-  // even after dropping disabled:true. Devvit form submission envelope may
-  // nest values differently than {values: {thingId}}.
+  // Live-playtest 2026-05-16 revealed Devvit form submit envelope is FLAT:
+  // `{thingId: '...'}`, NOT `{values: {thingId: '...'}}` per the doc convention
+  // we assumed. Defensive multi-shape parse covers older/future envelope shapes
+  // without requiring a re-test if Reddit changes the contract.
   const body = await c.req.json<Record<string, unknown>>();
-  console.log(`[cm/forms/test-rules-submit] RAW BODY:`, JSON.stringify(body));
-  // Try every reasonable parse path Devvit might use:
   const thingId =
-    (body as { values?: { thingId?: string } }).values?.thingId ??
     (body as { thingId?: string }).thingId ??
+    (body as { values?: { thingId?: string } }).values?.thingId ??
     (body as { payload?: { values?: { thingId?: string } } }).payload?.values?.thingId ??
     (body as { form?: { values?: { thingId?: string } } }).form?.values?.thingId;
   console.log(`[cm/forms/test-rules-submit] thingId=${thingId}`);
