@@ -23,6 +23,30 @@ describe('passesFilters — empty/null filter passes everything', () => {
   });
 });
 
+describe('Codex H5 — invalid filter regex MUST not throw (fail-CLOSED to false)', () => {
+  // Mirrors runRegexRule's try/catch behavior — filter regexes were previously
+  // raw `new RegExp(...).test(...)` which threw at runtime, killing the whole
+  // handleActivity request for the bad-pattern config row. Codex flagged this
+  // inconsistency: rule regex returns non-match, filter regex throws. Now both
+  // return non-match (filter returns false, treated as filter-failed = skip).
+  it('invalid titleMatches returns false instead of throwing', () => {
+    expect(() => passesFilters({ itemIs: { titleMatches: '([' } }, baseItem, baseAuthor)).not.toThrow();
+    expect(passesFilters({ itemIs: { titleMatches: '([' } }, baseItem, baseAuthor)).toBe(false);
+  });
+  it('invalid bodyMatches returns false instead of throwing', () => {
+    expect(() => passesFilters({ itemIs: { bodyMatches: '([' } }, baseItem, baseAuthor)).not.toThrow();
+    expect(passesFilters({ itemIs: { bodyMatches: '([' } }, baseItem, baseAuthor)).toBe(false);
+  });
+  it('invalid urlMatches returns false instead of throwing', () => {
+    expect(() => passesFilters({ itemIs: { urlMatches: '([' } }, baseItem, baseAuthor)).not.toThrow();
+    expect(passesFilters({ itemIs: { urlMatches: '([' } }, baseItem, baseAuthor)).toBe(false);
+  });
+  it('valid regex still functions normally', () => {
+    expect(passesFilters({ itemIs: { titleMatches: '^hi$' } }, baseItem, baseAuthor)).toBe(true);
+    expect(passesFilters({ itemIs: { titleMatches: '^bye$' } }, baseItem, baseAuthor)).toBe(false);
+  });
+});
+
 describe('passesFilters — authorIs predicates', () => {
   it('nameIn positive', () => {
     expect(passesFilters({ authorIs: { nameIn: ['u'] } }, baseItem, baseAuthor)).toBe(true);

@@ -48,10 +48,23 @@ function passesItem(f: ItemFilter, i: Item): boolean {
   if (f.scoreMax != null && i.score > f.scoreMax) return false;
   if (f.linkFlairTextIn && (i.linkFlairText == null || !f.linkFlairTextIn.includes(i.linkFlairText))) return false;
   if (f.linkFlairTextNotIn && i.linkFlairText != null && f.linkFlairTextNotIn.includes(i.linkFlairText)) return false;
-  if (f.titleMatches && !new RegExp(f.titleMatches).test(i.title)) return false;
-  if (f.bodyMatches && !new RegExp(f.bodyMatches).test(i.body)) return false;
-  if (f.urlMatches && !new RegExp(f.urlMatches).test(i.url)) return false;
+  // Codex H5 2026-05-16: invalid filter regex MUST not throw — mirrors
+  // src/rules/regex.ts try/catch pattern. Bad pattern → filter-failed = skip.
+  // (Parse-time validator + catastrophic-backtracking detection deferred
+  // post-hackathon — tracked as MED/LOW Codex findings.)
+  if (f.titleMatches && !safeRegexTest(f.titleMatches, i.title, 'titleMatches')) return false;
+  if (f.bodyMatches && !safeRegexTest(f.bodyMatches, i.body, 'bodyMatches')) return false;
+  if (f.urlMatches && !safeRegexTest(f.urlMatches, i.url, 'urlMatches')) return false;
   return true;
+}
+
+function safeRegexTest(pattern: string, target: string, fieldName: string): boolean {
+  try {
+    return new RegExp(pattern).test(target);
+  } catch (err) {
+    console.error('[cm/filters] invalid', fieldName, 'pattern — treating as non-match:', pattern, err);
+    return false;
+  }
 }
 
 // Re-export the field-level helpers for unit testing.
