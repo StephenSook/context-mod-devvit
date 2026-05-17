@@ -107,7 +107,13 @@ menu.post('/test-rules', async (c) => {
             name: 'thingId',
             label: 'Thing ID',
             defaultValue: evt.targetId,
-            disabled: true,
+            // NB: cannot set `disabled: true` here — Devvit/HTML spec drops
+            // disabled fields from form submission, so the handler would
+            // receive thingId=undefined. Live-playtest 2026-05-16 hit this.
+            // Field stays editable so the value actually arrives at the
+            // submit handler; mods can technically edit but the menu only
+            // exposes this on a specific post/comment context so the
+            // pre-filled value is the mod's intent in practice.
           },
         ],
         acceptLabel: 'Run dry-run',

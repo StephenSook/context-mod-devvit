@@ -33,6 +33,10 @@ describe('POST /test-rules menu handler', () => {
       name: 'thingId',
       defaultValue: 't3_abc',
     });
+    // Codex/playtest 2026-05-16: field MUST NOT be disabled — Devvit drops
+    // disabled fields from form submission, so the handler would receive
+    // thingId=undefined and bail. Regression test pins editable shape.
+    expect((json.showForm.form.fields[0] as { disabled?: boolean }).disabled).toBeUndefined();
   });
 
   it('returns toast when targetId missing (mod invoked from subreddit menu, not post/comment)', async () => {
