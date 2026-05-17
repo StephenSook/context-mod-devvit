@@ -198,7 +198,7 @@ Multi-select. Choose:
 ### Reddit username (team members)
 
 ```
-u/CowSufficient3840 (Stephen Sookra), u/<Vinh's reddit username — confirm>
+u/CowSufficient3840 (Stephen Sookra), u/Outside-Research-772 (Vinh)
 ```
 
 ### developers.reddit.com app page
