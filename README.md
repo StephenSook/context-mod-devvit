@@ -392,7 +392,7 @@ Vite's `base` must be `'./'` for the Devvit webview iframe. Verify in `vite.conf
 Run `devvit login` and complete the browser flow. Token's cached in your home dir.
 
 **Wiki config fails to validate after editing.**
-The AJV schema (lands at `src/server/schema/app.schema.json` in Phase 1) is strict. If the cron's `refresh-config` rejects your JSON5, the previous `cfg:current_rev` stays active and the error is logged. Common gotchas: trailing commas (OK in JSON5), unquoted keys (OK in JSON5), but type mismatches (e.g., `age: "1d"` instead of `age: 86400`) get rejected.
+The AJV schema (lives at `src/schema/app.schema.json`, shipped Phase 1) is strict. If the cron's `refresh-config` rejects your JSON5, the previous `cfg:current_rev` stays active and the error is logged. Common gotchas: trailing commas (OK in JSON5), unquoted keys (OK in JSON5), but type mismatches (e.g., `age: "1d"` instead of `age: 86400`) get rejected.
 
 **Devvit upload fails with "name does not meet maximum length of 16".**
 `devvit.json:name` must be ≤16 chars. Our slug is `cm-devvit`.
