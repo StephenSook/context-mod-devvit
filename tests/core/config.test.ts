@@ -129,4 +129,25 @@ describe('parseConfig — malformed configs', () => {
     const r = parseConfig(json5);
     expect(r.ok).toBe(false);
   });
+
+  it('Codex H6 — returns {ok:false} (NOT throws) on unknown named-rule reference', () => {
+    // expandNamedRules throws on unknown names. parseConfig must catch it so
+    // callers get a structured ParseResult, not a 500. The error message must
+    // be informative enough for the wiki-load failure toast to be actionable.
+    const json5 = `{
+      runs: [{
+        name: 'r',
+        checks: [{
+          name: 'c',
+          combinator: 'AND',
+          rules: [{ kind: 'named', name: 'doesNotExist' }],
+        }],
+      }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(typeof r.errors === 'string' ? r.errors : JSON.stringify(r.errors)).toMatch(/unknown rule name/);
+    }
+  });
 });
