@@ -250,19 +250,20 @@ Paste from [`writeup-draft.md`](./writeup-draft.md) Section 3. Key honest claims
 
 ### Nominate a most helpful user (optional)
 
-Devpost field accepts ONE primary nominee + free-form reasoning. Pick one of:
+Devpost field accepts ONE primary nominee + free-form reasoning.
 
-**Primary recommendation — u/SampleOfNone:**
+**✅ CONFIRMED 2026-05-17 — Primary nomination is u/SampleOfNone** (Stephen pinged via Reddit Devs Discord; consent granted to be nominated + cited):
+
 ```
 u/SampleOfNone — moderator of r/piercing (600K visitors, 12K contributors). Publicly flagged in the Reddit Devs Discord (May 12, 2026) that image parsing is "the hard part on Devvit" while I was scoping Phase 4, which directly informed my decision to gate the image-hash repost rule on a Day-0 feasibility spike before committing scope. Also asked a real technical compatibility question ("For subs that already run CM, you plan on using their existing wiki pages?") that improved the port's operator-migration story. Honest scope and operator credibility — both directly attributable to her early engagement.
 ```
 
-**Alternate — u/FoxxMD (only if SampleOfNone declines):**
+**Alternate kept on file (not needed — SampleOfNone confirmed): u/FoxxMD:**
 ```
 u/FoxxMD — author of the original PRAW ContextMod that 15+ communities have run since 2019, including r/mealtimevideos (60K weekly visitors). Gave explicit written permission to port (issue #152), added Stephen + Vinh as repo collaborators on May 12, set up the shared GitHub Projects v2 kanban for cross-team coordination on May 13. Without his permission this port wouldn't exist; without his engagement throughout the hackathon it wouldn't be defensible as "ported faithfully."
 ```
 
-> **Send protocol:** ping SampleOfNone via Discord ~5/19 (T-1) asking "would you be cool if I nominated you on my Devpost helper-nomination field + cited r/piercing as a named community in the writeup?" If she declines or doesn't reply within 24h, fall back to FoxxMD (he's already engaged; safe asks via issue thread). Both nominations are valid; pick one.
+> **Status (2026-05-17):** ping sent, consent granted, no fallback needed. Paste the SampleOfNone block into the Devpost Helper-nomination field.
 
 ### [Optional] Developer Platform feedback
 
