@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'cm-tour-seen-v1';
 
+/**
+ * Wave U BUG fix (Codex CR3 #9): in-session fallback when localStorage is
+ * blocked (Safari/Firefox enhanced tracking + iframe-restricted storage). Tour
+ * never reappears within the same session even if persistence fails.
+ */
+let inMemorySeen = false;
+
 const STEPS = [
   {
     title: 'Welcome to ContextMod Observatory',
@@ -18,20 +25,32 @@ const STEPS = [
 ];
 
 export function hasSeenTour(): boolean {
+  // SSR / no-DOM: suppress tour (correct — DOM isn't ready yet).
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return true;
+  // In-memory flag honored first so within-session dismiss persists even when
+  // localStorage write failed.
+  if (inMemorySeen) return true;
   try {
     return localStorage.getItem(STORAGE_KEY) === '1';
   } catch {
-    return true;
+    // Wave U BUG fix (Codex CR3 #9): fail-OPEN on localStorage exception so
+    // first-time mods in restricted iframes (Safari/Firefox enhanced tracking)
+    // still see the tour. Previously failed-CLOSED which silently stripped the
+    // feature for those browsers.
+    console.warn('[cm/onboarding] localStorage read blocked, falling back to in-memory flag');
+    return false;
   }
 }
 
 export function markTourSeen() {
+  // Always set in-memory flag so within-session dismiss persists even when
+  // localStorage write fails.
+  inMemorySeen = true;
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, '1');
   } catch {
-    // ignore — localStorage may be unavailable in iframe
+    console.warn('[cm/onboarding] localStorage write blocked; in-memory flag still suppresses re-show this session');
   }
 }
 

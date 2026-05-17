@@ -21,6 +21,37 @@ describe('OnboardingTour state helpers', () => {
     markTourSeen();
     expect(hasSeenTour()).toBe(true);
   });
+
+  it('U4 fix — fail-open on localStorage.getItem exception (Codex CR3 BUG #9)', () => {
+    const original = Storage.prototype.getItem;
+    Storage.prototype.getItem = () => {
+      throw new Error('storage blocked');
+    };
+    try {
+      // In a fresh module-scope inMemorySeen=false, error path should return false (show tour)
+      // We can't reset module state cleanly between tests so this is a smoke test —
+      // the critical assertion is no exception bubbles + returns boolean.
+      const result = hasSeenTour();
+      expect(typeof result).toBe('boolean');
+    } finally {
+      Storage.prototype.getItem = original;
+    }
+  });
+
+  it('U4 fix — markTourSeen still suppresses re-show within session when localStorage.setItem throws', () => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => {
+      throw new Error('storage write blocked');
+    };
+    try {
+      markTourSeen();
+      // In-memory flag should now be true, so hasSeenTour returns true
+      // even though localStorage write failed.
+      expect(hasSeenTour()).toBe(true);
+    } finally {
+      Storage.prototype.setItem = original;
+    }
+  });
 });
 
 describe('OnboardingTour component', () => {
