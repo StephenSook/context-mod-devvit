@@ -18,6 +18,8 @@ import { getRecentRevs } from '../state/configStore';
 import { readModActivity } from '../state/modActivity';
 import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
+import { explainEvent, type EventSummary } from '../core/explainEvent';
+import { settings } from '@devvit/web/server';
 
 /**
  * Wave U BLOCKER fix — verify caller is a moderator of the current sub before
@@ -194,6 +196,28 @@ api.post('/unmute-rule', async (c) => {
     detail: `${runName}/${checkName}`,
   });
   return c.json({ ok: true });
+});
+
+/**
+ * Wave V Phase V7 — POST /api/explain-event
+ * Mod-auth gated (only mods can burn the OpenAI quota). Body = EventSummary.
+ * Returns { ok, explanation } or { ok:false, error }.
+ */
+api.post('/explain-event', async (c) => {
+  const body = await c.req.json<{ event?: EventSummary }>();
+  if (!body?.event) return c.json({ ok: false, error: 'event payload required' }, 400);
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  try {
+    const apiKey = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+    const result = await explainEvent(body.event, apiKey);
+    if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+    return c.json({ ok: true, explanation: result.explanation });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/api/explain-event] failed:', err);
+    return c.json({ ok: false, error: `Explain failed: ${msg}` }, 500);
+  }
 });
 
 function stripServerFields(e: RecentEvent) {
