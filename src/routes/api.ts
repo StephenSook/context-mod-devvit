@@ -14,6 +14,7 @@ import { Hono } from 'hono';
 import { reddit } from '@devvit/web/server';
 import { demoEvents, DEMO_STATS } from '../lib/demo-fixtures';
 import { readRecent, type RecentEvent } from '../state/recentEvents';
+import { getRecentRevs } from '../state/configStore';
 
 export const api = new Hono();
 
@@ -33,6 +34,45 @@ api.get('/recent', async (c) => {
 
   const events = await readRecent(subName);
   return c.json({ events: events.map(stripServerFields) });
+});
+
+/**
+ * Wave S Phase S9 — Config history endpoint for the rev-diff viewer.
+ * Returns last 10 published config revisions w/ rev # + parsed config payload.
+ * ?demo=1 returns synthetic fixtures so the dashboard renders the diff UI
+ * without depending on a live install.
+ */
+api.get('/config-history', async (c) => {
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '10', 10) || 10, 50);
+  if (c.req.query('demo') === '1') {
+    return c.json({
+      revs: [
+        {
+          rev: 3,
+          config: { runs: [{ name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }, { name: 'low-karma-author' }] }] },
+        },
+        {
+          rev: 2,
+          config: { runs: [{ name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }] }] },
+        },
+        {
+          rev: 1,
+          config: { runs: [{ name: 'spam-removal', checks: [] }] },
+        },
+      ],
+    });
+  }
+
+  let subName: string | undefined;
+  try {
+    subName = (await reddit.getCurrentSubreddit()).name;
+  } catch (err) {
+    console.error('[cm/api/config-history] could not resolve current sub:', err);
+    return c.json({ revs: [] });
+  }
+
+  const revs = await getRecentRevs(subName, limit);
+  return c.json({ revs });
 });
 
 function stripServerFields(e: RecentEvent) {

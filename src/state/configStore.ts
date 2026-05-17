@@ -68,3 +68,29 @@ export async function getCurrentRev(sub?: string): Promise<ConfigSnapshot | null
     return null;
   }
 }
+
+/**
+ * Wave S Phase S9 — Read the last N config revisions for the diff viewer.
+ * Iterates rev pointer backwards from current. Stops at first missing payload
+ * (revs can be GC'd outside the window) or when N is reached.
+ */
+export async function getRecentRevs(sub: string | undefined, limit = 10): Promise<ConfigSnapshot[]> {
+  const ptr = await redis.get(K.cfgCurrentRev(sub));
+  if (ptr == null) return [];
+  const currentRev = Number.parseInt(ptr, 10);
+  if (!Number.isFinite(currentRev)) return [];
+  const out: ConfigSnapshot[] = [];
+  for (let i = 0; i < limit; i++) {
+    const rev = currentRev - i;
+    if (rev < 0) break;
+    const payload = await redis.get(K.cfgRev(rev, sub));
+    if (payload == null) break;
+    try {
+      const config = JSON.parse(payload) as AppConfig;
+      out.push({ rev, config });
+    } catch {
+      // skip corrupt rev, continue
+    }
+  }
+  return out;
+}

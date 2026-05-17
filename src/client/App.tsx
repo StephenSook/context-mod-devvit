@@ -12,6 +12,7 @@ import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
 import { RuleStatsTable } from './components/RuleStatsTable';
+import { ConfigDiffViewer } from './components/ConfigDiffViewer';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -38,6 +39,7 @@ export default function App() {
   const [filter, setFilter] = useState<EventFilter>({ kind: 'all' });
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState<boolean>(() => !hasSeenTour());
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
@@ -95,7 +97,8 @@ export default function App() {
     () => [
       { key: '?', label: 'Show / hide this overlay', handler: () => setOverlayOpen((v) => !v) },
       { key: 'r', label: 'Reload data from server', handler: () => void refresh() },
-      { key: 'Escape', label: 'Close overlay', handler: () => setOverlayOpen(false) },
+      { key: 'h', label: 'Open config history / diff viewer', handler: () => setHistoryOpen((v) => !v) },
+      { key: 'Escape', label: 'Close overlay', handler: () => { setOverlayOpen(false); setHistoryOpen(false); } },
       { key: 'a', label: 'Show all events (clear filter)', handler: () => setFilter({ kind: 'all' }) },
     ],
     [refresh],
@@ -193,6 +196,7 @@ export default function App() {
       </div>
 
       <KeyboardOverlay open={overlayOpen} onClose={() => setOverlayOpen(false)} shortcuts={shortcuts} />
+      <ConfigDiffViewer open={historyOpen} onClose={() => setHistoryOpen(false)} />
       {tourOpen && <OnboardingTour onDone={() => setTourOpen(false)} />}
     </div>
   );
