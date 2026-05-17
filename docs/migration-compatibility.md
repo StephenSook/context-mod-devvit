@@ -2,7 +2,7 @@
 
 > For operators already running FoxxMD's PRAW-era [ContextMod](https://github.com/FoxxMD/context-mod): this document tells you exactly which rules, actions, filters, and config keys carry over, which are deferred, and which were explicitly cut. **No surprises in your wiki config.**
 
-**Last reviewed:** 2026-05-14.
+**Last reviewed:** 2026-05-17 (v0.2.0).
 **Upstream version sampled:** master branch at the time of the Devvit port (FoxxMD's last release was Nov 2022).
 **Audience:** the 15+ existing ContextMod operators who want to know "what changes for me?" before migrating.
 
@@ -10,7 +10,18 @@
 
 ## Quick answer
 
-If your current wiki config uses **regex rules + author criteria + named rules + filters + Mustache-templated actions**, your config copies across with **zero changes** once Phase 1+2+3 wiring lands. If you use the Phase 4 stretch rules (history / attribution / recentActivity), they land post-hackathon. If you use `mhs`, that's cut per Reddit's PR #96 — keep running upstream PRAW for hate-speech filtering.
+If your current wiki config uses **regex rules + author criteria + named rules + filters + Mustache-templated actions + URL-dedupe repost**, your config copies across with **minor renames** as of Devvit-port v0.2.0 (Phase 1+2+3 shipped 2026-05-16, in Reddit App Directory review). The Phase 4 stretch rules (`history` / `attribution` / `recentActivity`) land post-hackathon; image-mode repost (Phase 4.7) is deferred. If you use `mhs`, that's cut per Reddit's PR #96 — keep running upstream PRAW for hate-speech filtering.
+
+**Schema renames you'll apply to your wiki config (one-time):**
+- `condition:` → `combinator:` on runs / checks / ruleSets
+- `testOn:` → `target:` on regex rules
+- `patterns: [...]` → `pattern: "..."` (single string per rule)
+- `criteria:` → `filter:` on author rules
+- `body:` → `template:` on comment actions
+- `{ kind: 'ruleSet', name: '<name>' }` for named-rule refs (was `{ kind: 'named', name }` upstream)
+- Top-level: drop `schema_version` (no longer required), camelCase `namedRules` (was `named_rules`)
+- Wiki path: `r/<sub>/wiki/botconfig/contextmod` (was `r/<sub>/wiki/contextmod`)
+- `postBehavior:` values: `'next'` (default) / `'stop'` / `'goto:<run-name>'` (was `'continue'` upstream → now `'next'`)
 
 ---
 
@@ -18,15 +29,15 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 
 | Upstream rule | Devvit port status | Notes |
 |---------------|---------------------|-------|
-| `regex` (with `testOn` + `threshold`) | ✅ **Ported (Phase 1)** | Same JSON5 surface. `testOn` accepts `title \| body \| url`. Threshold is the minimum matched-pattern count for the rule to fire. |
-| `author` | ✅ **Ported (Phase 1)** | Same JSON5 surface. Supports age / karma / flair / verified / contributor / mod / shadowBanned / removed / approved criteria with `equals` / `lessThan` / `greaterThan` / `in` operators. Account-history sub-criteria (`history`, `attribution`, `recentActivity`) land Phase 4 — see below. |
-| `ruleSet` (AND/OR composition) | ✅ **Ported (Phase 1)** | Same JSON5 surface — `condition: 'AND' \| 'OR'` + `rules: []`. Nested ruleSets supported. `postBehavior: 'continue' \| 'stop' \| 'goto:<run-name>'` honored. |
-| `named_rules` (declare-once, ref-by-name) | ✅ **Ported (Phase 1)** | Top-level `named_rules: { <name>: <rule> }` declaration. Reference from any check via `{ kind: 'ruleSet', name: '<name>' }`. |
+| `regex` (with `target` + `threshold`) | ✅ **Ported (Phase 1)** | JSON5 surface w/ schema rename: `target:` (was `testOn:`) accepts `title \| body \| url`; `pattern:` is now a single string per rule (was `patterns: []`). Threshold is the minimum matched-pattern count for the rule to fire. |
+| `author` | ✅ **Ported (Phase 1)** | Rename: `filter:` (was `criteria:`). Supports age / karma / flair / verified / contributor / mod / shadowBanned / removed / approved fields with `equals` / `lessThan` / `greaterThan` / `in` operators. Account-history sub-criteria (`history`, `attribution`, `recentActivity`) land Phase 4 — see below. |
+| `ruleSet` (AND/OR composition) | ✅ **Ported (Phase 1)** | Rename: `combinator: 'AND' \| 'OR'` (was `condition:`) + `rules: []`. Nested ruleSets supported. `postBehavior: 'next' \| 'stop' \| 'goto:<run-name>'` honored (`'continue'` upstream → `'next'` Devvit). |
+| `namedRules` (declare-once, ref-by-name) | ✅ **Ported (Phase 1)** | Top-level `namedRules: { <name>: <rule> }` (camelCase, was `named_rules:` upstream). Reference from any check via `{ kind: 'ruleSet', name: '<name>' }`. |
+| `repost` (URL mode) | ✅ **Ported (Phase 2)** | URL sha256 + Redis `cm:repost:url:{hash}` w/ SET NX semantics for atomicity (Codex C1), 30-day TTL. Promoted from Phase 4 by Codex hardening pass. |
 | `history` | 🚧 **Deferred to Phase 4** | Cache-backed (`cm:author:{name}` hash, 1h TTL). Same criteria surface as upstream: submissionCount / commentCount / linkKarma / commentKarma / accountAge. |
 | `attribution` | 🚧 **Deferred to Phase 4** | Same domain-frequency criteria as upstream. |
 | `recentActivity` | 🚧 **Deferred to Phase 4** | Same per-sub thresholds + window criteria as upstream. |
-| `repost` (URL mode) | 🚧 **Deferred to Phase 4** | URL sha256 + Redis SET dedup, 30-day TTL. |
-| `repost` (image mode) | 🚧 **Deferred to Phase 4 (gated)** | Pure-JS perceptual blockhash + multi-band LSH in Redis. Gated on Phase 0.10 GO/NO-GO spike. If NO-GO, image-mode cut; URL-mode still ships. |
+| `repost` (image mode) | ⏸ **Deferred (Phase 4.7)** | Pure-JS perceptual blockhash + multi-band LSH in Redis. Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission. |
 | `repost` (YouTube mode) | ✂️ **Cut** | YouTube Data API quota model doesn't fit Devvit's fetch policy. Upstream PRAW build keeps it. |
 | `mhs` (ModerateHateSpeech HTTP fetch) | ✂️ **Cut 2026-05-13** | Reddit PR #96 (2026-05-08) locked HTTP fetch policy AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside. Subs using upstream `mhs` for hate-speech filtering: keep running upstream PRAW. See [`devvit-app-settings.md`](./submission/devvit-app-settings.md). |
 | `sentiment` | ✂️ **Cut** | NLP libs (compromise, sentiment) don't bundle cleanly in Devvit's 30s execution window + 500MB bundle cap. Upstream PRAW build keeps it. |
@@ -39,7 +50,7 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 | `remove` | ✅ **Ported (Phase 2)** | Same fields (`reason`, `spam: bool`). Maps to `reddit.remove(thingId, spam)`. |
 | `approve` | ✅ **Ported (Phase 2)** | Maps to `reddit.approve(thingId)`. |
 | `lock` | ✅ **Ported (Phase 2)** | Maps to `reddit.lock(thingId)`. |
-| `comment` | ✅ **Ported (Phase 2)** | Same fields (`body`, `distinguish`, `sticky`, `lock`). Mustache `{{author}}` / `{{subreddit}}` / `{{permalink}}` templating supported. |
+| `comment` | ✅ **Ported (Phase 2)** | Rename: `template:` (was `body:`). Fields: `template`, `distinguish`, `sticky`, `lock`. Mustache `{{author}}` / `{{subreddit}}` / `{{permalink}}` templating supported w/ default `escapeMarkdown` for safety (Codex H4). |
 | `report` | ✅ **Ported (Phase 2)** | Same fields (`reason`). Maps to `reddit.report(thingId, reason)`. |
 | `ban` | ✅ **Ported (Phase 2)** | Same fields (`reason`, `duration`, `message`). Maps to `reddit.banUser(...)`. |
 | `userFlair` | ✅ **Ported (Phase 2)** | Same fields (`text`, `cssClass`). Maps to `reddit.setUserFlair(...)`. |
@@ -62,10 +73,10 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 
 | Upstream key | Devvit port status | Notes |
 |--------------|---------------------|-------|
-| `schema_version` | ✅ **Ported** | Required at root. Currently 1. |
-| `runs[]` | ✅ **Ported** | Same shape — `name`, `checks[]`, `condition` (AND/OR), `postBehavior`. |
-| `checks[]` | ✅ **Ported** | Same shape — `name`, `condition` (AND/OR), `rules[]`, `actions[]`, `authorIs`, `itemIs`, `postBehavior`. |
-| `named_rules` | ✅ **Ported** | Top-level map of name → rule definition. |
+| `schema_version` | ✂️ **Dropped** | No longer required at root in Devvit port. AJV schema doesn't validate it; harmless if present. |
+| `runs[]` | ✅ **Ported** | Shape: `name`, `checks[]`, `combinator` (was `condition`, AND/OR), `postBehavior`. |
+| `checks[]` | ✅ **Ported** | Shape: `name`, `combinator` (was `condition`, AND/OR), `rules[]`, `actions[]`, `authorIs`, `itemIs`, `postBehavior`. |
+| `namedRules` | ✅ **Ported** | Top-level map of name → rule definition (camelCase, was `named_rules` upstream). |
 | `runs[].postBehavior: 'goto:<run>'` | ✅ **Ported** | 100-iter safety break to prevent infinite loops. |
 | `nicknames` | ✂️ **Cut** | Upstream feature that aliased external users to internal IDs; not portable to Devvit's per-install isolation. |
 | `polling` | ✂️ **Cut** | Devvit triggers replace upstream's polling loop. |
@@ -75,7 +86,7 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 
 | Upstream | Devvit port |
 |----------|-------------|
-| `r/<sub>/wiki/contextmod` | ✅ **Same path.** Existing operators can copy their wiki content over (minus the cut rules + replaced caching block). |
+| `r/<sub>/wiki/contextmod` | ⚠️ **Path renamed → `r/<sub>/wiki/botconfig/contextmod`** (namespaced under `botconfig/` for collision-safety w/ other Devvit apps). Existing operators copy their wiki content to the new path (minus the cut rules + replaced caching block + the schema renames listed at top). |
 
 ## Install model
 
@@ -90,14 +101,14 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 
 | Upstream | Devvit port |
 |----------|-------------|
-| AJV against `Schema/App.json` | Same AJV pattern, schema trimmed for cut rules. Lands at `src/server/schema/app.schema.json` Phase 1. |
-| Bad config → mod sees stack trace in logs | Bad config → last known-good revision stays active, dashboard event chip surfaces the parse/schema error (Phase 3 wiring) |
+| AJV against `Schema/App.json` | Same AJV pattern, schema trimmed for cut rules. Lives at `src/schema/app.schema.json` (unified isomorphic path, used by both server validator + dashboard dry-run typing). |
+| Bad config → mod sees stack trace in logs | Bad config → last known-good revision stays active via atomic INCR-allocated revision pointer (Codex H2), dashboard event chip surfaces the parse/schema error |
 
 ## What changes for me as an existing operator
 
 Concretely, if you're FoxxMD-instance-class (running upstream CM today against r/mealtimevideos or similar):
 
-1. **Your wiki config copies over.** Open `r/<your-sub>/wiki/contextmod` → copy → paste into the new install's same wiki path. Delete any `mhs` / `dispatch` / `message` / `modnote` / `usernote` / `sentiment` / `repeatActivity` blocks. Phase 4 rules (`history`, `attribution`, `recentActivity`, `repost`) stay in config but won't fire until Phase 4 ships post-hackathon — that's fine; they're no-ops, not errors.
+1. **Your wiki config copies over with one-time renames.** Open `r/<your-sub>/wiki/contextmod` → copy → apply the schema renames listed in the Quick Answer at top → paste into the new install's `r/<sub>/wiki/botconfig/contextmod` path. Delete any `mhs` / `dispatch` / `message` / `modnote` / `usernote` / `sentiment` / `repeatActivity` blocks. Phase 4 rules (`history`, `attribution`, `recentActivity`) stay in config but won't fire until Phase 4 ships post-hackathon — that's fine; they're no-ops, not errors. URL-dedupe `repost` works today.
 2. **Your central server gets retired** after migration. The Devvit install handles polling, rate limiting, storage, and rule eval per-sub.
 3. **Your reason-chain audit log** (which sub did X to author Y because rule Z) is now visible in-product via the Observatory dashboard (custom post). No more grep-the-Discord-webhook.
 4. **Your operator-tier features** (cross-sub aggregate, multi-bot orchestration, dispatch-and-replay) **don't exist** in the Devvit port today. If you need them, keep running upstream alongside. The two coexist — each install is isolated.
