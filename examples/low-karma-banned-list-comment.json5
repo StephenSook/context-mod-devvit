@@ -1,0 +1,59 @@
+// ContextMod Devvit — example: low-karma + named-user blocklist → comment + report.
+//
+// Combines an author rule with a sub-mod-curated banned-user list
+// (nameIn array). Low-karma OR named-list match (combinator: 'OR')
+// triggers a report to mod queue + a transparent removal comment.
+//
+// Useful for subs that maintain a list of known-bad users who've
+// been banned before but keep returning under new accounts — surfaces
+// their new posts for mod review without auto-removing.
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes:
+//   - `nameIn: string[]` on AuthorFilter — exact-match against author username.
+//   - `report` action has a `reason: string` field surfaced in mod queue.
+//   - `commentKarmaMax` and `linkKarmaMax` set independently — author trips on EITHER (default within filter is AND, so combine via separate rules + OR combinator).
+{
+  runs: [
+    {
+      name: 'flag-low-karma-and-blocklist',
+      checks: [
+        {
+          name: 'low-karma-or-named-blocklist',
+          combinator: 'OR',
+          filters: { authorIs: { isMod: false, isContributor: false } },
+          rules: [
+            {
+              kind: 'author',
+              name: 'very-low-karma',
+              filter: {
+                commentKarmaMax: 5,
+                linkKarmaMax: 5,
+                verified: false,
+              },
+            },
+            {
+              kind: 'author',
+              name: 'mod-curated-blocklist',
+              filter: {
+                nameIn: [
+                  'KnownBadActor1',
+                  'KnownBadActor2',
+                  'KnownBadActor3',
+                ],
+              },
+            },
+          ],
+          actions: [
+            { kind: 'report', reason: 'Low-karma or named-blocklist match — mod review' },
+            {
+              kind: 'comment',
+              template: 'Hi {{author.name}}, your post is queued for mod review per our new-account / blocklist policy.',
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}

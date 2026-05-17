@@ -1,0 +1,60 @@
+// ContextMod Devvit — example: named rules + flair-text gating for trusted contributors.
+//
+// Demonstrates a richer namedRules block that gates trust on user flair text
+// (sub-specific "Verified Pro", "Moderator Council", etc) rather than just
+// reddit-wide isMod/isContributor booleans. Subs with curated flair systems
+// (r/science, r/AskHistorians, etc) use this pattern.
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes:
+//   - `flairTextIn: string[]` on AuthorFilter — exact-match against
+//     the user's current flair text on this sub. Case-sensitive.
+//   - Named rules can reference filter-shape data; the inline rule reference
+//     `{kind: 'named', name: 'X'}` resolves via expandNamedRules at parse time.
+//   - Codex H6 hardening: if named-rule reference points at an unknown name,
+//     parseConfig returns `{ok: false, errors}` with a clear message — mods
+//     never get a 500 in the toast.
+{
+  namedRules: {
+    'sub-trusted-flair': {
+      kind: 'author',
+      filter: {
+        flairTextIn: [
+          'Verified Pro',
+          'Moderator Council',
+          'Trusted Contributor',
+          'Subject Matter Expert',
+        ],
+      },
+    },
+    'high-karma-old-account': {
+      kind: 'author',
+      filter: {
+        ageMinSec: 63072000,         // 2+ year account
+        commentKarmaMin: 10000,
+        linkKarmaMin: 1000,
+        verified: true,
+      },
+    },
+  },
+  runs: [
+    {
+      name: 'trusted-contributor-fastpath',
+      checks: [
+        {
+          name: 'auto-approve-trusted',
+          combinator: 'OR',
+          rules: [
+            { kind: 'named', name: 'sub-trusted-flair' },
+            { kind: 'named', name: 'high-karma-old-account' },
+          ],
+          actions: [
+            { kind: 'approve' },
+          ],
+          postBehavior: 'stop',
+        },
+      ],
+    },
+  ],
+}

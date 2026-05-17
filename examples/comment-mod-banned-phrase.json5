@@ -1,0 +1,43 @@
+// ContextMod Devvit — example: comment moderation with banned phrase + parent lock.
+//
+// Catches a regex match in a comment body and both removes the comment
+// AND locks the parent thread (lock action routes via getCommentById per
+// Vinh's Phase 2 reality correction, not reddit.lock() directly).
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes:
+//   - `target: 'body'` on regex rule matches the comment body (vs 'title' for posts).
+//   - `lock` action with no fields = lock the thing the trigger fired on.
+//   - Two actions in the array execute sequentially; both are idempotent-keyed
+//     via the cm:action:done/pending shape so retries don't double-apply.
+{
+  runs: [
+    {
+      name: 'comment-mod',
+      checks: [
+        {
+          name: 'banned-phrase-comment',
+          combinator: 'OR',
+          filters: { authorIs: { isMod: false, isContributor: false } },
+          rules: [
+            {
+              kind: 'regex',
+              name: 'banned-phrase-body',
+              pattern: '(?i)(slur-pattern-here|another-banned-term)',
+              target: 'body',
+            },
+          ],
+          actions: [
+            { kind: 'remove' },
+            { kind: 'lock' },
+            {
+              kind: 'comment',
+              template: 'Comment removed and locked — banned phrase. Modmail us on appeal.',
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}

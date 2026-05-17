@@ -1,0 +1,71 @@
+// ContextMod Devvit — example: NSFW sub with strict author verification.
+//
+// For 18+ subs that need verified-age + verified-email + non-trivial account
+// history before allowing posts. Combines itemIs (over18 = post is NSFW)
+// with an author rule requiring all the verification flags.
+//
+// Removes + bans posts from authors that don't meet ALL the criteria.
+// Tune the karma + age thresholds for your sub's risk tolerance.
+//
+// Reference: ../README.md "Config schema" + src/schema/app.schema.json.
+//
+// Schema notes:
+//   - `itemIs` filter on the check matches against the submitted post:
+//     `over18: true` short-circuits if the post is NOT marked NSFW.
+//   - `ban` action shape: `{kind: 'ban', reason?, duration?, message?}`.
+//     `duration` in days; omit for permanent.
+//   - Author rule with all-positive filter (verified + ageMin + karmaMin)
+//     fires when criteria FAIL (compose with `combinator: 'AND'` on the
+//     check + negate via separate "low-trust" rule below).
+{
+  runs: [
+    {
+      name: 'nsfw-strict-verification',
+      checks: [
+        {
+          name: 'remove-unverified-on-nsfw',
+          combinator: 'OR',
+          filters: {
+            itemIs: { over18: true },
+            authorIs: { isMod: false, isContributor: false },
+          },
+          rules: [
+            {
+              kind: 'author',
+              name: 'unverified-email',
+              filter: {
+                verified: false,
+              },
+            },
+            {
+              kind: 'author',
+              name: 'too-new-account',
+              filter: {
+                ageMaxSec: 7776000,        // < 90 days
+              },
+            },
+            {
+              kind: 'author',
+              name: 'too-low-karma',
+              filter: {
+                commentKarmaMax: 100,
+                linkKarmaMax: 100,
+              },
+            },
+          ],
+          actions: [
+            { kind: 'remove', isSpam: false },
+            {
+              kind: 'comment',
+              template: 'Hi {{author.name}}, this NSFW sub requires verified email + 90+ day account + 100+ karma. Modmail us if you meet these and were caught in error.',
+            },
+            {
+              kind: 'report',
+              reason: 'NSFW post from unverified/new/low-karma account — mod review',
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
