@@ -1,6 +1,6 @@
 # Devpost Submission Form — Paste-Ready Cheat Sheet
 
-> **Source of truth:** Stephen captured the actual Devpost form on May 13, 2026 (URL: `devpost.com/submit-to/29423-reddit-mod-tools-and-migrated-apps-hackathon/manage/submissions/1017798/...`). Every field below is mapped to the real form, with verbatim paste copy. Drafted May 13, 2026; hackathon deadline May 27, 2026 at 6pm PT.
+> **Source of truth:** Stephen captured the actual Devpost form on May 13, 2026 (URL: `devpost.com/submit-to/29423-reddit-mod-tools-and-migrated-apps-hackathon/manage/submissions/1017798/...`). Every field below is mapped to the real form, with verbatim paste copy. Drafted May 13, 2026; **refreshed 2026-05-16 after Vinh shipped Phase 1+2+3 + Stephen shipped Step 3.6 + Codex CRITICAL/HIGH hotfixes + v0.2.0 submitted for Reddit review**. Hackathon deadline May 27, 2026 at 6pm PT.
 >
 > **Voice:** Stephen edits every paragraph in his own voice before submission. This is structural scaffolding, not final copy. No AI-tone words (`powerful`, `sophisticated`, `revolutionary`, `seamless`, `leverage`, `robust`, `cutting-edge`, `intuitive`, `amazing`, `easily`, `simply`, `effortlessly`, `transform`). <!-- AITONE_IGNORE -->
 
@@ -33,9 +33,9 @@ ContextMod — Devvit port of FoxxMD's PRAW mod bot
 
 **Recommended:**
 ```
-FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 rules in your sub's wiki, action-telemetry dashboard, per-sub install — no hosting, no API tokens, no shared bottleneck. 15+ communities ready.
+FoxxMD's PRAW mod bot, ported to Reddit Devvit Web. JSON5 wiki rules, live Observatory dashboard, per-sub install — no hosting, no tokens, no shared bottleneck. Codex-hardened. 15+ communities ready.
 ```
-*198 characters (Devpost cap is 200). Names the upstream, names the platform, lists the wedge (no hosting/tokens/bottleneck), grounds in a concrete operator base.*
+*197 characters (Devpost cap is 200). Names the upstream, names the platform, lists the wedge (no hosting/tokens/bottleneck), credits the adversarial-review hardening, grounds in a concrete operator base.*
 
 **Sookra anchors:** Pillar 1 (FoxxMD) + Pillar 2 (no shared bottleneck) + Pillar 5 (15+ communities).
 
@@ -60,18 +60,20 @@ I got written permission from FoxxMD to port it (GitHub issue [FoxxMD/context-mo
 
 ## What it does
 
-Mods install ContextMod on their sub with one click — no Heroku, no API tokens, no shared rate limits. They write rules in JSON5 inside `r/<sub>/wiki/contextmod`. Once Phase 1-3 wiring lands, ContextMod evaluates every new post and comment against those rules and takes the configured action: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. A custom-post Observatory dashboard surfaces action telemetry — stat cards, 24h sparkline, last 50 events with color-coded chips. v0.1.0 ships the rule engine + idempotency primitives + atomic config publish + dashboard demo mode; live trigger / action / dashboard data wiring lands through Day 5-11. A dry-run mod-menu lets you test rules against a specific post before committing.
+Mods install ContextMod on their sub with one click — no Heroku, no API tokens, no shared rate limits. They write rules in JSON5 inside `r/<sub>/wiki/botconfig/contextmod`. ContextMod evaluates every new post and comment against those rules and takes the configured action: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. A custom-post Observatory dashboard surfaces action telemetry live via the `events:recent50` ZSET — stat cards, 24h sparkline, last 50 events with color-coded chips. v0.2.0 ships the full Run → Check → Rule → Action engine + 7 action handlers + atomic config publish + wiki cron + live dashboard data + dry-run rule tester — Phase 1+2+3 complete. A mod-menu dry-run lets you test rules against a specific post before committing them live.
 
-The rule engine ports the original ContextMod concept model faithfully: **Run → Check → Rule → Action** with `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:<run>.<check>`), filters (`authorIs` / `itemIs`), named rule composition, Mustache action templating with `{{item.*}}` / `{{author.*}}` / `{{rules.<name>.data.*}}` context. v0.1.0 ships 3 MVP rule kinds (`regex`, `author`, `ruleSet`) and 7 actions; Phase 4 adds `history`, `attribution`, `recentActivity`, `repost`. Upstream `mhs` toxicity classifier was cut per PR #96.
+The rule engine ports the original ContextMod concept model faithfully: **Run → Check → Rule → Action** with `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:<run>.<check>`), filters (`authorIs` / `itemIs`), named rule composition, Mustache action templating with `{{item.*}}` / `{{author.*}}` / `{{rules.<name>.data.*}}` context. v0.2.0 ships 3 MVP rule kinds (`regex`, `author`, `ruleSet`) + URL-dedupe repost rule promoted from Phase 4 + 7 actions; remaining Phase 4 stretch (`history`, `attribution`, `recentActivity`, image-hash) in progress. Upstream `mhs` toxicity classifier was cut per Reddit PR #96 (HTTP fetch allowlist restricted to OpenAI + Gemini only).
 
 ## How I built it
 
-TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architecture is in [README.md](https://github.com/StephenSook/context-mod-devvit#architecture) — Mermaid `flowchart TB` + `sequenceDiagram` showing the three-stage idempotency keys (`cm:proc` 24h + `cm:action:pending` 5m + `cm:action:done` 7d) that make Devvit's at-least-once trigger delivery safe.
+TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). Two-person team: Vinh on backend (rule engine, actions, handleActivity, config UX), Stephen on frontend + scaffolding + idempotency + submission. The architecture is in [README.md](https://github.com/StephenSook/context-mod-devvit#architecture) — Mermaid `flowchart TB` + `sequenceDiagram` showing the three-stage idempotency keys + atomic config publish + dashboard webview.
 
-- **Hono routes:** `/internal/triggers/*` (post-submit, comment-submit, app-install, app-upgrade), `/internal/cron/*` (refresh-config, stats-rollup, image-hash, delayed-eval), `/internal/menu/*` (reload-config, recent-actions, test-rules), `/api/recent`, `/api/stats`, `/api/health`.
-- **Config publish is atomic.** Wiki edit → `refresh-config` cron parses + validates → writes immutable `cfg:rev:n` → atomically bumps `cfg:current_rev` pointer. Every `handleActivity` reads the pointer once at event start, so the full pipeline runs against a consistent snapshot — no mid-event tear under concurrent reload.
-- **Redis storage only.** Strings, hashes, sorted sets — no Lists, no Sets (Devvit constraint). The `events:recent` 50-deep ring buffer is a ZSET, not a List.
-- **Observatory dashboard:** React + Vite, custom-post webview. HSL design tokens, Geist + Geist Mono + Instrument Serif italic typography. FNV-1a 64-bit hashing for event dedup. `ApiResult<T>` discriminated union for error UX so the dashboard preserves last-good state on backend hiccups.
+- **Hono routes:** `/internal/triggers/*` (post-submit, comment-submit, app-install, app-upgrade), `/internal/cron/*` (refresh-config, stats-rollup, image-hash-worker), `/internal/menu/*` (reload-config, recent-actions, test-rules), `/internal/form/test-rules-submit`, `/api/recent`, `/api/stats`, `/api/health`.
+- **Config publish is atomic via INCR-allocated rev pointer.** Mod edits wiki → `refresh-config` cron parses JSON5 + AJV-validates → atomic INCR allocates next rev → writes immutable `cfg:rev:n` → bumps `cfg:current_rev` pointer. Triggers pass the pre-read snapshot through to `handleActivity` so a publish between trigger normalization and rule execution cannot split a single event across revs (Codex H3 read-once invariant).
+- **Redis storage only.** Strings, hashes, sorted sets — no Lists, no Sets (Devvit constraint). The `events:recent50` ring buffer is a ZSET with `ZREMRANGEBYRANK` trim. Per-action idempotency: `cm:action:pending` lease holds a random owner token so a slow worker's late `releaseAction` can't delete a successor's valid lease (Codex C2). `commitAction` retries done-write 3× w/ backoff and refuses to release pending on persistent failure (Codex C1) — prevents double-action on Devvit's at-least-once trigger delivery.
+- **Observatory dashboard:** React + Vite, custom-post webview. HSL design tokens, Geist + Geist Mono + Instrument Serif italic typography. Live event data via `/api/recent` ZRANGE. `?demo=1` synthetic-fixture path retained for screenshots/recordings. `ApiResult<T>` discriminated union for error UX so the dashboard preserves last-good state on backend hiccups.
+- **Dry-run rule tester** (Step 3.6): mod right-clicks any post/comment → menu `Test rules on this item` → form pre-fills thingId → submit invokes a sibling `dryRunActivity()` pipeline that mirrors `handleActivity` but forces dry-run on every action and returns a structured `DryRunResult` for the toast bullets. Non-contract design choice: keeps `handleActivity`'s `void` signature stable while giving the form UI structured data.
+- **Codex adversarial review** ran end-to-end on both phases (Phase 1+2 ship and full-session retrospective). 2 CRITICAL + 7 HIGH idempotency/safety findings shipped as atomic hotfixes in-session: dry-run global authority, repost SET NX race-elimination, commitAction retries, lease owner tokens, plus 5 contract-touching fixes (publish INCR, handleActivity ConfigSnapshot, Mustache.escape default, filter regex try/catch, ParseResult wraps expandNamedRules).
 
 ## Challenges
 
@@ -82,15 +84,21 @@ TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architectu
 - **Vitest needed its own config** to bypass the `@devvit/start` plugin (which only works in `vite build` mode).
 - **App icon I generated via Gemini was JPEG bytes inside a `.png` filename** — would've failed Devvit's upload validation. Caught via Codex review on Day 2, re-encoded via PIL with LANCZOS resample.
 - **The first developer-portal cheat sheet I drafted invented 8 of 13 fields** (tagline, category dropdown, support URL, etc.) that don't exist in Reddit's actual Developer Portal. Caught via research-agent cross-check against the official Devvit `launch-guide.md`. Rewrote it.
+- **Reddit-API reality vs plan.** Vinh shipped Phase 2 actions and caught 3 spec mismatches in live playtest: `ban` duration 0 = same-day unban (not permanent — permanent = omit field); `lock` routes via `getPostById().lock()` not `reddit.lock(thingId)`; `reddit.getCurrentSubredditName()` doesn't exist (use `(await reddit.getCurrentSubreddit()).name`). All 3 fixed against the actual Reddit API surface, not the docs assumption.
+- **Codex CRITICAL idempotency edges.** Adversarial review caught two double-action risks: `commitAction` could swallow done-marker write failures and let `releaseAction` re-open the gate; pending lease had no owner token so a slow worker's late release could delete a successor's valid lease (third-execution race). Shipped 2 atomic hotfixes same session — retry-with-backoff + lease-owner-tokens.
+- **Dry-run form submit returned thingId=undefined in live playtest.** Devvit's form submission envelope is FLAT (`{thingId: '...'}`) not the doc-convention nested `{values: {thingId}}` we assumed. Caught by adding a RAW BODY log, shipped a defensive multi-shape parse, fix landed same session.
 
 ## Accomplishments
 
-- 60+ atomic commits across 3 days (every fix is its own commit per the GitHub-activity discipline I'm using).
+- **300+ atomic commits across 5 days** (every fix is its own commit per the GitHub-activity discipline I'm using). Vinh shipped Phase 1+2+3 (3,670+ lines, 6 phase commits) in a single day; Stephen shipped Step 3.6 dry-run tester + 4 Codex CRITICAL/HIGH hotfixes + 5 contract-touching fixes the same evening.
+- **173 tests green** end-to-end across rule engine, actions, handleActivity orchestrator, idempotency, configStore, recentEvents, dryRunActivity, menu + form routes. `tsc --build` clean.
+- **v0.2.0 submitted to Reddit App Directory review** ([cm-devvit](https://developers.reddit.com/apps/cm-devvit)). Email-on-approval within 1–7 days per Reddit SLA.
+- **Codex adversarial review ran end-to-end** on both phases (Phase 1+2 ship review + full-session retrospective). 2 CRITICAL + 7 HIGH + 5 MED + 3 LOW first round; 3 HIGH + 4 MED + 3 LOW second round; ALL CRITICAL + HIGH addressed in atomic commits. Caught real safety regressions (double-action idempotency edges, dry-run safety-gate bypass, repost SET-NX race) that would have been worst in production.
 - Sookra Methodology Pillars 4 + 5 deepened with verbatim quotes from Reddit's own r/Devvit posts (`1r3xcm2`, `1pcm13z`, `1shophd`, `1sgwkm7`) and Steve Huffman's Q1 2026 earnings call.
 - Privacy + ToS deployed to GitHub Pages, repo flipped public after a clean secrets audit.
 - Architecture diagram in the README is Mermaid (flowchart + sequence) — best-practice patterns from official Mermaid docs (semantic shape conventions, 4-color WCAG-AA palette, screen-reader `accTitle` + `accDescr`).
 - Domain approval came back: `i.redd.it`, `preview.redd.it`, `external-preview.redd.it`, `external-i.redd.it` are all in Reddit's global fetch allowlist — no explicit allowlist needed.
-- Codex adversarial review caught the 32-bit FNV-1a, the icon-was-JPEG bug, and the fabricated dev-settings fields. Three-brain stack pays for itself.
+- **Live e2e scenarios captured** on Stephen's test sub `r/cm_devvit_test` against playtest-deployed v0.2.0.8: Scenario G (reload-config toast w/ rule count), Scenario F (dry-run form modal + toast bullets), Scenario H (Observatory dashboard webview render). Screenshots in `docs/screenshots/scenario-*.png`.
 
 ## What I learned
 
@@ -101,10 +109,10 @@ TypeScript + Hono + Vite served via Devvit Web (CommonJS bundle). The architectu
 
 ## What's next
 
-- **Phase 1 (Vinh):** core engine completion — `handleActivity`, `runRun`, `runCheck`, `runRule` wired to real config + live triggers.
-- **Phase 2 (Vinh):** 7 action handlers + 4 trigger routes.
-- **Phase 4 stretch:** perceptual-hash repost detection (image blockhash in pure JS within Devvit's 30s/no-native-deps env). `mhs` toxicity rule was cut per `reddit/devvit-docs` PR #96 (2026-05-08) — Reddit locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out.
-- **Post-hackathon:** open the app to all 15+ ContextMod operators FoxxMD identified; pursue Reddit Developer Funds DQE ladder ($5K-$10.5K realistic 12-mo capture).
+- **Phase 4 stretch (Vinh, capacity-permitting before 5/27):** `history`, `attribution`, `recentActivity` rules — author-cache infrastructure backing all three. Cuts in stretch order if capacity slips per the risk register.
+- **Phase 4.7 image-hash repost detection:** perceptual blockhash in pure JS within Devvit's 30s/no-native-deps env. Gated on a Day-0 feasibility spike that wasn't run; effectively NO-GO for this hackathon, deferred post-submission.
+- **`mhs` toxicity rule explicitly cut** per `reddit/devvit-docs` PR #96 (2026-05-08) — Reddit locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside the carve-out. Subs using upstream CM specifically for hate-speech filtering keep running the PRAW build.
+- **Post-hackathon:** open the app to all 15+ ContextMod operators FoxxMD identified; pursue Reddit Developer Funds DQE ladder ($5K-$10.5K realistic 12-mo capture); evaluate parse-time regex catastrophic-backtracking validator (Codex MED finding deferred — `safe-regex` npm dep adds bundling weight not worth the hackathon-window cost).
 
 ## Built with
 
@@ -137,20 +145,35 @@ TypeScript, React, Hono, Vite, Tailwind, Lucide, Redis, Devvit, Devvit Web, Redd
 
 ### Image gallery (3:2 ratio, ≤5MB each)
 
-5 mockups already live in `assets/` (Banana-generated, 1200×800 RGBA PNG). Upload in this order (judges land on the first image):
+Two parallel sources available — pick the mix that tells the strongest story. Live captures (from playtest 2026-05-16/17 on `r/cm_devvit_test`) are MORE AUTHENTIC; banana mockups (`assets/gallery-*.png`, 1200×800 PNG) are more POLISHED. Recommend hybrid: lead with the live dashboard, follow with live dry-run flow, finish with banana hero shots for polish.
 
-1. `assets/gallery-dashboard.png` — Observatory dashboard hero (stat cards + sparkline + event stream)
-   - **Devpost caption + alt-text:** *"Observatory dashboard: 4 stat cards (Actions today, Mod time saved, Active rules, Top rule), 24-hour hourly-actions sparkline, and the most recent moderation events with action chips."*
-2. `assets/gallery-modmenu.png` — mod overflow menu showing the 3 ContextMod items
-   - **Devpost caption + alt-text:** *"Reddit mod overflow menu with three ContextMod entries: Reload config from wiki, View recent actions, Test rules on this item."*
-3. `assets/gallery-wiki.png` — JSON5 rule config rendered in subreddit wiki
-   - **Devpost caption + alt-text:** *"Subreddit wiki at r/<sub>/wiki/contextmod showing a JSON5 ContextMod config with named rules, filters, and Mustache-templated action messages."*
-4. `assets/gallery-install.png` — App Directory "Add to community" flow
-   - **Devpost caption + alt-text:** *"Reddit App Directory page for ContextMod with the Add to community button highlighted — per-subreddit install, no hosting required."*
-5. `assets/gallery-trigger.png` — event stream close-up showing action chips on a fresh trigger
-   - **Devpost caption + alt-text:** *"Close-up of the Observatory event stream showing a freshly-fired spam-filter rule with REMOVE and COMMENT action chips, activity ID, and elapsed time."*
+**Recommended upload order (5 slots — judges land on first image):**
 
-Plus the thumbnail (separate slot, see Step 2): `assets/thumbnail.png`. Total = 5 gallery + 1 thumbnail = 6 assets uploaded; this matches the on-disk reality (`ls assets/gallery-*.png` returns exactly 5). Dashboard / event chip captures get a `(rendered with ?demo=1 synthetic data)` caption suffix in the synthetic-data fallback path.
+1. **`docs/screenshots/dashboard-desktop.png`** — Observatory dashboard hero (Wave F Playwright capture against `?demo=1` synthetic; rich event stream + populated stat cards)
+   - **Caption + alt-text:** *"Observatory dashboard: 4 stat cards (Actions today, Mod time saved, Active rules, Top rule), 24-hour hourly-actions sparkline, recent moderation events with REMOVE / COMMENT / APPROVE / LOCK action chips. Rendered with ?demo=1 synthetic for screenshot capture; production renders live events:recent50 ZSET data."*
+
+2. **`docs/screenshots/scenario-g-reload-toast.png`** — LIVE mod-menu reload toast `Loaded 3 rules (rev 1).`
+   - **Caption + alt-text:** *"Mod menu action 'ContextMod: Reload config from wiki' firing live on r/cm_devvit_test. Toast confirms 3 rules loaded from the sub's wiki JSON5 config at rev 1, after the loadFromWiki() pipeline parsed + AJV-validated + atomically published the snapshot."*
+
+3. **`docs/screenshots/scenario-f-dryrun-form.png`** — LIVE Step 3.6 dry-run modal `ContextMod — Dry-run rules` w/ Thing ID pre-filled
+   - **Caption + alt-text:** *"Dry-run rule tester modal from the post mod menu. Thing ID pre-filled; submit runs the full rule pipeline against this item with zero Reddit side-effects so mods can validate config before going live."*
+
+4. **`docs/screenshots/scenario-f-dryrun-toast.png`** — LIVE dry-run result toast `No rules triggered. Evaluated 3 run(s) at rev 1.`
+   - **Caption + alt-text:** *"Dry-run result rendered as a Reddit toast. Pipeline evaluated all 3 rule runs against the selected item, reported zero triggers (Observatory post by mod-bot → authorIs filters short-circuit), all without firing a single mod action."*
+
+5. **`assets/gallery-modmenu.png`** OR **`docs/screenshots/scenario-h-dashboard-empty.png`** — choose your finisher
+   - Gallery-modmenu (banana mockup): polished menu-overflow showing the 3 ContextMod entries
+   - Scenario-h dashboard-empty (live capture): empty-state UX showing the starter-config snippet + copy-clipboard button (proves the cold-start experience works)
+
+**Plus thumbnail** (separate slot, Step 2): **`assets/thumbnail.png`** already generated via Banana (1200×800, Observatory aesthetic — warm-dark + concentric rings + green accent + "ContextMod · Devvit Web port" overlay).
+
+Bonus options in `assets/` (banana mockups) if Stephen wants more polished slides:
+- `gallery-dashboard.png` — Observatory hero (banana version, polished composition)
+- `gallery-wiki.png` — JSON5 wiki rendering
+- `gallery-install.png` — App Directory install flow
+- `gallery-trigger.png` — event-stream close-up
+- `gallery-dryrun.png` — 4-card dry-run mockup
+- `install-flow.png` — 3-panel install composite
 
 ### Video demo link
 
@@ -254,9 +277,9 @@ Per the [hackathon page](https://mod-tools-migration.devpost.com/) judging crite
 | **Community Impact** | 466 hr/day measured mod labor (Li et al. 2022) + 73% bot-driven actions; 94-upvote anti-AI-tooling ask in May 2026 r/modnews; r/mealtimevideos 60K weekly + r/piercing 600K + 15 other CM subs as named beneficiaries; CM-class tools offload the "context tier" AutoMod can't reach | [`writeup-draft.md`](./writeup-draft.md) §1+§2 · [`pillar-5-numbers.md`](./pillar-5-numbers.md) §1+§5+§9.5+§11 |
 | **Polish** | CI green, type-check clean, lint clean, 9/9 tests passing; AI-tone strict scanner gating all paste-day text; Mermaid architecture + sequence diagrams; CONTRIBUTING + CODE_OF_CONDUCT + SECURITY + CHANGELOG + LICENSE all shipped; per-component Status table in README distinguishes Production vs Scaffolded vs Phase-N pending | `README.md` Status table · `.github/workflows/ci.yml` · `scripts/check-ai-tone.sh` · `CHANGELOG.md` |
 | **Reliable UX** | One-click install via App Directory; Observatory custom-post dashboard renders on mobile webview; mod-menu items work today (View recent actions = production); `?demo=1` synthetic path provides reviewer-installable preview without Phase 1+2+3 backend; AJV validation with last-known-good fallback (designed behavior, lands Phase 1) ensures a bad config never breaks moderation | `README.md` "Quick start" + "Observatory dashboard preview" + Validation section · `docs/screenshots/dashboard-desktop.png` |
-| **Port Completion** | MVP scope (regex / author / ruleSet rules + 7 actions + filters + Mustache + named-rule composition + wiki config + Observatory + idempotency primitives + atomic config publish) is types + scaffolds shipped. Live evaluation + action handlers + trigger routes (Phase 1+2+3) ship per backend lane; honest gating in writeup §3. Explicit cuts (MHS per PR #96; DispatchAction; SentimentRule; full RepostRule; multi-bot) documented with rationale | [`writeup-draft.md`](./writeup-draft.md) §3 "Ported faithfully" · `examples/` 3 working JSON5 configs · README "Comparison" section |
+| **Port Completion** | Phase 1+2+3 SHIPPED 2026-05-16: regex / author / ruleSet rules + 7 action handlers + filters + Mustache + named-rule composition + wiki config + atomic publish (INCR-allocated rev) + handleActivity orchestrator + read-once snapshot + Observatory live data + dry-run rule tester. URL-dedupe repost promoted from Phase 4 to Phase 2. 173 tests green; tsc clean; v0.2.0 in Reddit review. Live e2e captured on Stephen's test sub. Codex-hardened (2 CRITICAL + 10 HIGH safety findings closed). Phase 4 stretch in progress; cuts (MHS per PR #96; DispatchAction; SentimentRule; full RepostRule; multi-bot) documented with rationale | [`writeup-draft.md`](./writeup-draft.md) §3 "Ported faithfully" + Build Journal · `examples/` 3 working JSON5 configs · README "Comparison" + Status table · `docs/screenshots/scenario-*.png` live captures · `docs/superpowers/codex-reviews/*.md` audit trail |
 
-The **Port Completion** criterion is the most-checkable. Devpost's question is *"Could this app be installed today and serve the original function?"*. Honest answer for hackathon-MVP: **Yes for MVP scope once Phase 1+2+3 wiring lands** (Vinh's lane, target 5/17). Without Phase 1+2+3, the dashboard renders + the scaffolds + the safety primitives + the docs are submission-clean, but the live trigger pipeline + action handlers + dashboard live-data wire-up are pending. The synthetic-data fallback demo (`?demo=1` + `scripts/demo/stitch.sh --synthetic`) preserves the demo path even if Phase 1+2+3 slips.
+The **Port Completion** criterion is the most-checkable. Devpost's question is *"Could this app be installed today and serve the original function?"*. Honest answer post-Phase-1+2+3 ship: **YES for MVP scope** — regex / author / ruleSet rules, all 7 action handlers, atomic config publish, wiki cron, dry-run rule tester, live Observatory dashboard, idempotency primitives all shipped + Codex-hardened + verified live on `r/cm_devvit_test`. Subs using the original CM for regex spam removal, mod-flair gating, author-criteria filtering, and named-rule composition see feature parity at install today. Subs using upstream CM specifically for hate-speech filtering (`mhs`) keep running the PRAW build — that rule is cut from this port per PR #96. Image-hash repost detection (4.7) is deferred post-hackathon. Everything else either ships in v0.2.0 (in Reddit review, email-on-approval 1–7 days) or is Phase 4 stretch in active development.
 
 ---
 
@@ -271,11 +294,12 @@ Pre-submission checklist (run in order):
 - [ ] Tool overview passes AI-tone scan
 - [ ] Project Impact passes AI-tone scan
 - [ ] Port Completion passes AI-tone scan
-- [ ] Thumbnail uploaded (3:2, ≤5MB, real PNG not JPEG-in-png)
-- [ ] At least 3 image gallery images uploaded
-- [ ] Demo video YouTube unlisted URL pasted
+- [ ] Thumbnail uploaded (`assets/thumbnail.png` — verified PNG, ≤5MB, 3:2)
+- [ ] 4–5 image gallery images uploaded (recommended: dashboard-desktop + 3 live scenario captures + 1 gallery mockup; see Image gallery section above)
+- [ ] Demo video YouTube unlisted URL pasted (gated on Wave I recording)
 - [ ] FoxxMD has confirmed `u/ContextModBot` (or correct handle) for Original Bot field
 - [ ] Vinh's Reddit username added to team Reddit-usernames field
+- [ ] **v0.2.0 Reddit App Directory review status checked** at `https://developers.reddit.com/apps/cm-devvit/app-versions` — Devpost form can be SUBMITTED before review approves (review SLA 1–7 days; Devpost-submit cutoff is the binding deadline)
 - [ ] Codex adversarial review on this entire draft (final pass before submit)
 - [ ] Stephen rewrites every paragraph in his own voice (don't sound like AI; Watchful1 lesson)
 - [ ] Preview the project page via Devpost's "Preview" button
