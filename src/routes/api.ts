@@ -16,6 +16,8 @@ import { demoEvents, DEMO_STATS } from '../lib/demo-fixtures';
 import { readRecent, type RecentEvent } from '../state/recentEvents';
 import { getRecentRevs } from '../state/configStore';
 import { readModActivity } from '../state/modActivity';
+import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
+import { logModActivity } from '../state/modActivity';
 
 export const api = new Hono();
 
@@ -101,6 +103,69 @@ api.get('/mod-activity', async (c) => {
   }
   const activity = await readModActivity(subName);
   return c.json({ activity });
+});
+
+/**
+ * Wave S Phase S10 — Muted rules endpoints.
+ * GET /api/muted-rules returns array of run/check keys currently muted.
+ * POST /api/mute-rule + POST /api/unmute-rule mutate the set.
+ *
+ * v0: soft mute — dashboard filters events with these rule keys. Backend
+ * eval still fires (Vinh's runCheck.ts unchanged). Phase 4 follow-up will
+ * read this set in runCheck for hard-mute.
+ */
+api.get('/muted-rules', async (c) => {
+  if (c.req.query('demo') === '1') {
+    return c.json({ muted: [] });
+  }
+  let subName: string | undefined;
+  try {
+    subName = (await reddit.getCurrentSubreddit()).name;
+  } catch {
+    return c.json({ muted: [] });
+  }
+  const muted = await listMutedRules(subName);
+  return c.json({ muted });
+});
+
+api.post('/mute-rule', async (c) => {
+  const body = await c.req.json<{ runName?: string; checkName?: string }>();
+  const { runName, checkName } = body;
+  if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
+  try {
+    const sub = (await reddit.getCurrentSubreddit()).name;
+    const user = await reddit.getCurrentUser();
+    await muteRule(sub, runName, checkName);
+    await logModActivity(sub, {
+      ts: Date.now(),
+      actor: user?.username ?? 'unknown',
+      kind: 'mute-rule',
+      detail: `${runName}/${checkName}`,
+    });
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
+  }
+});
+
+api.post('/unmute-rule', async (c) => {
+  const body = await c.req.json<{ runName?: string; checkName?: string }>();
+  const { runName, checkName } = body;
+  if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
+  try {
+    const sub = (await reddit.getCurrentSubreddit()).name;
+    const user = await reddit.getCurrentUser();
+    await unmuteRule(sub, runName, checkName);
+    await logModActivity(sub, {
+      ts: Date.now(),
+      actor: user?.username ?? 'unknown',
+      kind: 'unmute-rule',
+      detail: `${runName}/${checkName}`,
+    });
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
+  }
 });
 
 function stripServerFields(e: RecentEvent) {
