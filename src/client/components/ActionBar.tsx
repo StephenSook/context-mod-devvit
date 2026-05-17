@@ -1,25 +1,9 @@
 import { useState } from 'react';
 import { RefreshCw, FileText, ExternalLink, Download } from 'lucide-react';
 import type { EventRecord } from '../lib/types';
+import { eventsToCsv, csvFilename } from '../lib/csv-export';
 
 const REPO_URL = 'https://github.com/StephenSook/context-mod-devvit';
-
-function eventsToCsv(events: EventRecord[]): string {
-  const header = ['ts', 'activityId', 'runName', 'checkName', 'actions', 'allOk'];
-  const rows = events.map((e) =>
-    [
-      new Date(e.ts).toISOString(),
-      e.activityId,
-      e.runName ?? '',
-      e.checkName ?? '',
-      e.actions.map((a) => `${a.kind}${a.ok ? '' : '✗'}`).join(';'),
-      e.actions.every((a) => a.ok) ? 'true' : 'false',
-    ]
-      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-      .join(','),
-  );
-  return [header.join(','), ...rows].join('\n');
-}
 
 function downloadCsv(events: EventRecord[], subreddit: string) {
   const csv = eventsToCsv(events);
@@ -27,8 +11,7 @@ function downloadCsv(events: EventRecord[], subreddit: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-  a.download = `contextmod-events-${subreddit}-${stamp}.csv`;
+  a.download = csvFilename(subreddit);
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
