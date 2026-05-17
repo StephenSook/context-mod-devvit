@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.{test,test.tsx}.ts*'],
+    exclude: ['tests/e2e/**'],
     globals: false,
   },
   // Allow .tsx test files (Header RTL renders use JSX).

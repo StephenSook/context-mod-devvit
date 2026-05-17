@@ -9,3 +9,8 @@ docs/submission/_video-source/
 raw-obs/
 raw-vo/
 beats/
+
+# Playwright (S12 Wave S)
+playwright-report/
+test-results/
+.playwright-mcp/
