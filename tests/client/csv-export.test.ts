@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { eventsToCsv, actionMarker, csvFilename } from '../../src/client/lib/csv-export';
+import {
+  eventsToCsv,
+  actionMarker,
+  csvFilename,
+  neutralizeCsvFormula,
+} from '../../src/client/lib/csv-export';
 import type { EventRecord } from '../../src/client/lib/types';
+
+const UTF8_BOM = '﻿';
+const CRLF = '\r\n';
 
 const FIXTURE_TS = Date.UTC(2026, 4, 17, 1, 0, 0, 0); // 2026-05-17T01:00:00.000Z
 
@@ -40,9 +48,22 @@ describe('actionMarker', () => {
 });
 
 describe('eventsToCsv', () => {
-  it('empty events array → header-only CSV', () => {
+  it('empty events array → BOM + header-only CSV', () => {
     const out = eventsToCsv([]);
-    expect(out).toBe('ts,activityId,runName,checkName,actions,allOk');
+    expect(out).toBe(UTF8_BOM + 'ts,activityId,runName,checkName,actions,allOk');
+  });
+
+  it('starts with UTF-8 BOM for Excel locale auto-detect', () => {
+    const out = eventsToCsv([baseEvent]);
+    expect(out.charAt(0)).toBe(UTF8_BOM);
+    expect(out.charCodeAt(0)).toBe(0xfeff);
+  });
+
+  it('joins rows with CRLF per RFC 4180', () => {
+    const out = eventsToCsv([baseEvent, baseEvent]);
+    const dataPortion = out.slice(UTF8_BOM.length);
+    const lines = dataPortion.split(CRLF);
+    expect(lines).toHaveLength(3); // header + 2 rows
   });
 
   it('renders ISO timestamp + escaped fields', () => {
@@ -128,8 +149,67 @@ describe('eventsToCsv', () => {
   it('produces one header row + N event rows', () => {
     const events: EventRecord[] = [baseEvent, baseEvent, baseEvent];
     const out = eventsToCsv(events);
-    const lines = out.split('\n');
+    const dataPortion = out.slice(UTF8_BOM.length);
+    const lines = dataPortion.split(CRLF);
     expect(lines).toHaveLength(4);
+  });
+});
+
+describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () => {
+  it('prefixes = with single quote to neutralize formula', () => {
+    expect(neutralizeCsvFormula('=cmd|"/c calc"!A1')).toBe('\'=cmd|"/c calc"!A1');
+  });
+
+  it('prefixes + with single quote', () => {
+    expect(neutralizeCsvFormula('+1234')).toBe("'+1234");
+  });
+
+  it('prefixes - with single quote (covers leading dash)', () => {
+    expect(neutralizeCsvFormula('-2+3+cmd')).toBe("'-2+3+cmd");
+  });
+
+  it('prefixes @ with single quote (covers SUM @ syntax)', () => {
+    expect(neutralizeCsvFormula('@SUM(A1)')).toBe("'@SUM(A1)");
+  });
+
+  it('prefixes tab with single quote', () => {
+    expect(neutralizeCsvFormula('\t=cmd')).toBe("'\t=cmd");
+  });
+
+  it('prefixes CR with single quote', () => {
+    expect(neutralizeCsvFormula('\rmalicious')).toBe("'\rmalicious");
+  });
+
+  it('leaves safe values unchanged', () => {
+    expect(neutralizeCsvFormula('normal-value')).toBe('normal-value');
+    expect(neutralizeCsvFormula('t3_abc123')).toBe('t3_abc123');
+    expect(neutralizeCsvFormula('spam-removal')).toBe('spam-removal');
+  });
+
+  it('leaves empty string unchanged', () => {
+    expect(neutralizeCsvFormula('')).toBe('');
+  });
+
+  it('eventsToCsv integration: malicious activityId neutralized in output', () => {
+    const evilEvent: EventRecord = {
+      ...baseEvent,
+      activityId: '=HYPERLINK("https://attacker.test","click")',
+    };
+    const out = eventsToCsv([evilEvent]);
+    expect(out).toContain(
+      '"\'=HYPERLINK(""https://attacker.test"",""click"")"',
+    );
+    // No bare =HYPERLINK that Excel would evaluate
+    expect(out).not.toContain('"=HYPERLINK');
+  });
+
+  it('eventsToCsv integration: malicious checkName with leading @ neutralized', () => {
+    const evilEvent: EventRecord = {
+      ...baseEvent,
+      checkName: '@SUM(1+1)*cmd',
+    };
+    const out = eventsToCsv([evilEvent]);
+    expect(out).toContain('"\'@SUM(1+1)*cmd"');
   });
 });
 

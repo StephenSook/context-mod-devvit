@@ -61,6 +61,12 @@ describe('fetchRecentSafe', () => {
     expect(result).toEqual({ ok: true, empty: true });
   });
 
+  it('200 + null events value → ok:true empty:true (defensive, Codex P5 gap)', async () => {
+    mockFetch({ ok: true, json: () => Promise.resolve({ events: null }) });
+    const result = await fetchRecentSafe();
+    expect(result).toEqual({ ok: true, empty: true });
+  });
+
   it('500 error → ok:false error includes HTTP code', async () => {
     mockFetch({ ok: false, status: 500 });
     const result = await fetchRecentSafe();
