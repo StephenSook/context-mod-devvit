@@ -36,11 +36,13 @@ describe('fetchRecentSafe', () => {
         }),
     });
     const result = await fetchRecentSafe();
-    expect(result.ok).toBe(true);
-    if (result.ok && !result.empty) {
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0]?.activityId).toBe('t3_a');
-    }
+    // Strict shape assert prevents the false-pass where implementation returns
+    // { ok: true, empty: true } and skips the conditional assertion block
+    // (Codex Q3 WARN — conditional assertions can silently pass on wrong branch).
+    expect(result).toMatchObject({ ok: true, empty: false });
+    if (!result.ok || result.empty) throw new Error('expected non-empty data branch');
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0]?.activityId).toBe('t3_a');
   });
 
   it('200 + empty events array → ok:true empty:true', async () => {
@@ -139,11 +141,11 @@ describe('fetchStatsSafe', () => {
         }),
     });
     const result = await fetchStatsSafe();
-    expect(result.ok).toBe(true);
-    if (result.ok && !result.empty) {
-      expect(result.data.actionsToday).toBe(5);
-      expect(result.data.topRule).toBe('spam-filter');
-    }
+    // Strict shape assert prevents false-pass (Codex Q3 WARN).
+    expect(result).toMatchObject({ ok: true, empty: false });
+    if (!result.ok || result.empty) throw new Error('expected non-empty data branch');
+    expect(result.data.actionsToday).toBe(5);
+    expect(result.data.topRule).toBe('spam-filter');
   });
 
   it('200 + missing counters → ok:true empty:true', async () => {
