@@ -164,18 +164,17 @@ Two parallel sources available — pick the mix that tells the strongest story. 
 1. **`docs/screenshots/dashboard-desktop.png`** — Observatory dashboard hero (Wave F Playwright capture against `?demo=1` synthetic; rich event stream + populated stat cards)
    - **Caption + alt-text:** *"Observatory dashboard: 4 stat cards (Actions today, Mod time saved, Active rules, Top rule), 24-hour hourly-actions sparkline, recent moderation events with REMOVE / COMMENT / APPROVE / LOCK action chips. Rendered with ?demo=1 synthetic for screenshot capture; production renders live events:recent50 ZSET data."*
 
-2. **`docs/screenshots/scenario-g-reload-toast.png`** — LIVE mod-menu reload toast `Loaded 3 rules (rev 1).`
+2. **`assets/gallery-live-g-reload-toast.png`** — LIVE mod-menu reload toast `Loaded 3 rules (rev 1).` (cropped 1200×800 from `scenario-g-reload-toast.png`)
    - **Caption + alt-text:** *"Mod menu action 'ContextMod: Reload config from wiki' firing live on r/cm_devvit_test. Toast confirms 3 rules loaded from the sub's wiki JSON5 config at rev 1, after the loadFromWiki() pipeline parsed + AJV-validated + atomically published the snapshot."*
 
-3. **`docs/screenshots/scenario-f-dryrun-form.png`** — LIVE Step 3.6 dry-run modal `ContextMod — Dry-run rules` w/ Thing ID pre-filled
+3. **`assets/gallery-live-f-dryrun-form.png`** — LIVE Step 3.6 dry-run modal `ContextMod — Dry-run rules` w/ Thing ID pre-filled (cropped 1200×800)
    - **Caption + alt-text:** *"Dry-run rule tester modal from the post mod menu. Thing ID pre-filled; submit runs the full rule pipeline against this item with zero Reddit side-effects so mods can validate config before going live."*
 
-4. **`docs/screenshots/scenario-f-dryrun-toast.png`** — LIVE dry-run result toast `No rules triggered. Evaluated 3 run(s) at rev 1.`
+4. **`assets/gallery-live-f-dryrun-toast.png`** — LIVE dry-run result toast `No rules triggered. Evaluated 3 run(s) at rev 1.` (cropped 1200×800)
    - **Caption + alt-text:** *"Dry-run result rendered as a Reddit toast. Pipeline evaluated all 3 rule runs against the selected item, reported zero triggers (Observatory post by mod-bot → authorIs filters short-circuit), all without firing a single mod action."*
 
-5. **`assets/gallery-modmenu.png`** OR **`docs/screenshots/scenario-h-dashboard-empty.png`** — choose your finisher
-   - Gallery-modmenu (banana mockup): polished menu-overflow showing the 3 ContextMod entries
-   - Scenario-h dashboard-empty (live capture): empty-state UX showing the starter-config snippet + copy-clipboard button (proves the cold-start experience works)
+5. **`assets/gallery-live-h-dashboard-empty.png`** — LIVE dashboard empty-state capture (cropped 1200×800; supersedes `assets/gallery-modmenu.png` banana mockup)
+   - **Caption + alt-text:** *"Empty-state Observatory dashboard right after first install on r/cm_devvit_test — before any mod action has fired. Shows the starter-config snippet + copy-to-clipboard button so first-time mods know exactly what JSON5 shape to paste at r/<sub>/wiki/botconfig/contextmod."*
 
 **Plus thumbnail** (separate slot, Step 2): **`assets/thumbnail.png`** already generated via Banana (1200×800, Observatory aesthetic — warm-dark + concentric rings + green accent + "ContextMod · Devvit Web port" overlay).
 
