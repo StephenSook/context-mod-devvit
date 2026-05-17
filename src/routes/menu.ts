@@ -87,6 +87,31 @@ menu.post('/recent-actions', async (c) => {
   }
 });
 
+menu.post('/simulate-rule', async (c) => {
+  await c.req.json<MenuItemRequest>();
+  return c.json({
+    showForm: {
+      name: 'simulateRule',
+      form: {
+        title: 'ContextMod — Simulate rule against history',
+        description:
+          'Paste a rule JSON5. The simulation runs your proposed rule against the last 25 posts in this sub and reports how often it would have fired. Zero Reddit side-effects.',
+        fields: [
+          {
+            type: 'paragraph',
+            name: 'ruleJson5',
+            label: 'Rule JSON5',
+            helpText:
+              "Example: {kind: 'regex', name: 'r1', pattern: 'crypto|nft', target: 'title'}",
+          },
+        ],
+        acceptLabel: 'Run simulation',
+        cancelLabel: 'Cancel',
+      },
+    },
+  });
+});
+
 menu.post('/test-rules', async (c) => {
   const evt = await c.req.json<MenuItemRequest>();
   console.log(`[cm/menu/test-rules] targetId=${evt.targetId}`);

@@ -76,11 +76,19 @@
         ],
         "forUserType": "moderator",
         "endpoint": "/internal/menu/test-rules"
+      },
+      {
+        "label": "ContextMod: Simulate rule against history",
+        "description": "Paste a proposed rule; see how often it would have fired on recent posts",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/simulate-rule"
       }
     ]
   },
   "forms": {
-    "testRules": "/internal/form/test-rules-submit"
+    "testRules": "/internal/form/test-rules-submit",
+    "simulateRule": "/internal/form/simulate-rule-submit"
   },
   "scripts": {
     "build": "vite build",

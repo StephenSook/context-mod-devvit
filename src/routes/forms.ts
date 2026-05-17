@@ -19,9 +19,12 @@ import { reddit } from '@devvit/web/server';
 import { dryRunActivity } from '../core/dryRunActivity';
 import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
 import * as configStore from '../state/configStore';
+import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
 import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
+
+const SIMULATION_SAMPLE_LIMIT = 25;
 
 interface FetchedPost {
   id?: string;
@@ -149,3 +152,112 @@ forms.post('/test-rules-submit', async (c) => {
     return c.json({ showToast: `Dry-run failed: ${msg}` });
   }
 });
+
+/**
+ * Wave S Phase S1 — simulate rule against history.
+ * Mod pastes a rule (JSON5). We fetch the last N posts via reddit API,
+ * normalize them, run the proposed rule against each, return a toast w/
+ * fired-count + percent + sample IDs.
+ */
+forms.post('/simulate-rule-submit', async (c) => {
+  const body = await c.req.json<Record<string, unknown>>();
+  const ruleJson5 =
+    (body as { ruleJson5?: string }).ruleJson5 ??
+    (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
+    '';
+  if (!ruleJson5.trim()) {
+    return c.json({ showToast: 'Paste a rule JSON5 in the form field, then submit.' });
+  }
+
+  try {
+    const sub = await reddit.getCurrentSubreddit();
+    // Reuse the live AppConfig snapshot for needsAuthorEnrichment decisions
+    // — same enrichment path live rules use, so simulation matches reality.
+    const snapshot = await configStore.getCurrentRev(sub.name);
+    const config: AppConfig = snapshot?.config ?? {
+      runs: [],
+      needsAuthorEnrichment: false,
+    };
+
+    // reddit.getNewPosts returns a Listing; .all() flattens to an array.
+    // Defensive shape: if the surface differs across Devvit minor versions,
+    // we fall back to an empty samples array + report it cleanly.
+    const recent = await fetchRecentPostsSafe(sub.name);
+    const samples: SimulationSample[] = [];
+    for (const post of recent) {
+      try {
+        const payload: PostSubmitPayload = {
+          post: {
+            id: post.id,
+            title: post.title,
+            selftext: post.body ?? '',
+            url: post.url ?? '',
+            authorId: post.authorId ?? '',
+            score: post.score ?? 0,
+            isSelf: !!post.url?.includes(sub.name),
+            nsfw: !!post.nsfw,
+            locked: !!post.locked,
+            stickied: !!post.stickied,
+            createdAt: asPayloadTimestamp(post.createdAt),
+          },
+          author: { name: post.authorName ?? '', id: post.authorId ?? '' },
+        } as PostSubmitPayload;
+        const normalized = await normalizePost(payload, config);
+        samples.push({ item: normalized.item, author: normalized.author });
+      } catch (perPostErr) {
+        // skip individual normalization failures, keep going
+        console.warn('[cm/forms/simulate-rule-submit] skipped sample:', perPostErr);
+      }
+    }
+
+    const result = await simulateRule(ruleJson5, samples, sub.name);
+    return c.json({ showToast: formatSimulationToast(result) });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/forms/simulate-rule-submit] failed:', err);
+    return c.json({ showToast: `Simulation failed: ${msg}` });
+  }
+});
+
+interface RedditPostLike {
+  id?: string;
+  title?: string;
+  body?: string;
+  url?: string;
+  authorId?: string;
+  authorName?: string;
+  score?: number;
+  nsfw?: boolean;
+  locked?: boolean;
+  stickied?: boolean;
+  createdAt?: number | Date | string;
+}
+
+interface RedditListingLike<T> {
+  all?: () => Promise<T[]> | T[];
+}
+
+async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLike[]> {
+  try {
+    const redditAny = reddit as unknown as {
+      getNewPosts?: (opts: {
+        subredditName: string;
+        limit: number;
+        pageSize: number;
+      }) => Promise<RedditListingLike<RedditPostLike>>;
+    };
+    if (typeof redditAny.getNewPosts !== 'function') return [];
+    const listing = await redditAny.getNewPosts({
+      subredditName,
+      limit: SIMULATION_SAMPLE_LIMIT,
+      pageSize: SIMULATION_SAMPLE_LIMIT,
+    });
+    if (!listing) return [];
+    const all = typeof listing.all === 'function' ? await listing.all() : [];
+    return all.slice(0, SIMULATION_SAMPLE_LIMIT);
+  } catch (err) {
+    console.warn('[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:', err);
+    return [];
+  }
+}
+
