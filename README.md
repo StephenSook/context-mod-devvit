@@ -106,28 +106,31 @@ See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-
 ```mermaid
 flowchart TB
   accTitle: ContextMod Devvit Architecture
-  accDescr: Reddit Devvit platform delivers trigger events and cron jobs to a Hono server that runs the rule engine and emits moderation actions back to Reddit while telemetry feeds a React webview dashboard.
+  accDescr: Reddit Devvit platform delivers trigger events and cron jobs to a Hono server that runs the rule engine through handleActivity (live) or dryRunActivity (mod menu test) and emits moderation actions back to Reddit while telemetry feeds a React webview dashboard.
 
   subgraph Platform["Reddit Devvit Platform"]
     direction LR
     TRIG[/"Triggers<br/>onPostSubmit · onCommentSubmit<br/>onAppInstall · onAppUpgrade"/]
     SCHED[/"Scheduler (cron)<br/>refresh-config · stats-rollup · image-hash-worker"/]
-    WIKI[("Wiki API<br/>r/&lt;sub&gt;/wiki/contextmod")]
+    MENU[/"Mod Menu<br/>Reload config · View recent · Test rules"/]
+    WIKI[("Wiki API<br/>r/&lt;sub&gt;/wiki/botconfig/contextmod")]
     REDIS[("Per-sub Redis<br/>strings · hashes · zsets")]
     RAPI{{"Reddit API<br/>remove · approve · ban · flair<br/>comment · lock · report"}}
   end
 
   subgraph Server["Hono Server (CommonJS)"]
-    HA["handleActivity()"]
-    CFG[("Config store<br/>cfg:rev:n + cfg:current_rev")]
-    PIPE["runRun → runCheck → runRule<br/>filters · named rules · Mustache"]
-    IDEM["Idempotency<br/>cm:proc 24h · cm:action:pending 5m<br/>cm:action:done 7d"]
-    ACT["Actions"]
-    STATS["Stats rollup<br/>events:recent ZSET (50-deep)"]
+    HA["handleActivity()<br/>(live, writes events ZSET)"]
+    DRY["dryRunActivity()<br/>(Step 3.6 sibling<br/>no side-effects)"]
+    REVCNT["cfg:rev-counter<br/>atomic INCR allocation<br/>(Codex H2)"]
+    CFG[("Config store<br/>cfg:rev:n + cfg:current_rev<br/>read-once snapshot, Codex H3")]
+    PIPE["runRun → runCheck → runRule<br/>filters · named rules · Mustache<br/>(escapeMarkdown default, Codex H4)"]
+    IDEM["Idempotency w/ lease owner tokens<br/>cm:proc 24h · cm:action:pending 5m<br/>cm:action:done 7d (Codex C1+C2)"]
+    ACT["Actions<br/>+ ActionResult status propagation<br/>(ok / dry-run / error / skipped-locked)"]
+    STATS["events:recent50 ZSET<br/>(50-deep ring buffer)"]
   end
 
   subgraph Client["Observatory Webview (React + Vite)"]
-    DASH["Dashboard<br/>stat cards · sparkline · event stream"]
+    DASH["Dashboard<br/>stat cards · sparkline · event stream<br/>status-aware chip variants"]
   end
 
   subgraph External["External HTTP (allowlist)"]
@@ -137,25 +140,32 @@ flowchart TB
   TRIG ==>|"POST /internal/triggers/*"| HA
   SCHED -->|"POST /internal/cron/*"| HA
   SCHED -->|"refresh-config"| CFG
+  MENU -.->|"Test rules form"| DRY
   WIKI -.->|"5-min poll"| CFG
-  CFG -.->|"read at event start"| HA
+  REVCNT ==>|"INCR"| CFG
+  CFG ==>|"snapshot at event start"| HA
+  CFG -.->|"snapshot for dry-run"| DRY
   HA ==> PIPE
+  DRY -.-> PIPE
   PIPE ==> IDEM
   IDEM ==> ACT
-  ACT ==>|"mod action"| RAPI
+  ACT ==>|"live mod action"| RAPI
   ACT --> STATS
-  IDEM <-.->|"SET NX"| REDIS
+  DRY -.->|"DryRunResult (no ACT)"| MENU
+  IDEM <-.->|"SET NX + owner token"| REDIS
   CFG <-.->|"SET cfg:rev:n"| REDIS
-  STATS <-.->|"ZADD"| REDIS
+  STATS <-.->|"ZADD events:recent50"| REDIS
   DASH -->|"GET /api/recent · /api/stats · /api/health"| HA
-  PIPE -.->|"fetch (image hash)"| RIMG
+  PIPE -.->|"fetch (image hash, deferred)"| RIMG
 
   classDef platform fill:#FF4500,stroke:#CC3700,color:#fff
   classDef server fill:#0079D3,stroke:#005FA3,color:#fff
+  classDef sibling fill:#3B82F6,stroke:#1E40AF,color:#fff,stroke-dasharray: 5 5
   classDef client fill:#10B981,stroke:#047857,color:#fff
   classDef external fill:#6B7280,stroke:#4B5563,color:#fff
-  class TRIG,SCHED,WIKI,REDIS,RAPI platform
-  class HA,CFG,PIPE,IDEM,ACT,STATS server
+  class TRIG,SCHED,MENU,WIKI,REDIS,RAPI platform
+  class HA,REVCNT,CFG,PIPE,IDEM,ACT,STATS server
+  class DRY sibling
   class DASH client
   class RIMG external
 ```
