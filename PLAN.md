@@ -113,7 +113,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | Contract | Owner | Consumers | Definition |
 |---|---|---|---|
 | Redis key schema | Vinh | Both | `src/state/keys.ts` const K namespace |
-| AJV config schema | Vinh | Both | `src/server/schema/app.schema.json` (trimmed from CM `Schema/App.json` — see `docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md:110` for the trim list) |
+| AJV config schema | Vinh | Both | `src/schema/app.schema.json` (trimmed from CM `Schema/App.json` — see `docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md:110` for the trim list) |
 | Internal `Item` shape | Vinh | Both | `src/shared/types.ts` — id, title, body, url, author, age, score, isSelf, over18, removed, approved, locked, stickied, linkFlairText, depth?, op? |
 | Internal `Author` shape | Vinh | Both | `src/shared/types.ts` — name, id, age, linkKarma, commentKarma, flairText, isMod, isContributor, verified, shadowBanned |
 | Trigger event normalizer | Vinh | Both | Maps PostV2/CommentV2/UserV2 → `Item`/`Author` |
