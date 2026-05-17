@@ -24,7 +24,16 @@ export type EventRecord = {
     ok: boolean;
     status?: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
     wouldHaveCalled?: string;
+    error?: string;
   }[];
+  /**
+   * Optional drill-down context (S2 Wave). Populated by handleActivity when
+   * a rule fires — names the run + check + rule + (for regex) matched substring.
+   * Frontend EventRow renders these in the expanded panel when present.
+   */
+  matchedRule?: string;
+  runPath?: string;
+  matchedSubstring?: string;
 };
 
 export type StatsRollup = {

@@ -1,7 +1,9 @@
-import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle, type LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle, ChevronRight, type LucideIcon } from 'lucide-react';
 import type { ActionKind, EventRecord } from '../lib/types';
 import { SIGNAL } from '../lib/design-tokens';
 import { chipColorForStatus, chipMarkerForStatus } from '../lib/chip';
+import { EventDetails } from './EventDetails';
 
 const KIND_ICON: Record<ActionKind, LucideIcon> = {
   remove: Trash2,
@@ -34,13 +36,18 @@ function relTime(ts: number): string {
 }
 
 export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
+  const [expanded, setExpanded] = useState(false);
   const allOk = event.actions.every((a) => a.ok);
   const FirstIcon = event.actions[0] ? KIND_ICON[event.actions[0].kind] ?? AlertTriangle : AlertTriangle;
   const firstColor = event.actions[0] ? KIND_COLOR[event.actions[0].kind] ?? '#71717A' : '#71717A'; // bone.300 fallback
   return (
-    <div
-      className="cm-event-arrive group grid grid-cols-[32px_48px_1fr_auto] sm:grid-cols-[44px_60px_1fr_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 border-b border-line/60 hover:bg-white/[0.015] transition-colors"
-      style={{ animationDelay: `${0.05 * idx + 0.4}s` }}
+    <div className="cm-event-arrive border-b border-line/60" style={{ animationDelay: `${0.05 * idx + 0.4}s` }}>
+    <button
+      type="button"
+      onClick={() => setExpanded((v) => !v)}
+      aria-expanded={expanded}
+      aria-label={`${expanded ? 'Hide' : 'Show'} details for event ${event.activityId}`}
+      className="group w-full grid grid-cols-[32px_48px_1fr_auto] sm:grid-cols-[44px_60px_1fr_auto] items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 hover:bg-white/[0.015] transition-colors text-left"
     >
       <div className="flex items-center gap-1.5">
         <span
@@ -78,7 +85,15 @@ export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
             </span>
           );
         })}
+        <ChevronRight
+          size={12}
+          strokeWidth={1.8}
+          className={`text-bone-300/60 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          aria-hidden
+        />
       </div>
+    </button>
+    {expanded && <EventDetails event={event} />}
     </div>
   );
 }
