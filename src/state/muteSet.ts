@@ -21,21 +21,29 @@ export function ruleKey(runName: string, checkName: string): string {
   return `${runName}/${checkName}`;
 }
 
-export async function muteRule(sub: string, runName: string, checkName: string): Promise<void> {
-  if (!sub || !runName || !checkName) return;
+export type MuteResult = { ok: true } | { ok: false; error: string };
+
+export async function muteRule(sub: string, runName: string, checkName: string): Promise<MuteResult> {
+  if (!sub || !runName || !checkName) return { ok: false, error: 'sub + runName + checkName required' };
   try {
     await redis.hSet(key(sub), { [ruleKey(runName, checkName)]: new Date().toISOString() });
+    return { ok: true };
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.warn('[cm/muteSet] muteRule failed:', err);
+    return { ok: false, error: msg };
   }
 }
 
-export async function unmuteRule(sub: string, runName: string, checkName: string): Promise<void> {
-  if (!sub || !runName || !checkName) return;
+export async function unmuteRule(sub: string, runName: string, checkName: string): Promise<MuteResult> {
+  if (!sub || !runName || !checkName) return { ok: false, error: 'sub + runName + checkName required' };
   try {
     await redis.hDel(key(sub), [ruleKey(runName, checkName)]);
+    return { ok: true };
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.warn('[cm/muteSet] unmuteRule failed:', err);
+    return { ok: false, error: msg };
   }
 }
 

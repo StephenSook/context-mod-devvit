@@ -19,6 +19,34 @@ import { readModActivity } from '../state/modActivity';
 import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
 
+/**
+ * Wave U BLOCKER fix — verify caller is a moderator of the current sub before
+ * mutating shared state. Devvit's `moderator` permission scope grants the APP
+ * mod permissions but `/api/*` endpoints can be hit by ANY user viewing the
+ * custom post (including regular subscribers). Without this gate, a non-mod
+ * could POST /api/mute-rule and silently disable rules sub-wide.
+ *
+ * Best-effort check: queries getModerators for the sub + verifies the username
+ * appears. Returns null when permitted, or an error response when denied.
+ */
+async function requireModerator(): Promise<
+  | { ok: true; sub: string; username: string }
+  | { ok: false; status: 401 | 403 | 500; error: string }
+> {
+  try {
+    const sub = (await reddit.getCurrentSubreddit()).name;
+    const user = await reddit.getCurrentUser();
+    if (!user?.username) return { ok: false, status: 401, error: 'not authenticated' };
+    const mods = await reddit.getModerators({ subredditName: sub }).all();
+    const isMod = mods.some((m) => m.username === user.username);
+    if (!isMod) return { ok: false, status: 403, error: 'not a moderator of this sub' };
+    return { ok: true, sub, username: user.username };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, status: 500, error: `mod check failed: ${msg}` };
+  }
+}
+
 export const api = new Hono();
 
 api.get('/recent', async (c) => {
@@ -70,8 +98,9 @@ api.get('/config-history', async (c) => {
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/api/config-history] could not resolve current sub:', err);
-    return c.json({ revs: [] });
+    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
   }
 
   const revs = await getRecentRevs(subName, limit);
@@ -98,8 +127,10 @@ api.get('/mod-activity', async (c) => {
   let subName: string | undefined;
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
-  } catch {
-    return c.json({ activity: [] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/api/mod-activity] could not resolve current sub:', err);
+    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
   }
   const activity = await readModActivity(subName);
   return c.json({ activity });
@@ -121,8 +152,10 @@ api.get('/muted-rules', async (c) => {
   let subName: string | undefined;
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
-  } catch {
-    return c.json({ muted: [] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/api/muted-rules] could not resolve current sub:', err);
+    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
   }
   const muted = await listMutedRules(subName);
   return c.json({ muted });
@@ -132,40 +165,35 @@ api.post('/mute-rule', async (c) => {
   const body = await c.req.json<{ runName?: string; checkName?: string }>();
   const { runName, checkName } = body;
   if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
-  try {
-    const sub = (await reddit.getCurrentSubreddit()).name;
-    const user = await reddit.getCurrentUser();
-    await muteRule(sub, runName, checkName);
-    await logModActivity(sub, {
-      ts: Date.now(),
-      actor: user?.username ?? 'unknown',
-      kind: 'mute-rule',
-      detail: `${runName}/${checkName}`,
-    });
-    return c.json({ ok: true });
-  } catch (err) {
-    return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
-  }
+  // Wave U BLOCKER fix: verify caller is a mod before mutating shared state.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  const result = await muteRule(auth.sub, runName, checkName);
+  if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+  await logModActivity(auth.sub, {
+    ts: Date.now(),
+    actor: auth.username,
+    kind: 'mute-rule',
+    detail: `${runName}/${checkName}`,
+  });
+  return c.json({ ok: true });
 });
 
 api.post('/unmute-rule', async (c) => {
   const body = await c.req.json<{ runName?: string; checkName?: string }>();
   const { runName, checkName } = body;
   if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
-  try {
-    const sub = (await reddit.getCurrentSubreddit()).name;
-    const user = await reddit.getCurrentUser();
-    await unmuteRule(sub, runName, checkName);
-    await logModActivity(sub, {
-      ts: Date.now(),
-      actor: user?.username ?? 'unknown',
-      kind: 'unmute-rule',
-      detail: `${runName}/${checkName}`,
-    });
-    return c.json({ ok: true });
-  } catch (err) {
-    return c.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 500);
-  }
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  const result = await unmuteRule(auth.sub, runName, checkName);
+  if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+  await logModActivity(auth.sub, {
+    ts: Date.now(),
+    actor: auth.username,
+    kind: 'unmute-rule',
+    detail: `${runName}/${checkName}`,
+  });
+  return c.json({ ok: true });
 });
 
 function stripServerFields(e: RecentEvent) {
