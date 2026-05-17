@@ -8,6 +8,8 @@ import { ErrorBanner } from './components/ErrorBanner';
 import { RuleCountChips } from './components/RuleCountChips';
 import { EmptyState } from './components/EmptyState';
 import { FilterChips, filterMatches, type EventFilter } from './components/FilterChips';
+import { KeyboardOverlay } from './components/KeyboardOverlay';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -32,6 +34,7 @@ export default function App() {
   const [usingDemo, setUsingDemo] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [filter, setFilter] = useState<EventFilter>({ kind: 'all' });
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
@@ -84,6 +87,17 @@ export default function App() {
     () => events.filter((e) => filterMatches(e, filter)),
     [events, filter],
   );
+
+  const shortcuts = useMemo(
+    () => [
+      { key: '?', label: 'Show / hide this overlay', handler: () => setOverlayOpen((v) => !v) },
+      { key: 'r', label: 'Reload data from server', handler: () => void refresh() },
+      { key: 'Escape', label: 'Close overlay', handler: () => setOverlayOpen(false) },
+      { key: 'a', label: 'Show all events (clear filter)', handler: () => setFilter({ kind: 'all' }) },
+    ],
+    [refresh],
+  );
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col bg-ink-950 grain">
@@ -172,6 +186,8 @@ export default function App() {
 
         <ActionBar subreddit={subreddit} onReload={refresh} events={events} />
       </div>
+
+      <KeyboardOverlay open={overlayOpen} onClose={() => setOverlayOpen(false)} shortcuts={shortcuts} />
     </div>
   );
 }
