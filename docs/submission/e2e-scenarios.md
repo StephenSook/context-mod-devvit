@@ -1,12 +1,12 @@
 # E2E Scenarios A–H — ContextMod Devvit Hackathon Submission
 
 > Step 5.3 in PLAN.md. 8 reproducible scenarios judges can replay on the
-> demo sub (`r/contextmod_vinh_dev`) to verify each capability end-to-end.
+> demo sub (`r/cm_devvit_test`) to verify each capability end-to-end.
 > Each scenario = trigger → expected outcome → verification → screenshot target.
 
-**Demo sub:** `r/contextmod_vinh_dev` (Vinh's playtest sub; Stephen also has access).
-**App version:** v0.0.2 (`contextmod-vinh@0.0.2`, hackathon build).
-**Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G).
+**Demo sub:** `r/cm_devvit_test` (Stephen's playtest sub where live captures G/F/H were taken 2026-05-16). Vinh's parallel dev sub `r/contextmod_vinh_dev` runs the package-renamed `contextmod-vinh` build for backend iteration.
+**App version:** v0.2.0 (`cm-devvit@0.2.0`, submitted to Reddit App Directory review 2026-05-16).
+**Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G; first install auto-seeds via `onAppInstall` per Phase 3).
 
 ---
 
@@ -81,16 +81,16 @@
 
 **Trigger:** existing subreddit mod submits a post titled "free crypto giveaway 🚀" (same trigger as Scenario A)
 
-**Config addition:**
+**Config addition (check-level `filters` wrapper):**
 ```json5
 {
-  authorIs: { isMod: false },  // check-level filter
+  filters: { authorIs: { isMod: false } },  // check-level filter — current schema wraps under `filters:`
   // ... rules as Scenario A
 }
 ```
 
 **Expected outcome:**
-- Spam-removal check pre-filters on `authorIs` BEFORE rule eval (Step 1.4 short-circuit)
+- Spam-removal check pre-filters on `filters.authorIs` BEFORE rule eval (Step 1.4 short-circuit)
 - Post is NOT removed (mod is exempt)
 - Observatory shows NO new event row
 
@@ -106,9 +106,9 @@
 
 **Trigger:** user added to the sub's approved-contributors list posts a borderline title (matches Scenario A regex)
 
-**Config addition:**
+**Config addition (check-level `filters` wrapper):**
 ```json5
-{ authorIs: { isContributor: false } }
+{ filters: { authorIs: { isContributor: false } } }
 ```
 
 **Expected outcome:**
