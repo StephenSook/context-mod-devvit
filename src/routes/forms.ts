@@ -5,52 +5,55 @@
  * or comment, picks "Test rules on this item", form pre-fills thingId, submit
  * runs dryRunActivity (no Reddit side-effects) + renders triggered runs as
  * toast bullets.
+ *
+ * Codex H1 2026-05-16 fix: previously hand-built Author with all defaults,
+ * which silently disagreed with live moderation results for author-aware rules
+ * (`authorIs`, isMod, karma, verified, contributor, shadowBanned all
+ * defaulted to false/0). Now synthesizes a V2 trigger payload shape from the
+ * fetched Post/Comment and routes through normalizePost / normalizeComment so
+ * dry-run uses the same enrichment path as live triggers.
  */
 
 import { Hono } from 'hono';
 import { reddit } from '@devvit/web/server';
 import { dryRunActivity } from '../core/dryRunActivity';
-import type { Item, Author } from '../shared/types';
+import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
+import * as configStore from '../state/configStore';
+import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
 
-interface PostLike {
+interface FetchedPost {
   id?: string;
   title?: string;
   body?: string;
   url?: string;
   authorName?: string;
+  authorId?: string;
   score?: number;
   isSelf?: boolean;
   nsfw?: boolean;
   locked?: boolean;
   stickied?: boolean;
-  createdAt?: number | Date;
+  createdAt?: number | Date | string;
 }
 
-interface CommentLike {
+interface FetchedComment {
   id?: string;
   body?: string;
   authorName?: string;
+  authorId?: string;
   score?: number;
-  createdAt?: number | Date;
+  parentId?: string;
+  createdAt?: number | Date | string;
 }
 
-function ageSeconds(createdAt?: number | Date): number {
-  if (!createdAt) return 0;
-  const ms = createdAt instanceof Date ? createdAt.getTime() : createdAt;
-  return Math.max(0, Math.floor((Date.now() - ms) / 1000));
+function asPayloadTimestamp(t?: number | Date | string): number | string | undefined {
+  if (t == null) return undefined;
+  if (typeof t === 'number') return t;
+  if (typeof t === 'string') return t;
+  return t.getTime();
 }
-
-const ITEM_DEFAULTS = {
-  removed: false, approved: false, locked: false, stickied: false,
-  isSelf: false, over18: false, linkFlairText: null as string | null,
-};
-const AUTHOR_DEFAULTS = {
-  id: '', age: 0, linkKarma: 0, commentKarma: 0,
-  flairText: null as string | null,
-  isMod: false, isContributor: false, verified: false, shadowBanned: false,
-};
 
 forms.post('/test-rules-submit', async (c) => {
   const body = await c.req.json<{ values?: { thingId?: string } }>();
@@ -65,41 +68,50 @@ forms.post('/test-rules-submit', async (c) => {
     const sub = await reddit.getCurrentSubreddit();
     const isComment = thingId.startsWith('t1_');
 
-    let item: Item;
-    let authorName: string;
-    if (isComment) {
-      const cmt = (await reddit.getCommentById(thingId as `t1_${string}`)) as unknown as CommentLike;
-      authorName = cmt.authorName ?? '';
-      item = {
-        ...ITEM_DEFAULTS,
-        id: cmt.id ?? thingId,
-        title: '',
-        body: cmt.body ?? '',
-        url: '',
-        author: authorName,
-        age: ageSeconds(cmt.createdAt),
-        score: cmt.score ?? 0,
-      };
-    } else {
-      const post = (await reddit.getPostById(thingId as `t3_${string}`)) as unknown as PostLike;
-      authorName = post.authorName ?? '';
-      item = {
-        ...ITEM_DEFAULTS,
-        id: post.id ?? thingId,
-        title: post.title ?? '',
-        body: post.body ?? '',
-        url: post.url ?? '',
-        author: authorName,
-        age: ageSeconds(post.createdAt),
-        score: post.score ?? 0,
-        isSelf: post.isSelf ?? false,
-        over18: post.nsfw ?? false,
-        locked: post.locked ?? false,
-        stickied: post.stickied ?? false,
-      };
-    }
+    // Read config FIRST so normalize can decide author enrichment correctly,
+    // matching the live trigger path. dryRunActivity reads its own snapshot
+    // for rule eval — Codex H3 read-once invariant doesn't apply here since
+    // dry-run is single-shot and not concurrent with a publish.
+    const current = await configStore.getCurrentRev(sub.name);
+    const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
 
-    const author: Author = { ...AUTHOR_DEFAULTS, name: authorName };
+    let item;
+    let author;
+    if (isComment) {
+      const cmt = (await reddit.getCommentById(thingId as `t1_${string}`)) as unknown as FetchedComment;
+      const payload: CommentSubmitPayload = {
+        comment: {
+          id: cmt.id ?? thingId,
+          body: cmt.body ?? '',
+          parentId: cmt.parentId ?? '',
+          score: cmt.score ?? 0,
+          ...(asPayloadTimestamp(cmt.createdAt) !== undefined ? { createdAt: asPayloadTimestamp(cmt.createdAt)! } : {}),
+        },
+        author: { id: cmt.authorId ?? '', name: cmt.authorName ?? '' },
+        subreddit: { name: sub.name },
+      };
+      ({ item, author } = await normalizeComment(payload, config));
+    } else {
+      const post = (await reddit.getPostById(thingId as `t3_${string}`)) as unknown as FetchedPost;
+      const payload: PostSubmitPayload = {
+        post: {
+          id: post.id ?? thingId,
+          title: post.title ?? '',
+          selftext: post.body ?? '',
+          url: post.url ?? '',
+          authorId: post.authorId ?? '',
+          score: post.score ?? 0,
+          nsfw: post.nsfw ?? false,
+          locked: post.locked ?? false,
+          stickied: post.stickied ?? false,
+          isSelf: post.isSelf ?? false,
+          ...(asPayloadTimestamp(post.createdAt) !== undefined ? { createdAt: asPayloadTimestamp(post.createdAt)! } : {}),
+        },
+        author: { id: post.authorId ?? '', name: post.authorName ?? '' },
+        subreddit: { name: sub.name },
+      };
+      ({ item, author } = await normalizePost(payload, config));
+    }
 
     const result = await dryRunActivity(item, author, sub.name);
 
