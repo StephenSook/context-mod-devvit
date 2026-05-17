@@ -87,6 +87,31 @@ menu.post('/recent-actions', async (c) => {
   }
 });
 
+menu.post('/explain-rule', async (c) => {
+  await c.req.json<MenuItemRequest>();
+  return c.json({
+    showForm: {
+      name: 'explainRule',
+      form: {
+        title: 'ContextMod — Explain a rule with AI',
+        description:
+          'Paste a rule JSON5. OpenAI returns a plain-English explanation. Requires the openai_api_key app setting to be configured.',
+        fields: [
+          {
+            type: 'paragraph',
+            name: 'ruleJson5',
+            label: 'Rule JSON5',
+            helpText:
+              "Example: {kind: 'regex', name: 'r1', pattern: 'crypto|nft', target: 'title'}",
+          },
+        ],
+        acceptLabel: 'Explain',
+        cancelLabel: 'Cancel',
+      },
+    },
+  });
+});
+
 menu.post('/simulate-rule', async (c) => {
   await c.req.json<MenuItemRequest>();
   return c.json({

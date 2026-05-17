@@ -20,6 +20,8 @@ import { dryRunActivity } from '../core/dryRunActivity';
 import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
 import * as configStore from '../state/configStore';
 import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
+import { explainRule, formatExplainToast } from '../core/explainRule';
+import { settings } from '@devvit/web/server';
 import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
@@ -232,6 +234,27 @@ interface RedditPostLike {
   stickied?: boolean;
   createdAt?: number | Date | string;
 }
+
+/**
+ * Wave S Phase S5 — AI rule explainer.
+ * Reads openai_api_key from app settings + calls OpenAI chat completions.
+ */
+forms.post('/explain-rule-submit', async (c) => {
+  const body = await c.req.json<Record<string, unknown>>();
+  const ruleJson5 =
+    (body as { ruleJson5?: string }).ruleJson5 ??
+    (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
+    '';
+  try {
+    const apiKey = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+    const result = await explainRule(ruleJson5, apiKey);
+    return c.json({ showToast: formatExplainToast(result) });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/forms/explain-rule-submit] failed:', err);
+    return c.json({ showToast: `Explain failed: ${msg}` });
+  }
+});
 
 interface RedditListingLike<T> {
   all?: () => Promise<T[]> | T[];

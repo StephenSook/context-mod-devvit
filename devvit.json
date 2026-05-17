@@ -26,7 +26,8 @@
         "i.redd.it",
         "preview.redd.it",
         "external-preview.redd.it",
-        "external-i.redd.it"
+        "external-i.redd.it",
+        "api.openai.com"
       ]
     }
   },
@@ -83,13 +84,31 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/simulate-rule"
+      },
+      {
+        "label": "ContextMod: Explain a rule with AI",
+        "description": "Paste a rule JSON5; OpenAI returns a plain-English explanation",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/explain-rule"
       }
     ]
   },
   "forms": {
     "testRules": "/internal/form/test-rules-submit",
-    "simulateRule": "/internal/form/simulate-rule-submit"
+    "simulateRule": "/internal/form/simulate-rule-submit",
+    "explainRule": "/internal/form/explain-rule-submit"
   },
+  "settings": [
+    {
+      "type": "string",
+      "name": "openai_api_key",
+      "label": "OpenAI API key",
+      "helpText": "Required only for 'Explain a rule with AI' menu. Get at platform.openai.com/api-keys. Stored encrypted per Devvit install.",
+      "isSecret": true,
+      "scope": "installation"
+    }
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch"
