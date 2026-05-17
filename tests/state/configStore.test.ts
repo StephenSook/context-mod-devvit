@@ -6,6 +6,12 @@ vi.mock('@devvit/web/server', () => ({
     get: vi.fn(async (k: string) => store.get(k) ?? null),
     set: vi.fn(async (k: string, v: string) => { store.set(k, v); return 'OK'; }),
     del: vi.fn(async (k: string) => { store.delete(k); }),
+    incrBy: vi.fn(async (k: string, n: number) => {
+      const cur = parseInt(store.get(k) ?? '0', 10);
+      const next = cur + n;
+      store.set(k, String(next));
+      return next;
+    }),
   },
 }));
 
@@ -50,5 +56,20 @@ describe('configStore', () => {
     const b = await getCurrentRev('subB');
     expect(a?.config.runs[0]?.name).toBe('a');
     expect(b?.config.runs[0]?.name).toBe('b');
+  });
+
+  it('Codex H2 — concurrent publishers get DISTINCT rev numbers via atomic INCR', async () => {
+    // Simulate the race that the old read-modify-write pattern failed:
+    // both callers START at the same time, then both finish. With INCR,
+    // they get N and N+1 (regardless of which actually runs first in the
+    // event loop), so the final state has BOTH payloads addressable.
+    const [revA, revB] = await Promise.all([publish(cfgA), publish(cfgB)]);
+    expect(revA).not.toBe(revB);
+    expect(new Set([revA, revB])).toEqual(new Set([0, 1]));
+    // Both rev payloads are durable + retrievable independently.
+    const snapA = JSON.parse(store.get(`cm:_:cfg:rev:${revA}`)!) as AppConfig;
+    const snapB = JSON.parse(store.get(`cm:_:cfg:rev:${revB}`)!) as AppConfig;
+    expect(snapA.runs[0]?.name).toBe('a');
+    expect(snapB.runs[0]?.name).toBe('b');
   });
 });

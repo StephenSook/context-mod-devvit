@@ -28,6 +28,10 @@ export const K = {
   cfgRev: (n: number, sub: string = SUB_DEFAULT) => `cm:${sub}:cfg:rev:${n}`,
   cfgCurrentRev: (sub: string = SUB_DEFAULT) => `cm:${sub}:cfg:current_rev`,
   cfgLastWikiRev: (sub: string = SUB_DEFAULT) => `cm:${sub}:cfg:last-wiki-rev`,
+  // Codex H2 fix 2026-05-16: atomic INCR counter for rev allocation —
+  // closes the read-modify-write race in publish() where two concurrent
+  // writers could both pick the same N+1 and silently last-writer-wins.
+  cfgRevCounter: (sub: string = SUB_DEFAULT) => `cm:${sub}:cfg:rev-counter`,
 
   // Events — versioned name so future "last 500" ZSET lands beside without renaming.
   eventsRecent: (sub: string = SUB_DEFAULT) => `cm:${sub}:events:recent50`,
