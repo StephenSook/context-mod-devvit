@@ -70,7 +70,16 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 3.6 | Dry-run rule tester menu + form | `src/routes/{menu,forms}.ts`, `src/core/dryRunActivity.ts` | **Stephen** | ✅ 2026-05-16 | 2.3 | Non-contract sibling `dryRunActivity()` mirrors handleActivity but forces dryRun on every action + returns structured `DryRunResult` (skips ZSET write). Menu `/test-rules` returns `showForm` w/ thingId pre-filled. Form `/test-rules-submit` fetches via `reddit.getPostById`/`getCommentById` (routed by thingId prefix), constructs inline Item/Author, invokes dryRunActivity, renders triggered runs as toast bullets. 8 new tests (4 dryRunActivity + 2 menu + 4 form). 162 total green. Last commit 50bda17. |
 | 3.7 | onAppUpgrade migrations | `src/state/migrations.ts` | **Vinh** | ✅ 2026-05-16 | 1.1 | `SCHEMA_VERSION='0.1'` + `runMigrations(from, to)` seam. v0.1 → v0.1 is a no-op as specified; the seam exists so a future shape change can land without breaking existing installs. Also added BACKFILL of the install pointer in `/app-upgrade` — install fires once but upgrade fires on every redeploy, so pre-Step-3.1 installs self-heal on next rebuild (synthesizes stable `sub:<subname>` id since V2 trigger payload does not actually carry installId — plan was speculative there). Commit c867143. |
 
-### Phase 4 — Stretch (Day 11–13, ~14h) — image hashing gated by 0.10
+### Phase 4 — AUTHORIZED ship targets (Days 11–18, ~12-14h) — Stephen authorized Wave S full push 2026-05-17
+
+> **Vinh — go for Phase 4 ship.** Per Stephen 2026-05-17 ("no restraints, we want best project possible"), authorizing the full history/attribution/recentActivity rule ladder. Target ship: 2026-05-25 (T-2 from May 27 deadline) to give time for integration testing + demo capture. Image-hash 4.7 remains GATED on 0.10 spike — re-run optional.
+>
+> **Tests target:** 280+ at Phase 4 completion (currently 260 + ~6 per rule × 3 rules + ~5 for author-cache substrate = ~283).
+>
+> **Schema additions:** add `history` / `attribution` / `recentActivity` to `src/schema/app.schema.json` rule definitions + AJV-validate all 8 examples after schema change.
+>
+> **Coordination:** ping Stephen on Discord (`Outside-Research-772`) when 4.3 author-cache lands so I can wire frontend rule-stats UI (Wave S Phase S11) against the new cache key.
+
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
