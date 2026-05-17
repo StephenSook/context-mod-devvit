@@ -11,6 +11,7 @@ import { FilterChips, filterMatches, type EventFilter } from './components/Filte
 import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
+import { RuleStatsTable } from './components/RuleStatsTable';
 import {
   fetchRecentSafe,
   fetchStatsSafe,
@@ -144,6 +145,8 @@ export default function App() {
               </div>
             ))}
         </div>
+
+        <RuleStatsTable events={events} />
 
         <div className="flex-1 min-h-0 mt-2 flex flex-col">
           <div className="flex items-baseline justify-between px-5 pb-2">
