@@ -103,7 +103,7 @@ The Devvit platform is opinionated. Things that have bitten us:
 ## Review process
 
 - A maintainer will review within ~7 days.
-- All CI checks must pass: type-check + lint + 461+ vitest tests + Playwright E2E (chromium on PRs, +firefox/webkit on main) + AI-tone soft scan + CodeQL SAST + Semgrep OWASP.
+- All CI checks must pass: type-check + lint + 481+ vitest tests + Playwright E2E (chromium on PRs, +firefox/webkit on main) + axe-core a11y + AI-tone soft scan + CodeQL SAST + Semgrep OWASP + dependency-cruiser.
 - At least one approving review is required before merge.
 - Security-sensitive paths (auth, idem, rate-limit, breaker, OpenAI integration) require `@StephenSook` review per `.github/CODEOWNERS`.
 - Squash-merge is the default merge strategy — squashed commits inherit the PR title.

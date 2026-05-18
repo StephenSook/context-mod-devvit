@@ -3,10 +3,10 @@
 # context-mod-devvit
 
 > **A rule-engine moderation co-pilot for Reddit subreddits, running natively on Devvit.**
-> Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, AI rule explainer, AI event summary, mod activity feed, config-diff viewer, mute/unmute MVP, full mod-auth gating + rate-limiting + circuit-breaker on AI calls, and Observatory dashboard all ship live in v0.3.1. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
+> Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, AI rule explainer, AI event summary, mod activity feed, config-diff viewer, mute/unmute MVP, full mod-auth gating + rate-limiting + circuit-breaker on AI calls, light-mode toggle, and Observatory dashboard all ship live in v0.5.1. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen.svg)](./tests)
+[![Tests](https://img.shields.io/badge/tests-481%20passing-brightgreen.svg)](./tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
@@ -32,7 +32,7 @@ The Devvit port preserves the rule/check/action concept model that mods of [r/me
 
 1. **Install** — Visit [developers.reddit.com/apps/cm-devvit](https://developers.reddit.com/apps/cm-devvit) and click **Add to community**, then pick your subreddit (you must be a mod with `posts` + `wiki` permissions).
 2. **Pin the dashboard** — In your sub's mod overflow menu, click **ContextMod: View recent actions**. A custom post appears that shows mod-action telemetry — live data from the `events:recent50` ZSET (Phase 3 shipped). Stickying it is optional but recommended.
-3. **Write your rules** — Create `r/<your-sub>/wiki/contextmod` with JSON5 config. A starter config is seeded on install; the [`examples/`](./examples) directory carries 3 working configs (starter + spam-fresh-account + approve-trusted-mod) you can paste and edit. See [Config schema](#config-schema) for the full surface.
+3. **Write your rules** — Create `r/<your-sub>/wiki/botconfig/contextmod` with JSON5 config. A starter config is seeded on install; the [`examples/`](./examples) directory carries 11 working configs (starter + spam-fresh + approve-trusted + comment-mod-banned + repost-watch + low-karma-banned + named-rules-flair + nsfw-strict + Phase 4 history/attribution/recentActivity) you can paste and edit. See [Config schema](#config-schema) for the full surface.
 4. **Reload** — In the subreddit mod overflow, click **ContextMod: Reload config from wiki** (or wait 5 minutes — the app polls automatically). Toast shows the rule count; the Observatory dashboard refreshes with the next rule firing.
 5. **Test a rule** — Right-click any post or comment, choose **ContextMod: Test rules on this item**. A dry-run shows which rules would fire without taking action.
 
@@ -101,7 +101,7 @@ For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-**446 tests passing** (Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Wave W + Wave X hardening + Vinh Phase 4: history/attribution/recentActivity + author cache). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 4 jobs (validate + ai-tone + e2e Playwright + CodeQL).
+**481 tests passing** (Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Wave W/X/Y/Z/AA/AB hardening + Vinh Phase 4: history/attribution/recentActivity + author cache). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 8 jobs (validate Node 20/22/24 + ai-tone + e2e Playwright (chromium+firefox+webkit) + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter).
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
@@ -280,7 +280,7 @@ sequenceDiagram
 
 ## Config schema
 
-Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable example:
+Mod config is JSON5 stored at `r/<your-sub>/wiki/botconfig/contextmod`. Minimum viable example:
 
 ```json5
 {
@@ -421,7 +421,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 No. Devvit runs the server. You install via the Reddit App Directory, write your rules in your sub's wiki, and that's it.
 
 **Can other mods edit the config?**
-Yes — anyone with `wiki` permissions in your sub can edit `/wiki/contextmod`. Standard Reddit wiki access control applies.
+Yes — anyone with `wiki` permissions in your sub can edit `/wiki/botconfig/contextmod`. Standard Reddit wiki access control applies.
 
 **What happens if I edit the wiki and break the config?**
 The 5-minute refresh cron validates new config against an AJV JSON Schema. If it fails to parse or validate, the previous `cfg:current_rev` stays active and the error is logged. Your sub stays moderated by the last good config until you fix the wiki page.

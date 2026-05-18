@@ -72,7 +72,7 @@ Liveness probe. Returns app version + server timestamp without hitting Redis.
 {
   "ok": true,
   "name": "cm-devvit",
-  "version": "0.3.0",
+  "version": "0.5.1",
   "ts": 1747526400000
 }
 ```

@@ -185,7 +185,7 @@ Wired into `/api/explain-event` (X1+X37), `/explain-rule-submit` + `/simulate-ru
 
 - **Structured JSON logger** — [`src/lib/log.ts`](./src/lib/log.ts) emits `{ts, level, tag, msg, ...ctx}` so downstream aggregators get parseable lines. Wired into `routes/api.ts`; other modules adopt incrementally.
 
-- **CI guards** — `ci.yml` runs type-check + lint + 446 vitest tests + Playwright E2E + AI-tone scan. `codeql.yml` runs SAST weekly + on every PR. `release.yml` auto-creates GitHub releases on `v*` tag push from the matching CHANGELOG section.
+- **CI guards** — `ci.yml` runs type-check + lint + 481 vitest tests + Playwright E2E (chromium PR; +firefox+webkit on main) + AI-tone scan + axe-core a11y + dependency-cruiser layer check. `codeql.yml` runs SAST weekly + on every PR. `release.yml` auto-creates GitHub releases on `v*` tag push from the matching CHANGELOG section.
 
 - **Per-handler safety nets** — config-read failures, trigger context loss, wiki unreachable, and OpenAI errors all surface to the dashboard via `recordEvent` so mods see red rows instead of silent degradation.
 
