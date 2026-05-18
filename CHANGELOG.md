@@ -185,14 +185,10 @@ Wave Y — "leave nothing on the table" finalize pass. After the v0.3.2 mid-revi
 - **X17 husky pre-commit hooks** — Stephen's local workflow choice.
 
 ## [0.3.2] — 2026-05-18
-- Phase 4 stretch rules — Vinh's queue: `history`, `attribution`, `recentActivity` w/ author-cache substrate (authorized 2026-05-17 Wave S16, target ship 2026-05-25)
-- Phase 4.7 image-mode `repost` (gated on Day-0 perceptual-hash spike re-run; deferred from hackathon)
-- Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
-- Post-hackathon operator outreach to 15+ FoxxMD operator pool
-
-## [0.3.2] — 2026-05-18
 
 Wave X mid-review fix pass — 5 commits applying findings from 3 parallel sub-agent reviews (Codex adversarial, silent-failure-hunter, type-design-analyzer, Gemini architecture sweep) launched against Wave X primitives.
+
+> Forward-looking items previously listed at the top of this entry (Phase 4 stretch rules, Phase 4.7 image-mode repost, hard-mute wiring, FoxxMD operator outreach) have moved to [`ROADMAP.md`](./ROADMAP.md) where they belong — CHANGELOG is for what shipped, ROADMAP is for what's planned.
 
 ### Fixed — Codex CRITICAL findings
 
