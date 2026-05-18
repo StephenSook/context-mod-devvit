@@ -137,9 +137,10 @@ api.get('/mod-activity', async (c) => {
  * GET /api/muted-rules returns array of run/check keys currently muted.
  * POST /api/mute-rule + POST /api/unmute-rule mutate the set.
  *
- * v0: soft mute — dashboard filters events with these rule keys. Backend
- * eval still fires (Vinh's runCheck.ts unchanged). Phase 4 follow-up will
- * read this set in runCheck for hard-mute.
+ * v0.5.5 (AE CRITICAL #4): hard-mute wired — runCheck reads this set on
+ * every evaluation; a muted rule short-circuits as not-triggered before
+ * any rule eval or action fires. Soft-mute (dashboard filter) is still
+ * applied for already-fired events still in the recent-events ring buffer.
  */
 api.get('/muted-rules', async (c) => {
   if (c.req.query('demo') === '1') {

@@ -48,7 +48,7 @@ export async function runRun(
     }
     const check = run.checks[i]!;
     lastCheckName = check.name;
-    const res = await runCheck(check, item, author, sub);
+    const res = await runCheck(check, item, author, sub, run.name);
     if (res.triggered) {
       if (!firstTriggeredCheckName) firstTriggeredCheckName = res.checkName;
       collectedActions.push(...res.actions);

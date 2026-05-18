@@ -2,9 +2,10 @@
  * Per-sub muted-rule SET.
  *
  * Stores rule keys ({runName}/{checkName}) that the mod has muted from the
- * dashboard. Current behavior is soft-mute: dashboard filters events but
- * backend rules still fire. TODO: runCheck consults this for hard-mute —
- * not wired yet.
+ * dashboard. Hard-mute wired into src/core/runCheck.ts as of v0.5.5 (AE
+ * CRITICAL #4) — the check short-circuits as not-triggered when its key is
+ * present in this hash. Soft-mute (dashboard filter) is still applied for
+ * already-fired events still in the recent-events ring buffer.
  *
  * Storage: Redis hash at `cm:muted-rules:{sub}` (Devvit lacks native SET).
  * Field key = rule key, value = ISO timestamp mute was applied (audit trail).
