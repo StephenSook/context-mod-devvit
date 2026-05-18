@@ -201,13 +201,18 @@ describe('POST /api/explain-event (W8)', () => {
     expect(explainEvent).not.toHaveBeenCalled();
   });
 
-  it('X37 records success when explainEvent returns ok', async () => {
+  it('X37 records success when explainEvent returns ok + emits wire envelope w/ explanation key', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKey.mockResolvedValue('sk-x');
-    explainEvent.mockResolvedValue({ ok: true, explanation: 'why' });
-    await postJson('/explain-event', { event: { kind: 'remove' } });
+    explainEvent.mockResolvedValue({ ok: true, value: 'why' });
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(recordSuccess).toHaveBeenCalledWith('openai:r_test');
     expect(recordFailure).not.toHaveBeenCalled();
+    // AD code-review MEDIUM #3: pin the wire shape — internal Result<string>
+    // exposes `.value` but the wire envelope MUST stay `{ok, explanation}`
+    // because src/client/components/EventDetails.tsx:139 reads `data.explanation`.
+    const body = await res.json();
+    expect(body).toEqual({ ok: true, explanation: 'why' });
   });
 
   it('X37 records failure when explainEvent returns error', async () => {
@@ -223,7 +228,7 @@ describe('POST /api/explain-event (W8)', () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKey.mockResolvedValue('sk-redis-key');
     settingsGet.mockResolvedValue('sk-settings-key');
-    explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
+    explainEvent.mockResolvedValue({ ok: true, value: 'because spam' });
     const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(res.status).toBe(200);
     expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-redis-key');
@@ -233,7 +238,7 @@ describe('POST /api/explain-event (W8)', () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKey.mockResolvedValue(null);
     settingsGet.mockResolvedValue('sk-settings-key');
-    explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
+    explainEvent.mockResolvedValue({ ok: true, value: 'because spam' });
     await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-settings-key');
   });

@@ -153,9 +153,12 @@ describe('buildUserPrompt', () => {
 });
 
 describe('validateEventSummary (X1)', () => {
-  it('accepts a well-formed event', () => {
+  it('accepts a well-formed event + exposes it at .value (AD code-review MEDIUM #4)', () => {
     const r = validateEventSummary(baseEvent);
     expect(r.ok).toBe(true);
+    // Pin the Result<EventSummary> success-field name so a regression
+    // that returns {ok:true} w/o `.value` doesn't slip through.
+    if (r.ok) expect(r.value).toEqual(baseEvent);
   });
 
   it('rejects non-object input', () => {
