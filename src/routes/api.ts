@@ -25,6 +25,7 @@ import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { log } from '../lib/log';
+import { readStatsSnapshot } from '../state/statsRollup';
 
 export const api = new Hono();
 
@@ -260,8 +261,18 @@ api.get('/stats', async (c) => {
     log.info('cm/api/stats', 'demo=1 — serving synthetic fixtures (not real rollup)');
     return c.json({ counters: DEMO_STATS });
   }
-  // TODO Phase 4 Task 41: return aggregated stats:rollup:7d hash
-  return c.json({ counters: {} });
+  // Y1-X7: real counters. Reads cm:stats:snapshot:{sub} (written hourly by
+  // the stats-rollup cron). Falls back to compute-on-fly when the snapshot
+  // is absent (first install, post-clear).
+  let subName: string | undefined;
+  try {
+    subName = (await reddit.getCurrentSubreddit()).name;
+  } catch (err) {
+    log.error('cm/api/stats', 'subreddit context unavailable', { err });
+    return c.json({ counters: {}, error: 'subreddit context unavailable' }, 503);
+  }
+  const stats = await readStatsSnapshot(subName);
+  return c.json({ counters: stats });
 });
 
 /**

@@ -2,9 +2,10 @@
  * Cron handlers for ContextMod. Every handler MUST acquireLock() at the top
  * to prevent overlapping invocations.
  *
- * Shipped: /refresh-config (5-min wiki pull + republish).
- * Stubs (not wired yet): /stats-rollup (hourly daily aggregation),
- * /image-hash-worker (on-demand blockhash for repost-image mode).
+ * Shipped: /refresh-config (5-min wiki pull + republish), /stats-rollup
+ * (hourly snapshot of events:recent50 aggregations for fast /api/stats).
+ * Stubs (not wired yet): /image-hash-worker (on-demand blockhash for
+ * repost-image mode, gated on Phase 4.7 spike).
  */
 
 import { Hono } from 'hono';
@@ -13,6 +14,7 @@ import { acquireLock } from '../lib/idem';
 import { K } from '../state/keys';
 import * as configStore from '../state/configStore';
 import { loadFromWiki } from '../core/configSource';
+import { writeStatsSnapshot } from '../state/statsRollup';
 
 export const scheduler = new Hono();
 
@@ -65,12 +67,28 @@ scheduler.post('/refresh-config', async (c) => {
   return c.json<TaskResponse>({ status: 'success' }, 200);
 });
 
+/**
+ * Stats-rollup cron (Y1-X7). Hourly aggregation of the per-install
+ * events:recent50 ZSET into a per-sub snapshot at cm:stats:snapshot:{sub}.
+ * /api/stats reads the snapshot key for a cheap dashboard render instead
+ * of recomputing on every poll.
+ */
 scheduler.post('/stats-rollup', async (c) => {
   const release = await acquireLock('stats-rollup');
   if (!release) return c.json<TaskResponse>({ status: 'ignored' }, 200);
   try {
-    console.log('[cm/cron/stats-rollup] tick');
-    // TODO Phase 4 Task 41: aggregate stats:daily hash counters
+    const installId = await redis.get(K.currentInstallId());
+    if (!installId) {
+      console.log('[cm/cron/stats-rollup] skipped — no installId pointer');
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+    const subName = await redis.get(K.installSubname(installId));
+    if (!subName) {
+      console.log(`[cm/cron/stats-rollup] skipped — no subname for installId=${installId}`);
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+    const stats = await writeStatsSnapshot(subName);
+    console.log(`[cm/cron/stats-rollup] sub=${subName} total=${stats.total} today=${stats.today} lastHour=${stats.lastHour}`);
   } finally {
     await release();
   }
