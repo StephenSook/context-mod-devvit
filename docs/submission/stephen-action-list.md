@@ -1,19 +1,33 @@
-# Stephen Action List — T-6 → T-0
+# Stephen Action List — T-9 → T-0
 
 > Companion to [`submission-day-runbook.md`](./submission-day-runbook.md). The runbook is the full sequence; this file is the **subset Claude can't do for you** — surfaces that require Stephen's authenticated session, voice, or judgment.
 
+## ⚠️ Status update 2026-05-18 (T-9)
+
+The original ladder below was anchored to a May 20 target. Deadline is now **May 27, 2026 18:00 PT** (T-9 from today). Most early-T action items already done. Current focus:
+
+- ✅ Phase 1+2+3 shipped (Vinh + Stephen, v0.2-0.3)
+- ✅ Phase 4 SHIPPED + live-verified on `r/contextmod_vinh_dev` (Vinh, 2026-05-18, commit `0bd59aa`)
+- ✅ v0.5.5 tagged + pushed (538 tests, all CI green)
+- ✅ Reddit cm-devvit@0.2.4 approved unlisted (re-upload latest source at T-2)
+- ⛔ Phase 0.10 image-blockhash spike — Vinh GO/NO-GO call pending; can be cut from demo per ROADMAP §4.7
+- ⏳ Devpost form submit — final action at T-0
+- ⏳ Demo video recording — Stephen's hands (T-3 to T-1 window)
+- ⏳ FoxxMD operator outreach — Discord DMs to 15 operators
+
 ## Labeling note (cross-ref with `submission-day-runbook.md`)
 
-The runbook uses `T-7 → Submission day` labels (T-7 = May 13, when pre-flight prep finished). This file uses `T-6 → T-0` labels (T-6 = May 14, today; T-0 = May 20 submission day). Same dates, different countdown labels — pre-flight prep is already done, so this file starts at T-6 (the first day with *user-only* work pending). When you read this file alongside the runbook, line up by **date** not label.
+This file's labels updated for May 27 deadline. Both files now anchor on the same dates.
 
 | This file | runbook | Date |
 |-----------|---------|------|
-| T-6 | (between T-7 and T-5) | 2026-05-14 |
-| T-5 | T-5 | 2026-05-15 |
-| T-3 | T-3 | 2026-05-17 |
-| T-2 | T-2 | 2026-05-18 |
-| T-1 | T-1 | 2026-05-19 |
-| T-0 | Submission day | 2026-05-20 |
+| T-9 (today) | (between T-7 and T-5) | 2026-05-18 |
+| T-7 | T-7 | 2026-05-20 |
+| T-5 | T-5 | 2026-05-22 |
+| T-3 | T-3 | 2026-05-24 |
+| T-2 | T-2 | 2026-05-25 |
+| T-1 | T-1 | 2026-05-26 |
+| T-0 | Submission day | 2026-05-27 |
 
 ## Why this list exists
 
@@ -110,7 +124,7 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ### Action 5 — Upload to YouTube as unlisted
 - Title: `ContextMod Devvit Web port — 60-second demo`
-- Paste URL into a temp file you'll paste into Devpost on May 20
+- Paste URL into a temp file you'll paste into Devpost on May 27
 
 ---
 
@@ -152,7 +166,7 @@ Verify all pass. If anything fails, ping Claude.
 
 ---
 
-## T-0 — 2026-05-20 — Submission day
+## T-0 — 2026-05-27 — Submission day
 
 ### Morning (60 min) — Claude assists
 - Claude does the final Codex review + the strict AI-tone scan + confirms CI green

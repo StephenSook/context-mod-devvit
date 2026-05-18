@@ -1,18 +1,22 @@
 # Submission Day Runbook
 
-> Top-to-bottom checklist for the May 20, 2026 target submission (May 27 hard deadline at 6pm PT). Stephen runs this end-to-end, no improvising. Every step has a verification gate.
+> Top-to-bottom checklist for **2026-05-27 18:00 PT hard deadline** submission. Stephen runs this end-to-end, no improvising. Every step has a verification gate.
 >
 > **User-only subset:** if you only want the actions Stephen has to physically do (Discord DM, Devpost paste, YouTube upload, publish click), read [`stephen-action-list.md`](./stephen-action-list.md) instead — same sequence, Claude-handled steps stripped out.
 
-## Why May 20 (not May 27)
+## ⚠️ Status update 2026-05-18 (T-9)
+
+Original runbook was anchored to a May 20 target submission. Reality: Phase 1+2+3+4 ALL shipped (Vinh + Stephen, see CHANGELOG v0.2.0 through v0.5.5), tests went 223 → 538, Reddit cm-devvit@0.2.4 approved unlisted on 2026-05-18. The "Phase 1 slips" fallback path below is obsolete. Recording window is now T-3 to T-1 (May 24-26). Final Devpost submit at T-0 = May 27.
+
+## Why submit T-2 to T-0 (not last-second)
 
 Per [`docs/superpowers/2026-05-13-research-deltas.md`](../superpowers/2026-05-13-research-deltas.md) Section 3:
 
 - Devvit domain approval SLA: up to **4 business days** (PR #98)
 - User Actions require App Review pre-approval (PR #106)
-- 4-day buffer between submit and deadline gives time to fix anything Reddit's app review bounces
+- 2-3 day buffer between final `npm run launch` and deadline gives time to fix anything Reddit's app review bounces
 
-If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, fall back to May 24-26 with the synthetic-data demo (see [`demo-video-runbook.md`](./demo-video-runbook.md) "Fallback if Phase 1 slips" section).
+Phase 1+2+3+4 all live as of 2026-05-18, so the synthetic-data fallback is no longer needed. Live-demo recording on Vinh's `r/contextmod_vinh_dev` (already verified end-to-end) is the strongest demo path.
 
 ---
 
@@ -33,10 +37,10 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 
 > Both T-5 items resolved 2026-05-13. T-5 day (May 15) now has no required actions — use as buffer.
 
-## T-3 days (May 17)
+## T-3 days (May 24)
 
 - [ ] **Confirm Phase 1+2 status with Vinh** — does `handleActivity` → rule pipeline → mod action work end-to-end against a real test post in `r/cm_devvit_test`?
-  - **Yes** → proceed with live-data demo recording May 17-19
+  - **Yes** → proceed with live-data demo recording May 24-26
   - **No** → execute synthetic-data fallback from `demo-video-runbook.md`
 - [ ] **Pin Devvit playtest version** if anything bumped during the week — run `npx devvit upload --bump minor`
 
@@ -46,7 +50,7 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 - [ ] **Record OBS clips per `demo-video-script.md` beat sheet** — 60s hard cap
 - [ ] **Record Audacity VO clips** in Stephen's own voice — slower than feels natural, ~2.5 words/sec
 - [ ] **ffmpeg stitch + caption bake + final encode** per runbook
-- [ ] **Upload to YouTube as unlisted** — title `ContextMod Devvit Web port — 60-second demo`, paste URL into a temp file for May 20 paste
+- [ ] **Upload to YouTube as unlisted** — title `ContextMod Devvit Web port — 60-second demo`, paste URL into a temp file for May 27 paste
 
 ## T-1 day (May 19)
 
@@ -60,7 +64,7 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
   - [ ] `./scripts/check-ai-tone.sh --strict` (strict mode blocks on any hit)
   - [ ] Re-run on the FULL paste-day bundle: writeup-draft, devpost-form-cheat-sheet, pillar-5-numbers, README, demo-video-script
 
-## Submission day (May 20)
+## Submission day (May 27)
 
 ### Morning (60 min)
 
@@ -145,8 +149,8 @@ If Phase 1+2 backend is fully live by May 17, target May 20. If Phase 1 slips, f
 | Image gallery upload fails on a specific PNG | Re-encode via `python3 -c "from PIL import Image; Image.open('FILE').save('FILE', 'PNG', optimize=True)"` to strip metadata |
 | YouTube video processing not complete by paste time | Upload earlier (T-2 day buffer); set to public-unlisted, not "scheduled" |
 | Reddit app review timeline >7 days | Submit Devpost anyway with the playtest URL — judges accept playtest links per hackathon rules |
-| Phase 1+2 not done by May 17 | Synthetic-data demo path; caption gallery images "demo data — Phase 1 wiring lands post-hackathon" |
+| Phase 1+2 not done by May 24 | OBSOLETE — Phase 1+2+3+4 all shipped 2026-05-17/18. Live-data demo on `r/contextmod_vinh_dev` (Vinh's verified install). |
 | Domain approval not received by May 18 | Drop MHS rule from `devvit.json` + writeup Section 3, ship without it |
-| CI red on `main` morning of May 20 (type-check/lint/test/build fails) | `git log --oneline -5` to find the offending commit; `git revert <hash>` if not a critical fix, force-push not needed (revert = new commit); re-run gates locally; if blocked >30 min, ship Devpost with the prior-good commit hash in the writeup |
+| CI red on `main` morning of May 27 (type-check/lint/test/build fails) | `git log --oneline -5` to find the offending commit; `git revert <hash>` if not a critical fix, force-push not needed (revert = new commit); re-run gates locally; if blocked >30 min, ship Devpost with the prior-good commit hash in the writeup |
 | Pages site (privacy/terms) returns 502 or HTML-not-found at paste time | Trigger a Pages redeploy: edit `policies/privacy.md` with a single-char no-op change + push; watch `gh run list --workflow=pages.yml` for green; if still down at T-0, paste raw `github.com/StephenSook/context-mod-devvit/blob/main/policies/privacy.md` URLs into Devpost (less polished but functional) |
 | Devvit upload/publish bounces on app review | Wait 4 business days per published SLA; if outside window, file support ticket at `developers.reddit.com/support`; for Devpost-side, paste the playtest URL (judges accept playtest links per hackathon rules — line 147 above) |
