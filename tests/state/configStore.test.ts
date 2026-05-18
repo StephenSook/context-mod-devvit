@@ -20,7 +20,7 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
-import { publish, getCurrentRev } from '../../src/state/configStore';
+import { publish, getCurrentRev, PublishError } from '../../src/state/configStore';
 import type { AppConfig } from '../../src/shared/types';
 
 const cfgA: AppConfig = { runs: [{ name: 'a', checks: [] }] };
@@ -97,5 +97,81 @@ describe('configStore', () => {
     const rev = await publish(cfgA);
     expect(rev).toBe(0);
     expect(store.get('cm:_:cfg:current_rev')).toBe('0');
+  });
+});
+
+describe('configStore — AE CRITICAL #6 PublishError wrap', () => {
+  it('rev INCR fails → throws PublishError phase=allocate-rev, NO rev consumed', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    const incrSpy = vi
+      .spyOn(failingRedis.redis, 'incrBy')
+      .mockRejectedValueOnce(new Error('redis down'));
+    try {
+      await publish(cfgA);
+      expect.fail('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(PublishError);
+      expect((err as PublishError).phase).toBe('allocate-rev');
+      expect((err as PublishError).message).toContain('safe to retry');
+    }
+    incrSpy.mockRestore();
+  });
+
+  it('payload write fails → throws PublishError phase=write-payload, pointer NOT advanced', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    const setSpy = vi
+      .spyOn(failingRedis.redis, 'set')
+      .mockImplementationOnce(async () => {
+        throw new Error('disk full');
+      });
+    try {
+      await publish(cfgA);
+      expect.fail('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(PublishError);
+      expect((err as PublishError).phase).toBe('write-payload');
+      // Pointer must NOT have been advanced — otherwise getCurrentRev would
+      // throw "cfg payload missing" forever (the leak class this fix prevents).
+      expect(store.get('cm:_:cfg:current_rev')).toBeUndefined();
+    }
+    setSpy.mockRestore();
+  });
+
+  it('pointer advance fails → throws PublishError phase=advance-pointer, payload IS durable', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    let setCallCount = 0;
+    const setSpy = vi
+      .spyOn(failingRedis.redis, 'set')
+      .mockImplementation(async (k: string, v: string) => {
+        setCallCount += 1;
+        // First set call writes the payload (succeed). Second set call is the
+        // pointer advance — fail it.
+        if (setCallCount >= 2) throw new Error('pointer write fail');
+        store.set(k, v);
+        return 'OK';
+      });
+    try {
+      await publish(cfgA);
+      expect.fail('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(PublishError);
+      expect((err as PublishError).phase).toBe('advance-pointer');
+      // Payload IS durable — retry will re-publish + re-attempt the pointer.
+      expect(store.get('cm:_:cfg:rev:0')).toBeDefined();
+    }
+    setSpy.mockRestore();
+  });
+
+  it('PublishError preserves cause for upstream logging', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    const original = new Error('original cause');
+    vi.spyOn(failingRedis.redis, 'incrBy').mockRejectedValueOnce(original);
+    try {
+      await publish(cfgA);
+      expect.fail('should have thrown');
+    } catch (err) {
+      expect(err).toBeInstanceOf(PublishError);
+      expect((err as PublishError).cause).toBe(original);
+    }
   });
 });

@@ -39,18 +39,74 @@ export interface ConfigSnapshot {
  * our set still loses). Acceptable for hackathon scope — collision requires
  * publishers in the same millisecond, which only happens if a manual reload
  * lands on the cron tick.
+ *
+ * AE CRITICAL #6: wrap the whole INCR/SET/GET/SET sequence so a Redis blip
+ * mid-publish surfaces a typed PublishError to the caller (scheduler cron,
+ * triggers default-seed, menu reload-config) instead of leaking a half-state
+ * (rev counter incremented but payload never written → getCurrentRev throws
+ * "cfg payload missing" forever). Callers can catch + show "publish failed,
+ * retry" to the mod instead of a 500.
  */
+export class PublishError extends Error {
+  constructor(
+    message: string,
+    public phase: 'allocate-rev' | 'write-payload' | 'read-pointer' | 'advance-pointer',
+    public override cause: unknown
+  ) {
+    super(message);
+    this.name = 'PublishError';
+  }
+}
+
 export async function publish(config: AppConfig, sub?: string): Promise<number> {
   const counterKey = K.cfgRevCounter(sub);
-  const allocated = await redis.incrBy(counterKey, 1);
+  let allocated: number;
+  try {
+    allocated = await redis.incrBy(counterKey, 1);
+  } catch (err) {
+    throw new PublishError(
+      `rev counter INCR failed (no rev allocated, safe to retry): ${msg(err)}`,
+      'allocate-rev',
+      err
+    );
+  }
   const next = allocated - 1;
-  await redis.set(K.cfgRev(next, sub), JSON.stringify(config));
-  const currentStr = await redis.get(K.cfgCurrentRev(sub));
+  try {
+    await redis.set(K.cfgRev(next, sub), JSON.stringify(config));
+  } catch (err) {
+    throw new PublishError(
+      `rev=${next} payload write failed (rev counter bumped but payload missing — pointer NOT advanced, retry will allocate next rev): ${msg(err)}`,
+      'write-payload',
+      err
+    );
+  }
+  let currentStr: string | null | undefined;
+  try {
+    currentStr = await redis.get(K.cfgCurrentRev(sub));
+  } catch (err) {
+    throw new PublishError(
+      `rev=${next} payload written but pointer read failed (pointer NOT advanced, retry will allocate next rev): ${msg(err)}`,
+      'read-pointer',
+      err
+    );
+  }
   const current = currentStr ? Number.parseInt(currentStr, 10) : -1;
   if (!Number.isFinite(current) || next > current) {
-    await redis.set(K.cfgCurrentRev(sub), String(next));
+    try {
+      await redis.set(K.cfgCurrentRev(sub), String(next));
+    } catch (err) {
+      throw new PublishError(
+        `rev=${next} payload written but pointer advance failed (config is published but readers still see old rev — retry will re-publish): ${msg(err)}`,
+        'advance-pointer',
+        err
+      );
+    }
   }
   return next;
+}
+
+function msg(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 /**
