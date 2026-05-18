@@ -368,7 +368,17 @@ forms.post('/explain-rule-submit', async (c) => {
       showToast: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
     });
   }
-  const apiKey = await resolveOpenaiKey(auth.sub);
+  // AD CRITICAL #1 mirror — apiKey resolve has its own try so a
+  // Redis/settings throw becomes a structured toast + log, not a 500.
+  let apiKey: string;
+  try {
+    apiKey = await resolveOpenaiKey(auth.sub);
+  } catch (err) {
+    log.error('cm/forms/explain-rule-submit', 'api-key resolve failed', { err });
+    return c.json({
+      showToast: 'Could not read OpenAI API key (Redis/settings unavailable). Retry in ~60s.',
+    });
+  }
   try {
     const result = await explainRule(ruleJson5, apiKey);
     if (!result.ok) {

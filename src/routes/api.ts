@@ -240,9 +240,27 @@ api.post('/explain-event', async (c) => {
       429
     );
   }
-  // Resolve apiKey OUTSIDE the try wrapping explainEvent.
-  const fromRedis = await getOpenaiKey(auth.sub);
-  const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  // AD CRITICAL #1: previously `getOpenaiKey` + `settings.get` lived
+  // outside the try block, so a Redis or Devvit-settings throw would
+  // 500 the route w/ NO log.error, NO breaker classification, NO json
+  // response. Wrap them in their own try so the failure surfaces as a
+  // 503 + structured log instead of vanishing into the Hono error
+  // handler. The breaker is NOT tripped here — Redis/settings being
+  // down isn't an OpenAI outage.
+  let apiKey: string;
+  try {
+    const fromRedis = await getOpenaiKey(auth.sub);
+    apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  } catch (err) {
+    log.error('cm/api/explain-event', 'api-key resolve failed (Redis or settings throw)', { err });
+    return c.json(
+      {
+        ok: false,
+        error: 'Could not read OpenAI API key (Redis/settings unavailable). Retry in ~60s.',
+      },
+      503
+    );
+  }
   try {
     const result = await explainEvent(validated.value, apiKey);
     if (!result.ok) {
