@@ -256,9 +256,17 @@ api.post('/explain-event', async (c) => {
     await recordSuccess(cbBucket);
     return c.json({ ok: true, explanation: result.explanation });
   } catch (err) {
-    await recordFailure(cbBucket);
     const msg = err instanceof Error ? err.message : String(err);
-    log.error('cm/api/explain-event', 'OpenAI call failed', { err });
+    // AD Tier-1 #3: parity w/ the result.error path above — classify the
+    // exception before opening the breaker. Auth/config thrown errors
+    // (no API key, parse failure, etc.) must NOT trip the breaker against
+    // OpenAI itself; only transient 5xx/network/timeout/429 paths do.
+    const isTransient = isTransientOpenaiError(msg);
+    if (isTransient) await recordFailure(cbBucket);
+    log.error('cm/api/explain-event', 'OpenAI call failed', {
+      err,
+      transient: isTransient,
+    });
     return c.json({ ok: false, error: `Explain failed: ${msg}` }, 500);
   }
 });
