@@ -1,0 +1,35 @@
+{
+  // Phase 4 attribution rule — flag drive-by self-promo where >40% of an
+  // author's recent posts link to one of their pet domains, even when each
+  // individual post looks innocent.
+  //
+  // The 1h sub-scoped author-history cache (src/state/authorHistory.ts) is
+  // shared by attribution + history + recentActivity rules — one Reddit
+  // listing fetch per author per hour fans out to all three rules.
+  //
+  // minPosts:5 floor stops 1/1 = 100% false positives on brand-new accounts.
+  runs: [
+    {
+      name: 'self-promo-watch',
+      checks: [
+        {
+          name: 'drive-by-domain-watch',
+          combinator: 'AND',
+          rules: [
+            {
+              kind: 'attribution',
+              name: 'crypto-promo',
+              domains: ['etherscan.io', 'opensea.io', 'coingecko.com', 'binance.com'],
+              domainPercent: 40,
+              minPosts: 5,
+            },
+          ],
+          actions: [
+            { kind: 'report', reason: 'attribution: drive-by self-promo (>40% crypto-domain posts in last 100)' },
+            { kind: 'comment', template: 'Hi u/{{author.name}} — looks like a high concentration of crypto-domain links in your recent posts here. Could you confirm this isn\'t self-promotion?' },
+          ],
+        },
+      ],
+    },
+  ],
+}

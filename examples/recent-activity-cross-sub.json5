@@ -1,0 +1,38 @@
+{
+  // Phase 4 recentActivity rule — flag authors with concentrated activity in
+  // problem subs even when their first post in YOUR sub looks fine. Catches
+  // "this user has 50 comments in r/spam this week" without a separate
+  // Reddit API query (reads from the same 1h author-history cache).
+  //
+  // Case-insensitive sub-name match. postCountGt + commentCountGt fire
+  // independently (OR semantics) so a prolific commenter in known-bad subs
+  // still triggers even if they don't post there.
+  runs: [
+    {
+      name: 'cross-sub-spam-watch',
+      checks: [
+        {
+          name: 'known-spam-sub-activity',
+          combinator: 'OR',
+          rules: [
+            {
+              kind: 'recentActivity',
+              name: 'crypto-pump-subs',
+              subreddits: ['CryptoMoonShots', 'SatoshiStreetBets', 'AltcoinDiscussion'],
+              postCountGt: 10,
+            },
+            {
+              kind: 'recentActivity',
+              name: 'low-effort-meme-subs',
+              subreddits: ['memes', 'dankmemes'],
+              commentCountGt: 30,
+            },
+          ],
+          actions: [
+            { kind: 'report', reason: 'recentActivity: high concentration in known-spam subs' },
+          ],
+        },
+      ],
+    },
+  ],
+}

@@ -1,0 +1,36 @@
+{
+  // Phase 4 history rule — flat OR-of-thresholds for "fresh + low-effort"
+  // account profile. Karma reads off the enriched Author (cheaper —
+  // normalize already fetches it); counts off the 1h author-history cache.
+  //
+  // Triggers when ANY threshold matches. Three-way profile here: low post
+  // count OR low comment karma OR no comments at all. Mod-tunable; this
+  // combination catches the classic burner-account spammer.
+  //
+  // Combine w/ regex spam-words rule for highest precision.
+  runs: [
+    {
+      name: 'fresh-account-spam-block',
+      checks: [
+        {
+          name: 'burner-profile-plus-spam-words',
+          combinator: 'AND',
+          rules: [
+            { kind: 'regex', name: 'spam-words', pattern: '\\b(free|giveaway|airdrop|drop)\\b.{0,30}\\b(crypto|nft|coin|token)\\b', target: 'title' },
+            {
+              kind: 'history',
+              name: 'burner-profile',
+              postCountLt: 3,
+              commentKarmaLt: 50,
+              linkKarmaLt: 20,
+            },
+          ],
+          actions: [
+            { kind: 'remove', isSpam: true },
+            { kind: 'comment', template: 'Removed: fresh low-karma account + crypto-giveaway pattern. u/{{author.name}}, modmail us if mistaken.' },
+          ],
+        },
+      ],
+    },
+  ],
+}
