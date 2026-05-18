@@ -2,6 +2,16 @@
 
 Thanks for your interest in contributing. This doc describes how to get set up + the conventions we follow.
 
+## Before you start
+
+Read these in order — they encode the load-bearing decisions any change must respect:
+
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — 10 ADR-style sections, the load-bearing invariants
+- [`THREAT-MODEL.md`](./THREAT-MODEL.md) — STRIDE inventory + the per-handler safety guarantees
+- [`PRIVACY.md`](./PRIVACY.md) + [`data-retention.md`](./data-retention.md) — every Redis key + TTL policy
+- [`API.md`](./API.md) — auth tier + request/response for every `/api/*` endpoint
+- [`ROADMAP.md`](./ROADMAP.md) — what's coming + what's intentionally out of scope
+
 ## Code of Conduct
 
 By participating, you agree to our [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -56,10 +66,12 @@ Keep commits atomic — one logical change per commit. Per the project's green-d
 
 ### Code style
 
-- TypeScript strict mode.
-- Run `npm run lint` and `npm run format` before committing.
+- TypeScript strict mode (full strict + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` + `noImplicitOverride`).
+- Run `npm run type-check && npm run lint && npm test && npm run prettier` before committing — the locked pre-commit triplet.
 - Prettier defaults + ESLint with the project config.
 - The client uses Tailwind tokens defined in `tailwind.config.ts` — see [DESIGN.md](DESIGN.md) for the visual system. Don't hardcode hex colors in components.
+- Comments encode WHY, not WHAT — well-named identifiers handle WHAT.
+- Avoid Codex/Wave provenance prefixes in comments (`Codex H4`, `Wave U BLOCKER fix`, etc) — keep the rationale, strip the label.
 
 ### Testing
 
@@ -91,9 +103,21 @@ The Devvit platform is opinionated. Things that have bitten us:
 ## Review process
 
 - A maintainer will review within ~7 days.
-- All CI checks must pass (type-check + lint + test + build + ai-tone soft check).
+- All CI checks must pass: type-check + lint + 461+ vitest tests + Playwright E2E (chromium on PRs, +firefox/webkit on main) + AI-tone soft scan + CodeQL SAST + Semgrep OWASP.
 - At least one approving review is required before merge.
+- Security-sensitive paths (auth, idem, rate-limit, breaker, OpenAI integration) require `@StephenSook` review per `.github/CODEOWNERS`.
 - Squash-merge is the default merge strategy — squashed commits inherit the PR title.
+
+### Sub-agent review chain (heavyweight changes)
+
+WAVE-class changes (anything touching `src/lib/*`, `src/core/*`, auth, idem, or external HTTP) get a 4-agent parallel review before tagging:
+
+- `codex:codex-rescue` — adversarial pass on risky paths
+- `pr-review-toolkit:silent-failure-hunter` — error-handling + fallback audit
+- `pr-review-toolkit:type-design-analyzer` — discriminated unions + invariant expression
+- `cc-gemini-plugin:gemini-agent` — architecture sweep at large-context scope
+
+Findings get integrated as follow-up commits before the release tag. See `CHANGELOG.md` Wave W + X entries for the pattern in practice.
 
 ## Phase scope (for context)
 
