@@ -108,16 +108,16 @@ api.get('/mod-activity', async (c) => {
       activity: [
         {
           ts: now - 5 * 60_000,
-          actor: 'CowSufficient3840',
+          actor: 'demo_mod_alice',
           kind: 'reload-config',
           detail: '5 rules @ rev 3',
         },
         {
           ts: now - 30 * 60_000,
-          actor: 'CowSufficient3840',
+          actor: 'demo_mod_alice',
           kind: 'simulate-rule',
         },
-        { ts: now - 2 * 3600_000, actor: 'vinhbin', kind: 'test-rules' },
+        { ts: now - 2 * 3600_000, actor: 'demo_mod_bob', kind: 'test-rules' },
       ],
     });
   }
