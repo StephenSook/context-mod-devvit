@@ -21,34 +21,7 @@ import { logModActivity } from '../state/modActivity';
 import { explainEvent, type EventSummary } from '../core/explainEvent';
 import { settings } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
-
-/**
- * Wave U BLOCKER fix — verify caller is a moderator of the current sub before
- * mutating shared state. Devvit's `moderator` permission scope grants the APP
- * mod permissions but `/api/*` endpoints can be hit by ANY user viewing the
- * custom post (including regular subscribers). Without this gate, a non-mod
- * could POST /api/mute-rule and silently disable rules sub-wide.
- *
- * Best-effort check: queries getModerators for the sub + verifies the username
- * appears. Returns null when permitted, or an error response when denied.
- */
-async function requireModerator(): Promise<
-  | { ok: true; sub: string; username: string }
-  | { ok: false; status: 401 | 403 | 500; error: string }
-> {
-  try {
-    const sub = (await reddit.getCurrentSubreddit()).name;
-    const user = await reddit.getCurrentUser();
-    if (!user?.username) return { ok: false, status: 401, error: 'not authenticated' };
-    const mods = await reddit.getModerators({ subredditName: sub }).all();
-    const isMod = mods.some((m) => m.username === user.username);
-    if (!isMod) return { ok: false, status: 403, error: 'not a moderator of this sub' };
-    return { ok: true, sub, username: user.username };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, status: 500, error: `mod check failed: ${msg}` };
-  }
-}
+import { requireModerator } from '../lib/requireModerator';
 
 export const api = new Hono();
 

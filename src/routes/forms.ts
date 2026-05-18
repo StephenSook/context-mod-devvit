@@ -21,8 +21,9 @@ import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSu
 import * as configStore from '../state/configStore';
 import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
 import { explainRule, formatExplainToast } from '../core/explainRule';
-import { settings, reddit as redditClient } from '@devvit/web/server';
+import { settings } from '@devvit/web/server';
 import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
+import { requireModerator } from '../lib/requireModerator';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -82,6 +83,10 @@ forms.post('/test-rules-submit', async (c) => {
   // we assumed. Defensive multi-shape parse covers older/future envelope shapes
   // without requiring a re-test if Reddit changes the contract.
   const body = await c.req.json<Record<string, unknown>>();
+  const auth = await requireModerator();
+  if (!auth.ok) {
+    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can dry-run ContextMod.' });
+  }
   const thingId =
     (body as { thingId?: string }).thingId ??
     (body as { values?: { thingId?: string } }).values?.thingId ??
@@ -179,6 +184,10 @@ forms.post('/test-rules-submit', async (c) => {
  */
 forms.post('/simulate-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
+  const auth = await requireModerator();
+  if (!auth.ok) {
+    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can simulate rules.' });
+  }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
     (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
@@ -266,13 +275,16 @@ interface RedditPostLike {
  */
 forms.post('/explain-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
+  const auth = await requireModerator();
+  if (!auth.ok) {
+    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can call OpenAI.' });
+  }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
     (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
     '';
   try {
-    const sub = (await redditClient.getCurrentSubreddit()).name;
-    const apiKey = await resolveOpenaiKey(sub);
+    const apiKey = await resolveOpenaiKey(auth.sub);
     const result = await explainRule(ruleJson5, apiKey);
     return c.json({ showToast: formatExplainToast(result) });
   } catch (err) {
@@ -284,6 +296,10 @@ forms.post('/explain-rule-submit', async (c) => {
 
 forms.post('/set-openai-key-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
+  const auth = await requireModerator();
+  if (!auth.ok) {
+    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can set the OpenAI key.' });
+  }
   const apiKey =
     (body as { apiKey?: string }).apiKey ??
     (body as { values?: { apiKey?: string } }).values?.apiKey ??
@@ -295,10 +311,9 @@ forms.post('/set-openai-key-submit', async (c) => {
     return c.json({ showToast: 'Key should start with sk-... — double-check + try again.' });
   }
   try {
-    const sub = (await redditClient.getCurrentSubreddit()).name;
-    await setOpenaiKey(sub, apiKey);
+    await setOpenaiKey(auth.sub, apiKey);
     const masked = apiKey.slice(0, 7) + '...' + apiKey.slice(-4);
-    return c.json({ showToast: `OpenAI key saved for r/${sub} (${masked}).` });
+    return c.json({ showToast: `OpenAI key saved for r/${auth.sub} (${masked}).` });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/forms/set-openai-key-submit] failed:', err);

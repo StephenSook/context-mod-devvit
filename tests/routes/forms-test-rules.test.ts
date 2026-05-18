@@ -13,6 +13,7 @@ const getCurrentRev = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
 const getPostById = vi.fn();
 const getCommentById = vi.fn();
+const requireModeratorMock = vi.fn(async () => ({ ok: true, sub: 'r_test', username: 'mod_alice' }));
 
 vi.mock('@devvit/web/server', () => ({
   reddit: {
@@ -21,6 +22,10 @@ vi.mock('@devvit/web/server', () => ({
     getCommentById: (id: string) => getCommentById(id),
   },
   redis: {},
+  settings: { get: async () => '' },
+}));
+vi.mock('../../src/lib/requireModerator', () => ({
+  requireModerator: () => requireModeratorMock(),
 }));
 vi.mock('../../src/core/dryRunActivity', () => ({
   dryRunActivity: (...a: unknown[]) => dryRunActivity(...a),
@@ -46,6 +51,8 @@ beforeEach(() => {
   getCurrentRev.mockReset();
   getPostById.mockReset();
   getCommentById.mockReset();
+  requireModeratorMock.mockReset();
+  requireModeratorMock.mockResolvedValue({ ok: true, sub: 'r_test', username: 'mod_alice' });
   getCurrentRev.mockResolvedValue({ rev: 1, config: { runs: [], needsAuthorEnrichment: false } });
   normalizePost.mockResolvedValue({ item: baseItem, author: baseAuthor, safe: baseSafe });
   normalizeComment.mockResolvedValue({ item: { ...baseItem, id: 't1_xyz', title: '', body: 'a comment' }, author: baseAuthor, safe: baseSafe });
@@ -111,6 +118,20 @@ describe('POST /test-rules-submit form handler', () => {
     const res = await forms.request(req);
     const json = await res.json() as { showToast: string };
     expect(json.showToast).toMatch(/no rules triggered/i);
+  });
+
+  it('W1 — rejects non-mod caller with showToast + does NOT call dryRunActivity', async () => {
+    requireModeratorMock.mockResolvedValueOnce({ ok: false, status: 403, error: 'not a moderator of this sub' });
+    const req = new Request('http://x/test-rules-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: { thingId: 't3_abc' } }),
+    });
+    const res = await forms.request(req);
+    const json = await res.json() as { showToast: string };
+    expect(json.showToast).toMatch(/mod-only/i);
+    expect(dryRunActivity).not.toHaveBeenCalled();
+    expect(getPostById).not.toHaveBeenCalled();
   });
 
   it('Codex H1 — routes comments through normalizeComment (live-parity enrichment)', async () => {
