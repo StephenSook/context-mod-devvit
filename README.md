@@ -6,7 +6,7 @@
 > Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, AI rule explainer, AI event summary, mod activity feed, config-diff viewer, mute/unmute MVP, full mod-auth gating + rate-limiting + circuit-breaker on AI calls, and Observatory dashboard all ship live in v0.3.1. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-414%20passing-brightgreen.svg)](./tests)
+[![Tests](https://img.shields.io/badge/tests-446%20passing-brightgreen.svg)](./tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
@@ -73,7 +73,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 | **Wave U code review hardening** | ✅ Shipped (v0.3.0) | 5 BLOCKERs + 1 CRITICAL + 11 WARNs closed from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). |
 | **Wave W + X — deep review + production hardening** | ✅ Shipped (v0.3.1) | 30+ atomic commits. requireModerator on every mutation/cost endpoint; rate-limit + circuit-breaker on OpenAI calls; configStore parse-fail surfacing; wiki not-found/unreachable split; structured JSON logger; deep-health probe; THREAT-MODEL.md + API.md + PRIVACY.md + data-retention.md; ErrorBoundary; CodeQL workflow; FUNDING + Discussions; .devcontainer + VSCode workspace. |
 | **v0.3.1** | ✅ Tagged + released | GitHub release auto-generated from CHANGELOG via X72 workflow. |
-| **Phase 4** — `history` / `attribution` / `recentActivity` rules | 🟡 In progress | Authorized 2026-05-17 (Wave S16). Vinh's queue — target ship 2026-05-25 (T-2). Author-cache substrate first. |
+| **Phase 4** — `history` / `attribution` / `recentActivity` rules | ✅ Shipped (2026-05-18) | Vinh's author-history cache + 3 stretch rules. 179 tests. Authorized 2026-05-17 Wave S16; shipped ahead of 2026-05-25 target. |
 | **Phase 4.7** — Image-mode `repost` (perceptual blockhash) | ⏸ Deferred | Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission |
 | **MHS** (ModerateHateSpeech HTTP fetch) | ✂️ Cut | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech |
 
@@ -101,7 +101,7 @@ For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-**414 tests passing** (Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Wave W + Wave X hardening). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 4 jobs (validate + ai-tone + e2e Playwright + CodeQL).
+**446 tests passing** (Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Wave W + Wave X hardening + Vinh Phase 4: history/attribution/recentActivity + author cache). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 4 jobs (validate + ai-tone + e2e Playwright + CodeQL).
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
