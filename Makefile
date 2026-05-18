@@ -45,6 +45,9 @@ build:  ## vite build — server + client bundle into dist/
 clean:  ## remove dist/ + coverage/ + playwright-report/ + test-results/
 	rm -rf dist coverage playwright-report test-results .devvit
 
+bench:  ## npx vitest bench — micro-benchmarks for hot paths
+	npx vitest bench
+
 e2e:  ## npx playwright test — chromium headless
 	npx playwright test
 

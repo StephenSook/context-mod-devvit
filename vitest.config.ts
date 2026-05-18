@@ -11,8 +11,8 @@ export default defineConfig({
   plugins: [],
   test: {
     environment: 'node',
-    include: ['tests/**/*.{test,test.tsx}.ts*'],
-    exclude: ['tests/e2e/**'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    exclude: ['tests/e2e/**', 'tests/bench/**', '**/__snapshots__/**'],
     globals: false,
     coverage: {
       provider: 'v8',
