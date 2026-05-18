@@ -4,7 +4,21 @@
 >
 > Full compatibility matrix (every rule kind, action, filter, config key — what's ported / deferred / cut) lives in [`docs/migration-compatibility.md`](./migration-compatibility.md). This doc is the action-list.
 
-**Last reviewed:** 2026-05-17 (v0.2.0 in Reddit App Directory review).
+**Last reviewed:** 2026-05-18 (v0.4.0 — full Wave W/X/Y hardening + Vinh's Phase 4 history/attribution/recentActivity rules shipped).
+
+---
+
+## Quick-checklist (the impatient version)
+
+- [ ] Install `cm-devvit` from App Directory → pick your sub
+- [ ] Click **ContextMod: View recent actions** in the mod menu → dashboard renders
+- [ ] Paste your existing config into `r/<sub>/wiki/botconfig/contextmod` (note the renamed wiki path — old CM used `/wiki/contextmod`, new path is under `/botconfig/`)
+- [ ] Rename in your config: `condition` → `combinator`, `regex` → `pattern`, `testOn` → `target`, `spam` → `isSpam`, `content` → `template`. See [`migration-compatibility.md`](./migration-compatibility.md) for the full table.
+- [ ] Click **ContextMod: Reload config from wiki** → toast confirms rule count
+- [ ] Right-click any post → **ContextMod: Test rules on this item** → dry-run verifies before going live
+- [ ] (Optional) Set OpenAI key via **ContextMod: Set OpenAI API key** mod menu if you want AI rule explainer + per-event AI summary
+
+The full step-by-step walkthrough below covers gotchas + verification.
 
 ---
 
