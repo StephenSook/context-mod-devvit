@@ -1,43 +1,48 @@
 #!/usr/bin/env bash
-# Z4-X65 — convert assets/social-preview.svg → PNG and upload as GitHub
-# social-preview image. Requires librsvg2-bin (rsvg-convert) or
-# ImageMagick (convert). Stephen runs this manually once.
+# X65 / X66 — generate or upload the GitHub repo social-preview image.
 #
-# Usage: ./scripts/set-social-preview.sh
+# Two assets exist in this repo:
+#   assets/social-preview.png   (May 13 — your hand-designed PNG)
+#   assets/social-preview.svg   (May 18 — Wave Z auto-gen SVG w/ stat cards)
+#
+# Usage:
+#   ./scripts/set-social-preview.sh           — show both options + upload URL
+#   ./scripts/set-social-preview.sh --regen   — convert SVG → social-preview-wave-z.png
+#                                              (does NOT overwrite the May 13 PNG)
 
 set -euo pipefail
 
 SVG=assets/social-preview.svg
-PNG=assets/social-preview.png
+OLD_PNG=assets/social-preview.png
+NEW_PNG=assets/social-preview-wave-z.png
 
-if [ ! -f "$SVG" ]; then
-  echo "ERR: $SVG not found"
-  exit 1
+if [ "${1:-}" = '--regen' ]; then
+  if ! command -v rsvg-convert > /dev/null 2>&1 && ! command -v convert > /dev/null 2>&1; then
+    echo "ERR: install librsvg ('brew install librsvg') or ImageMagick ('brew install imagemagick') first"
+    exit 1
+  fi
+  if command -v rsvg-convert > /dev/null 2>&1; then
+    rsvg-convert -w 1280 -h 640 "$SVG" -o "$NEW_PNG"
+  else
+    convert -background none -resize 1280x640 "$SVG" "$NEW_PNG"
+  fi
+  echo "==> generated $NEW_PNG (Wave-Z SVG variant — distinct from your May 13 $OLD_PNG)"
+  exit 0
 fi
 
-if command -v rsvg-convert > /dev/null 2>&1; then
-  rsvg-convert -w 1280 -h 640 "$SVG" -o "$PNG"
-elif command -v convert > /dev/null 2>&1; then
-  convert -background none -resize 1280x640 "$SVG" "$PNG"
-else
-  echo "ERR: neither rsvg-convert nor convert (ImageMagick) found"
-  echo "Install one of:"
-  echo "  brew install librsvg"
-  echo "  brew install imagemagick"
-  exit 1
-fi
+cat <<EOF
+==> Social preview options:
 
-echo "==> generated $PNG"
+  1. $OLD_PNG    (May 13 — your hand-designed)
+  2. $SVG     (May 18 — Wave Z auto-gen SVG, run --regen to convert to PNG)
 
-if command -v gh > /dev/null 2>&1; then
-  echo "==> uploading to GitHub repo social-preview..."
-  gh api -X PATCH /repos/StephenSook/context-mod-devvit \
-    -F "social_preview=@$PNG" || {
-      echo "Note: GitHub API doesn't accept this via gh — upload manually at:"
-      echo "https://github.com/StephenSook/context-mod-devvit/settings"
-      echo "(Social preview section — drag $PNG into the upload zone)"
-    }
-else
-  echo "==> gh CLI not found. Upload manually at:"
-  echo "https://github.com/StephenSook/context-mod-devvit/settings"
-fi
+==> Upload one of them via GitHub UI:
+    https://github.com/StephenSook/context-mod-devvit/settings
+    -> scroll to "Social preview" -> upload the PNG of choice.
+
+==> Or regenerate the Wave Z PNG variant first:
+    ./scripts/set-social-preview.sh --regen
+    # produces assets/social-preview-wave-z.png alongside the May 13 PNG
+
+==> CLI upload is not exposed by gh — manual repo-settings upload is the only path today.
+EOF
