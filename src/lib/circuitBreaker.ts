@@ -24,6 +24,11 @@ function failKey(bucket: string): string {
 function openedKey(bucket: string): string {
   return `cm:cb:${bucket}:opened-at`;
 }
+// Half-open probe lease — only one concurrent probe allowed.
+const HALF_OPEN_PROBE_TTL_SEC = 10;
+function probeKey(bucket: string): string {
+  return `cm:cb:${bucket}:probe`;
+}
 
 // Tagged union — retryInSec is ONLY present when state==='open' so a caller
 // reading state==='closed' can't accidentally use an undefined retryInSec.
@@ -41,7 +46,19 @@ export async function checkCircuit(
     const openedAt = await redis.get(openedKey(bucket));
     if (!openedAt) return { state: 'closed' };
     const elapsedMs = Date.now() - Number.parseInt(openedAt, 10);
-    if (elapsedMs >= openSec * 1000) return { state: 'half-open' };
+    if (elapsedMs >= openSec * 1000) {
+      // Claim the half-open probe lease (NX). Only ONE caller passes through
+      // per OPEN_SEC window — concurrent callers see state:'open' w/ a short
+      // retry so they don't all hammer the recovering service.
+      const claimed = await redis.set(probeKey(bucket), '1', {
+        nx: true,
+        expiration: new Date(Date.now() + HALF_OPEN_PROBE_TTL_SEC * 1000),
+      });
+      if (claimed !== 'OK') {
+        return { state: 'open', retryInSec: HALF_OPEN_PROBE_TTL_SEC };
+      }
+      return { state: 'half-open' };
+    }
     return {
       state: 'open',
       retryInSec: Math.ceil((openSec * 1000 - elapsedMs) / 1000),
@@ -74,6 +91,7 @@ export async function recordSuccess(bucket: string): Promise<void> {
   try {
     await redis.del(failKey(bucket));
     await redis.del(openedKey(bucket));
+    await redis.del(probeKey(bucket));
   } catch (err) {
     console.warn('[cm/circuitBreaker] recordSuccess failed:', bucket, err);
   }

@@ -228,6 +228,14 @@ forms.post('/simulate-rule-submit', async (c) => {
     });
   }
   const rlSim = await checkRateLimit('simulate', auth.sub, 10, 3600);
+  // Fail-CLOSED on degraded — simulation fans out 25 Reddit API reads;
+  // unlimited retries during a Redis-rate-limit outage could DOS the sub's
+  // Reddit API quota. Cost gate > availability gate.
+  if (rlSim.degraded) {
+    return c.json({
+      showToast: 'Rate-limit subsystem degraded (Redis down). Retry in ~60s.',
+    });
+  }
   if (!rlSim.allowed) {
     return c.json({
       showToast: `Rate limit: ${rlSim.count}/${rlSim.max} simulations this hour. Try again in ~${Math.ceil(rlSim.resetInSec / 60)}min.`,
@@ -335,6 +343,12 @@ forms.post('/explain-rule-submit', async (c) => {
     });
   }
   const rl = await checkRateLimit('explain-rule', auth.sub, 30, 3600);
+  // Fail-CLOSED on degraded — cost-bearing OpenAI endpoint.
+  if (rl.degraded) {
+    return c.json({
+      showToast: 'Rate-limit subsystem degraded (Redis down). Retry in ~60s.',
+    });
+  }
   if (!rl.allowed) {
     return c.json({
       showToast: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,

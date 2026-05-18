@@ -41,6 +41,11 @@ function emit(level: Level, tag: string, msg: string, ctx?: Ctx): void {
   if (ctx?.err instanceof Error) {
     payload.err = ctx.err.message;
     payload.errName = ctx.err.name;
+    // Include top 5 stack frames for error-level only — keeps line size
+    // bounded; full stack hits log truncation in Devvit's surface.
+    if (level === 'error' && ctx.err.stack) {
+      payload.errStack = ctx.err.stack.split('\n').slice(0, 5).join('\n');
+    }
   }
   const line = JSON.stringify(payload);
   if (level === 'error') console.error(line);

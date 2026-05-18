@@ -72,19 +72,25 @@ export async function computeStats(sub: string): Promise<StatsRollup> {
   };
 }
 
-/**
- * Write the freshly-computed snapshot to Redis. Called from the hourly cron
- * so /api/stats can read a single key instead of fetching 50 events + doing
- * the aggregation per dashboard poll.
- */
-export async function writeStatsSnapshot(sub: string): Promise<StatsRollup> {
+// Hourly-cron writes; /api/stats reads — single key vs per-poll aggregation.
+// Returns { stats, persisted } so the cron can log status:'ignored' if the
+// write failed (silent-failure-hunter Wave-AB-review BLOCKER #1).
+export interface WriteSnapshotResult {
+  stats: StatsRollup;
+  persisted: boolean;
+  error?: string;
+}
+
+export async function writeStatsSnapshot(sub: string): Promise<WriteSnapshotResult> {
   const stats = await computeStats(sub);
   try {
     await redis.set(snapshotKey(sub), JSON.stringify(stats));
+    return { stats, persisted: true };
   } catch (err) {
-    console.warn('[cm/statsRollup] snapshot write failed:', sub, err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/statsRollup] snapshot write failed:', sub, err);
+    return { stats, persisted: false, error: msg };
   }
-  return stats;
 }
 
 /**

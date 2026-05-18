@@ -219,8 +219,17 @@ api.post('/explain-event', async (c) => {
       503
     );
   }
-  // X1: per-sub rate limit — 30 calls per hour.
+  // Per-sub rate limit — 30 calls per hour. Fail-CLOSED for this cost-bearing
+  // endpoint on degraded (Redis-unavailable) — would otherwise let unlimited
+  // calls burn OpenAI quota during the exact Redis outage that broke the
+  // limiter. Cost gate > availability gate for AI calls.
   const rl = await checkRateLimit('explain', auth.sub, 30, 3600);
+  if (rl.degraded) {
+    return c.json({
+      ok: false,
+      error: 'Rate-limit subsystem degraded (Redis unavailable). Retry in ~60s.',
+    }, 503);
+  }
   if (!rl.allowed) {
     return c.json(
       {
@@ -230,7 +239,7 @@ api.post('/explain-event', async (c) => {
       429
     );
   }
-  // X39: resolve apiKey OUTSIDE the try wrapping explainEvent.
+  // Resolve apiKey OUTSIDE the try wrapping explainEvent.
   const fromRedis = await getOpenaiKey(auth.sub);
   const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
@@ -322,6 +331,14 @@ api.get('/health', (c) => {
  * can alert on degraded-but-not-down state.
  */
 api.get('/health/deep', async (c) => {
+  // Rate-limit per-install (single shared bucket). Endpoint writes Redis
+  // on every call, so a 10000-rpm attack would otherwise exhaust the
+  // per-install 500MB cap or rack up cost. 60/min cap is generous for
+  // legitimate monitor polls.
+  const rl = await checkRateLimit('health-deep', '_global', 60, 60);
+  if (!rl.allowed) {
+    return c.json({ ok: false, error: 'Too many deep-health probes — back off.' }, 429);
+  }
   const ts = Date.now();
 
   const redisStart = Date.now();

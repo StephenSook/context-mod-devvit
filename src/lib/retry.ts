@@ -12,6 +12,16 @@
  * src/lib/circuitBreaker.ts.
  */
 
+function defaultShouldRetry(err: unknown): boolean {
+  if (!err) return false;
+  const name = err instanceof Error ? err.name : '';
+  if (name === 'AbortError') return false;
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  if (msg.includes('401') || msg.includes('403') || msg.includes('404') || msg.includes('400')) return false;
+  if (msg.includes('invalid_api_key') || msg.includes('insufficient_quota')) return false;
+  return true;
+}
+
 export interface RetryOpts {
   /** Max attempts INCLUDING the first one. Defaults to 3. */
   maxAttempts?: number;
@@ -31,7 +41,11 @@ export async function retryWithJitter<T>(op: () => Promise<T>, opts: RetryOpts =
   const maxAttempts = opts.maxAttempts ?? 3;
   const baseMs = opts.baseMs ?? 100;
   const jitter = opts.jitter ?? 0.25;
-  const shouldRetry = opts.shouldRetry ?? (() => true);
+  // Default retry predicate: only transient failures (network/5xx/timeout).
+  // 4xx, AbortError, validation errors should NOT be retried — they won't
+  // resolve themselves and waste quota. Caller can pass shouldRetry: () => true
+  // for the original retry-everything behavior.
+  const shouldRetry = opts.shouldRetry ?? defaultShouldRetry;
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {

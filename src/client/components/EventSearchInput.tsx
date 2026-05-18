@@ -42,7 +42,7 @@ export function eventMatchesQuery(
   if (event.runName?.toLowerCase().includes(q)) return true;
   if (event.checkName?.toLowerCase().includes(q)) return true;
   for (const a of event.actions) {
-    if (a.kind.toLowerCase().includes(q)) return true;
+    if (a.kind?.toLowerCase().includes(q)) return true;
   }
   return false;
 }

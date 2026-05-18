@@ -91,7 +91,13 @@ scheduler.post('/stats-rollup', async (c) => {
       console.log(`[cm/cron/stats-rollup] skipped — no subname for installId=${installId}`);
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
-    const stats = await writeStatsSnapshot(subName);
+    const { stats, persisted, error } = await writeStatsSnapshot(subName);
+    if (!persisted) {
+      console.error(
+        `[cm/cron/stats-rollup] sub=${subName} compute ok but Redis write failed: ${error}`
+      );
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
     console.log(
       `[cm/cron/stats-rollup] sub=${subName} total=${stats.total} today=${stats.today} lastHour=${stats.lastHour}`
     );

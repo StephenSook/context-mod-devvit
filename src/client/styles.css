@@ -125,23 +125,42 @@
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.7; }
   }
-  /* Y2-X55: honor prefers-reduced-motion. Disable all CM animations so
-     users w/ vestibular sensitivities don't get the sparkline-draw +
-     event-arrive + fade-up + shimmer cascade. Live-data still updates;
-     just no entrance/exit animation. */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+  /* Light-mode MVP — ThemeToggle attaches data-theme="light" on <html>.
+     Inverts body background + primary text colors so high-contrast surfaces
+     stay readable. Signal accents (ok/err/warn/info) keep hues for
+     color-coding parity. System tokens unchanged; this only overrides the
+     outermost surface + a few high-contrast text/border rules. */
+  html[data-theme='light'] body,
+  html[data-theme='light'] .cm-body {
+    background: #fafaf9 !important;
+    color: #18181b !important;
+  }
+  html[data-theme='light'] .grain { opacity: 0.03 !important; }
+  html[data-theme='light'] .text-bone-50,
+  html[data-theme='light'] .text-bone-100,
+  html[data-theme='light'] .text-bone-200 {
+    color: #18181b !important;
+  }
+  html[data-theme='light'] .text-bone-300 { color: #52525b !important; }
+  html[data-theme='light'] .border-line,
+  html[data-theme='light'] .border-line\/60,
+  html[data-theme='light'] .border-line\/40 {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  html[data-theme='light'] .bg-ink-950,
+  html[data-theme='light'] .bg-ink-900\/40,
+  html[data-theme='light'] .bg-ink-800\/70 {
+    background-color: #f4f4f5 !important;
+  }
+  html[data-theme='light'] pre {
+    background-color: #f4f4f5 !important;
+    color: #18181b !important;
   }
 
-  /* Z1-X61: print stylesheet. Mods occasionally print activity logs as
-     audit-trail evidence (modmail disputes, abuse reports). Force light
-     ink, full-width layout, hide interactive chrome (filter chips,
-     search input, buttons), expand all collapsed sections. */
+  /* Print stylesheet — mods print activity logs as audit-trail evidence
+     (modmail disputes, abuse reports). Force light ink, full-width layout,
+     hide interactive chrome (filter chips, search input, buttons),
+     preserve event rows w/ break-inside:avoid. */
   @media print {
     @page { margin: 1cm; }
     body, .cm-body { background: white !important; color: black !important; }
@@ -189,9 +208,6 @@
   .cm-refresh-pulse {
     animation: cmRefreshPulse 1.5s ease-out;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .cm-refresh-pulse { animation: none; }
-  }
 }
 
 @layer utilities {
@@ -199,9 +215,10 @@
   .text-pretty { text-wrap: pretty; }
 }
 
-/* WCAG 2.3.3 — respect the OS-level reduced-motion preference. Collapse
-   durations to ~0 (not zero — some animation libraries break on
-   `animation: none`) so vestibular-sensitive users get a static UI. */
+/* WCAG 2.3.3 — respect OS-level reduced-motion preference. Collapse all
+   CM animation/transition durations to ~0 (not zero — some libs break on
+   `animation: none`) so vestibular-sensitive users get a static UI.
+   Single global block — covers every cm-* class + every transition. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

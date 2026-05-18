@@ -21,6 +21,21 @@ const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
 vi.mock('@devvit/web/server', () => ({
   reddit: { getCurrentSubreddit: () => getCurrentSubreddit() },
   settings: { get: (k: string) => settingsGet(k) },
+  redis: {
+    get: vi.fn(async () => null),
+    set: vi.fn(async () => 'OK'),
+    del: vi.fn(),
+    incrBy: vi.fn(async () => 1),
+    expire: vi.fn(),
+  },
+}));
+vi.mock('../../src/lib/ratelimit', () => ({
+  checkRateLimit: vi.fn(async () => ({ allowed: true, count: 1, max: 30, resetInSec: 3600 })),
+}));
+vi.mock('../../src/lib/circuitBreaker', () => ({
+  checkCircuit: vi.fn(async () => ({ state: 'closed' })),
+  recordFailure: vi.fn(),
+  recordSuccess: vi.fn(),
 }));
 vi.mock('../../src/lib/requireModerator', () => ({
   requireModerator: () => requireModeratorMock(),
