@@ -125,6 +125,18 @@
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.7; }
   }
+  /* Y2-X55: honor prefers-reduced-motion. Disable all CM animations so
+     users w/ vestibular sensitivities don't get the sparkline-draw +
+     event-arrive + fade-up + shimmer cascade. Live-data still updates;
+     just no entrance/exit animation. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
   @keyframes cmDrawLine {
     from { stroke-dashoffset: var(--line-len, 1000); }
     to { stroke-dashoffset: 0; }
