@@ -347,6 +347,13 @@ Why does Reddit need a port of CM when AutoMod already exists? Because AutoMod h
 | Install model | Auto-on for every sub | Operator-managed central server serving N subs | Per-mod-team install — no shared rate limits, no central bottleneck |
 | Pricing | Free | Heroku/VPS hosting + dev time | Free (Devvit hosts) — eligible for Reddit's Developer Funds program |
 | When to use | High-volume regex spam catches | Context-aware rules requiring history + composition | Same as original CM, without the central-server tax |
+| AI rule explainer | ❌ | ❌ | ✅ Paste a rule → plain-English explanation via OpenAI (rate-limited + circuit-breakered per sub) |
+| Per-event AI summary | ❌ | ❌ | ✅ Click "Explain with AI" on any drill-down — gpt-4o-mini summarizes why the rule fired |
+| Dry-run rule tester | ❌ | ❌ | ✅ Right-click any post → "Test rules on this item" → see which rules would fire w/ zero Reddit side-effects |
+| Rule simulation against history | ❌ | ❌ | ✅ Paste a proposed rule → "Would fire on N/25 (X%) recent items" against last 25 posts |
+| Auth gating | Subreddit-level | Self-hosted (operator's responsibility) | Per-endpoint `requireModerator`: mutation + cost-bearing endpoints all gate against Reddit's mod-list — defense-in-depth beyond menu `forUserType:moderator` |
+| Documented threat model | ❌ | ❌ | ✅ STRIDE inventory: 15 cataloged threats + mitigations + 4 residual risks ([`THREAT-MODEL.md`](./THREAT-MODEL.md)) |
+| Rate-limited AI calls | N/A | N/A | ✅ Redis fixed-window 30/hour/sub + 3-state circuit breaker w/ smart-failure classification — prevents quota burn on bad keys or transient outages |
 
 **Best-of-both posture:** ContextMod-Devvit doesn't replace AutoMod — both coexist on the same sub. AutoMod handles the fast regex pass; ContextMod handles the *context* part (history, composition, audit trail). Mods of [r/mealtimevideos](https://reddit.com/r/mealtimevideos) (60K weekly visitors) and [r/piercing](https://reddit.com/r/piercing) (600K visitors) already run upstream CM alongside AutoMod for exactly this reason.
 
