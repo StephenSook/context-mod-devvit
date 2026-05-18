@@ -1,0 +1,214 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FilterChips snapshot (Y2-X23) > renders all=active default state 1`] = `
+<div
+  aria-label="Filter event stream by action kind or status"
+  class="cm-fade-up flex flex-wrap items-center gap-1.5 px-5 pb-2"
+  role="group"
+  style="animation-delay: 0.45s;"
+>
+  <span
+    class="telemetry text-[10px] text-bone-300/70 mr-1 uppercase tracking-wider"
+  >
+    filter
+  </span>
+  <button
+    aria-pressed="true"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-signal-ok/60 text-signal-ok bg-signal-ok/10"
+    type="button"
+  >
+    all
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    remove
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    comment
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    approve
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    lock
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    report
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    failed
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    dry-run
+  </button>
+</div>
+`;
+
+exports[`FilterChips snapshot (Y2-X23) > renders kind=remove active 1`] = `
+<div
+  aria-label="Filter event stream by action kind or status"
+  class="cm-fade-up flex flex-wrap items-center gap-1.5 px-5 pb-2"
+  role="group"
+  style="animation-delay: 0.45s;"
+>
+  <span
+    class="telemetry text-[10px] text-bone-300/70 mr-1 uppercase tracking-wider"
+  >
+    filter
+  </span>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    all
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    remove
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    comment
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    approve
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    lock
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    report
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    failed
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    dry-run
+  </button>
+</div>
+`;
+
+exports[`FilterChips snapshot (Y2-X23) > renders status=failed active 1`] = `
+<div
+  aria-label="Filter event stream by action kind or status"
+  class="cm-fade-up flex flex-wrap items-center gap-1.5 px-5 pb-2"
+  role="group"
+  style="animation-delay: 0.45s;"
+>
+  <span
+    class="telemetry text-[10px] text-bone-300/70 mr-1 uppercase tracking-wider"
+  >
+    filter
+  </span>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    all
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    remove
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    comment
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    approve
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    lock
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    report
+  </button>
+  <button
+    aria-pressed="true"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-signal-ok/60 text-signal-ok bg-signal-ok/10"
+    type="button"
+  >
+    failed
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    dry-run
+  </button>
+</div>
+`;
