@@ -156,6 +156,29 @@
     background-color: #f4f4f5 !important;
     color: #18181b !important;
   }
+  /* AE CRITICAL #1 — the .glass component (lines 30-62) paints near-zero-opacity
+     white over a white-gradient border + inset white shadow. That's correct on
+     the dark surface but renders cards as invisible white-on-white when light
+     mode flips the body to #fafaf9. Judge clicks the sun icon → entire
+     dashboard dissolves. Mirror the .glass treatment with dark-on-light
+     equivalents so the four StatsRow cards, OnboardingTour modal, KeyboardOverlay,
+     and ConfigDiffViewer all stay readable when the theme flips. */
+  html[data-theme='light'] .glass {
+    background: rgba(24, 24, 27, 0.02) !important;
+    box-shadow:
+      inset 0 1px 1px rgba(24, 24, 27, 0.05),
+      0 8px 24px -12px rgba(24, 24, 27, 0.12) !important;
+  }
+  html[data-theme='light'] .glass::before {
+    background: linear-gradient(
+      180deg,
+      rgba(24, 24, 27, 0.10) 0%,
+      rgba(24, 24, 27, 0.03) 25%,
+      rgba(24, 24, 27, 0) 50%,
+      rgba(24, 24, 27, 0.03) 75%,
+      rgba(24, 24, 27, 0.10) 100%
+    ) !important;
+  }
 
   /* Print stylesheet — mods print activity logs as audit-trail evidence
      (modmail disputes, abuse reports). Force light ink, full-width layout,
