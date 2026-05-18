@@ -70,16 +70,11 @@ api.get('/config-history', async (c) => {
     });
   }
 
-  let subName: string | undefined;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/api/config-history] could not resolve current sub:', err);
-    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
-  }
-
-  const revs = await getRecentRevs(subName, limit);
+  // W2: gate behind mod-auth. Config history exposes prior rule payloads
+  // that may include sub-internal heuristics mods don't want public.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ error: auth.error, revs: [] }, auth.status);
+  const revs = await getRecentRevs(auth.sub, limit);
   return c.json({ revs });
 });
 
@@ -100,15 +95,12 @@ api.get('/mod-activity', async (c) => {
     });
   }
 
-  let subName: string | undefined;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/api/mod-activity] could not resolve current sub:', err);
-    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
-  }
-  const activity = await readModActivity(subName);
+  // W2: gate behind mod-auth. Activity feed exposes mod usernames + actions
+  // — non-mods viewing the dashboard custom post could enumerate which mods
+  // are active and what tools they use without this gate.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ error: auth.error, activity: [] }, auth.status);
+  const activity = await readModActivity(auth.sub);
   return c.json({ activity });
 });
 
