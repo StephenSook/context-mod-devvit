@@ -1,0 +1,4 @@
+# AA-X81 commit-msg hook — enforce Conventional Commits via commitlint.
+# Skip via HUSKY=0 in env if needed.
+
+npx --no-install commitlint --edit "$1"
