@@ -14,6 +14,9 @@ export interface RateLimitResult {
   count: number;
   max: number;
   resetInSec: number;
+  /** X39: true when the bucket couldn't be read (Redis blip) — caller may
+   *  decide to apply a soft cap or surface "degraded" to the user. */
+  degraded?: boolean;
 }
 
 /**
@@ -52,7 +55,8 @@ export async function checkRateLimit(
   } catch (err) {
     // Fail-OPEN on Redis blip — better to let a mod's legit click through
     // than block them. The OpenAI quota itself is the ultimate cap.
-    console.warn('[cm/ratelimit] check failed (fail-open):', bucket, sub, err);
-    return { allowed: true, count: 0, max, resetInSec: windowSec };
+    // degraded:true lets the caller decide to apply a soft cap.
+    console.error('[cm/ratelimit] check failed (fail-open, degraded):', bucket, sub, err);
+    return { allowed: true, count: 0, max, resetInSec: windowSec, degraded: true };
   }
 }

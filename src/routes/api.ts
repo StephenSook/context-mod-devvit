@@ -185,6 +185,17 @@ api.post('/explain-event', async (c) => {
   // burn quota or rate-window tokens.
   const validated = validateEventSummary(body.event);
   if (!validated.ok) return c.json({ ok: false, error: validated.error }, 400);
+  // X39: check breaker FIRST (cheap Redis GET, no state mutation). If
+  // OpenAI is down, deny without burning a rate-limit token — otherwise
+  // the user sees 429 ("try again in 30min") when truer answer is 503
+  // ("OpenAI down for 60s").
+  const cb = await checkCircuit('openai');
+  if (cb.state === 'open') {
+    return c.json({
+      ok: false,
+      error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.`,
+    }, 503);
+  }
   // X1: per-sub rate limit — 30 calls per hour. Stops a single mod from
   // accidentally burning the OpenAI key on every event in a busy sub.
   const rl = await checkRateLimit('explain', auth.sub, 30, 3600);
@@ -194,19 +205,13 @@ api.post('/explain-event', async (c) => {
       error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
     }, 429);
   }
-  // X37: circuit breaker — if OpenAI is failing repeatedly (5 consecutive
-  // errors), open for 60s before letting a probe through. Stops quota
-  // burn during sustained outages.
-  const cb = await checkCircuit('openai');
-  if (cb.state === 'open') {
-    return c.json({
-      ok: false,
-      error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec ?? 60}s.`,
-    }, 503);
-  }
+  // X39: resolve apiKey OUTSIDE the try wrapping explainEvent — settings.get
+  // / Redis errors aren't OpenAI failures and should NOT recordFailure
+  // against the OpenAI circuit breaker. Five settings hiccups would have
+  // opened the breaker for 60s against an unrelated infra problem.
+  const fromRedis = await getOpenaiKey(auth.sub);
+  const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
-    const fromRedis = await getOpenaiKey(auth.sub);
-    const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
     const result = await explainEvent(validated.event, apiKey);
     if (!result.ok) {
       await recordFailure('openai');

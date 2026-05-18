@@ -148,7 +148,16 @@ triggers.post('/post-submit', async (c) => {
     if (appUser && authorName === appUser.username) return c.json({ status: 'ok' });
   }
 
-  const subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+  // X39: wrap getCurrentSubreddit — Reddit context loss would otherwise 500
+  // the trigger handler and ride Devvit's retry storm. Return 200 + status
+  // so Devvit acks and we don't burn retries on a transient context blip.
+  let subName: string;
+  try {
+    subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+  } catch (err) {
+    console.error('[cm/post-submit] subreddit context unavailable:', err);
+    return c.json({ status: 'subreddit-unavailable' });
+  }
 
   // firstSeen BEFORE normalize so a re-delivered trigger doesn't burn the
   // (potentially expensive) getUserByUsername call when the config needs it.
@@ -205,7 +214,16 @@ triggers.post('/comment-submit', async (c) => {
     if (appUser && authorName === appUser.username) return c.json({ status: 'ok' });
   }
 
-  const subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+  // X39: wrap getCurrentSubreddit in try/catch — without it, a Reddit
+  // context loss during the trigger would 500 the handler and trigger
+  // Devvit's retry storm.
+  let subName: string;
+  try {
+    subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+  } catch (err) {
+    console.error('[cm/comment-submit] subreddit context unavailable:', err);
+    return c.json({ status: 'subreddit-unavailable' });
+  }
 
   const seen = await firstSeen(comment.id, subName);
   if (!seen) {
