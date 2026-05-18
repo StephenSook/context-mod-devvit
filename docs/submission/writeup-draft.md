@@ -10,7 +10,7 @@
 
 **Suggested opener** (Stephen's voice — rewrite):
 
-> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. The bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that. v0.3.0 ships the full Phase 1+2+3 stack PLUS 16 user-facing mod-UX features (filter chips, per-event drill-down w/ AI summary, keyboard shortcuts, mobile responsive, onboarding tour, per-rule statistics table, config rev diff viewer, mod activity attribution feed, mute/unmute rule MVP) PLUS the two killer demos: **rule simulation against history** (paste a rule, see "would have fired N/25 (X%)" on recent posts) and **AI rule explainer** (paste JSON5, get plain-English explanation via OpenAI). v0.2.0 is in Reddit App Directory review; v0.3.0 queued to publish post-CHANGELOG-lock. Codex adversarial review applied across two waves: 2 CRITICAL + 10 HIGH initial findings + 5 BLOCKERs + 1 CRITICAL + 11 WARNs surfaced by 5-agent parallel code review of Wave S+T+U code shipped as atomic hotfixes before submission.
+> ContextMod is a rule-engine moderation bot. Mods write JSON5 config in their sub's wiki — define what counts as spam, what flairs to require, what posts to remove, what comments to leave, what users to ban. The bot reads every new post and comment, runs the rules, takes the actions. No central server, no Heroku token, no shared rate limits — Devvit handles all of that. **v0.5.5** ships the full Phase 1+2+3+4 stack PLUS 16 user-facing mod-UX features (filter chips, per-event drill-down w/ AI summary, keyboard shortcuts, mobile responsive, onboarding tour, per-rule statistics table, config rev diff viewer, mod activity attribution feed, mute/unmute rule HARD-MUTE wired into runCheck, light-mode toggle) PLUS the two killer demos: **rule simulation against history** (paste a rule, see "would have fired N/25 (X%)" on recent posts) and **AI rule explainer** (paste JSON5, get plain-English explanation via OpenAI). **Reddit cm-devvit@0.2.4 approved unlisted 2026-05-18**; final code (v0.5.5) re-uploaded T-2 before submission. **Phase 4 history/attribution/recentActivity rules SHIPPED + live-verified on r/contextmod_vinh_dev 2026-05-18** (Vinh's commits 62a0985 + e0abd86). Multi-wave adversarial review across 13 distinct waves (S through AE) closed 70+ findings: 5 BLOCKERs + 8 CRITICAL + 50+ HIGH/WARN/MED surfaced by 6 parallel sub-agent reviews + Codex/Gemini/silent-failure-hunter/type-design-analyzer/comment-analyzer/pr-test-analyzer rotations, all atomic-committed before submission.
 
 > **Why now:** Reddit's CEO said on the Q1 2026 earnings call that they're "porting good bots to the developer platform." Reddit's own r/Devvit team is deprecating the older Blocks framework. The $1,000 App Migration Bounty is explicitly scoped to PRAW→Devvit moves — ContextMod is exactly that. FoxxMD's last ContextMod release was November 2022, weeks before Reddit's paid Data API tier launched in July 2023. The bot has been frozen at the pre-blackout boundary ever since, with 15+ operators stuck running it on dying infrastructure. This port unblocks all of them on the platform Reddit is actively recommending.
 
@@ -37,7 +37,7 @@
 - **URL-dedupe `repost` rule** promoted from Phase 4 to Phase 2.5.1 — atomic SET NX (Codex H7-hardened, no race), 30d TTL refresh on hit, fail-OPEN on Redis outage.
 - **7 MVP action handlers**: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`. Reddit-API signatures verified against the actual `@devvit/reddit` surface in live playtest — caught 3 spec mismatches Vinh corrected (ban duration 0 ≠ permanent, lock routes via `getPostById().lock()`, `getCurrentSubredditName` doesn't exist).
 - **Mustache action templates** over `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context. Codex H4 hardening: `Mustache.escape` defaults to `escapeMarkdown` so raw `{{item.title}}` can't re-enable u/-ping or `[click](evil)` injection. Triple-stash `{{{...}}}` bypass for explicitly-raw moderator-authored fields.
-- **3 Phase 4 stretch rules in active development**: `history`, `attribution`, `recentActivity` (author-cache infrastructure backing all three). `repost` URL-dedupe variant shipped (above); image-hash repost (Phase 4.7) deferred post-hackathon (Day-0 feasibility spike never ran). Upstream `mhs` toxicity classifier **cut** from the Devvit port per Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist restricted to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out.
+- **3 Phase 4 stretch rules SHIPPED + live-verified 2026-05-18**: `history`, `attribution`, `recentActivity` (author-cache infrastructure backing all three, +179 tests). Vinh's commits `62a0985` + `e0abd86` end-to-end verified on `r/contextmod_vinh_dev`. `repost` URL-dedupe variant shipped earlier (above); image-hash repost (Phase 4.7) deferred — Day-0 feasibility spike not yet run. Upstream `mhs` toxicity classifier **cut** from the Devvit port per Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist restricted to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out.
 - **Filters** (`authorIs` / `itemIs`) on Check short-circuit BEFORE rule evaluation — fast-fail when the post obviously can't trip the rule. Same predicate set as upstream ContextMod. Codex H5 fix: invalid regex in `titleMatches`/`bodyMatches`/`urlMatches` returns false instead of throwing.
 - **Flow control**: `postBehavior` per Check (`next` (default) / `stop` / `{goto: '<check-name>'}`). 100-iter safety break against circular goto.
 - **Named rules** for DRY composition. Declare once under top-level `namedRules`, reference via `{kind: 'named', name: '...'}`. Codex H6: unresolved name returns structured `{ok: false, errors}` not 500.
@@ -93,9 +93,9 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 
 > **What Devpost asks:** "Describe any differences, improvements, or gaps between your new app and the original bot. Could this app be installed today and serve the original function of the app?"
 
-### Ported faithfully (Phase 1+2+3 + Step 3.6 + Wave S+T+U+V ship in v0.3.0; v0.2.0 in Reddit App Directory review, v0.3.0 publish queued)
+### Ported faithfully (Phase 1+2+3+4 + Step 3.6 + Waves S through AE shipped in v0.5.5; Reddit cm-devvit@0.2.4 approved unlisted 2026-05-18, final v0.5.5 re-upload at T-2)
 
-The concept model + rule semantics + wiki-config publish pipeline + dashboard all ship. Live-trigger wiring (`handleActivity` → rule pipeline → mod action) is the Phase 1 integration step Vinh is finishing through Day 5-8. What that means concretely:
+The concept model + rule semantics + wiki-config publish pipeline + dashboard + 3 Phase 4 stretch rules + 16 mod-UX features all ship. Live-trigger wiring verified end-to-end on Vinh's `r/contextmod_vinh_dev` (commit `0bd59aa` Phase 4.4-4.6 live-verification). What that means concretely:
 
 - Rule/Check/Action concept model + `postBehavior` flow control + `goto:` jumps — ported
 - Filter system (authorIs/itemIs) — ported
@@ -113,10 +113,11 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 - **Mod-menu dry-run rule tester** (upstream had no equivalent)
 - **No central rate-limit bottleneck** — every install runs against its own per-sub Reddit API quota
 
-### Gaps vs upstream (deferred to Phase 4)
+### Gaps vs upstream (status as of v0.5.5)
 
-- `history`, `attribution`, `recentActivity`, `repost` rules — landing in Phase 4
-- Image-hash repost detection — gated on a Day-0 spike (decode + blockhash in pure JS within Devvit's 30s/no-native-deps env)
+- `history`, `attribution`, `recentActivity` rules — ✅ SHIPPED 2026-05-18 (Vinh, +179 tests, live-verified)
+- `repost` URL-dedupe variant — ✅ SHIPPED earlier in Phase 2.5.1 (atomic SET NX, Codex H7-hardened)
+- Image-hash repost detection (Phase 4.7) — ⛔ deferred. Day-0 perceptual-blockhash spike gated GO/NO-GO never ran; ROADMAP §4.7 keeps it as the post-hackathon target. Even a measured NO-GO writeup credibly closes it.
 
 ### Gaps vs upstream (explicitly cut)
 
@@ -128,7 +129,9 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard al
 
 ### Can this be installed today and serve the original function?
 
-**Yes, for the MVP scope.** Subreddits using the original CM primarily for regex-based spam removal, mod-flair gating, author-criteria filtering, and named-rule composition will see feature parity at install. Subs using CM specifically for repost detection will need to wait for Phase 4 (currently in active development). Subs using CM for hate-speech filtering will need to keep running the upstream PRAW build — the Devvit `mhs` port is cut per PR #96.
+**Yes, for nearly the entire upstream MVP.** As of v0.5.5 (2026-05-18) the port covers: regex/author/ruleSet rules, all 7 MVP actions, Mustache action templates with markdown sanitization, named-rule composition, atomic wiki-config publish + 5-min refresh cron + manual reload, mod-menu dry-run rule tester, per-effect idempotency (5-min pending + 7d done w/ retry-safe commits), Phase 4 history/attribution/recentActivity author-history rules + URL-dedupe repost, AI rule explainer + AI event summary, Observatory dashboard w/ live ZSET data + 24h sparkline + per-event drill-down + mod activity attribution + config rev diff viewer + hard-mute (wired into runCheck v0.5.5 AE CRITICAL #4), mute/unmute, keyboard shortcuts, filter chips, mobile-responsive, light-mode toggle, onboarding tour.
+
+Subs that depend on image-hash repost detection (Phase 4.7) will need to wait — the perceptual-blockhash spike is gated on Stephen's Vinh GO/NO-GO call. Subs using CM for hate-speech filtering will need to keep running the upstream PRAW build — the Devvit `mhs` port is cut per PR #96.
 
 ### Build journal (first-person per D10 — Stephen to rewrite)
 
@@ -153,7 +156,25 @@ Four non-contract hotfixes shipped as separate atomic commits the same session (
 
 **Dry-run rule tester (Step 3.6) design choice.** The handleActivity contract was Vinh's; modifying its `void` return type to accept a `dryRun: true` option that returns structured results would have needed a `⚠️ CONTRACT` PR roundtrip per the team coordination protocol. Instead, shipped a sibling `src/core/dryRunActivity.ts` (~30 line duplication) that mirrors the pipeline but forces `dryRun: true` on every action and returns a structured `DryRunResult` for the form UI to render as toast bullets. Non-contract, no coordination needed, ships immediately.
 
-**What didn't get done:** Phase 0.10 image-decode + blockhash spike never ran, so Phase 4.7 image-hash repost is effectively NO-GO for this hackathon (deferred post-submission). Phase 4.3–4.6 history-based rules are still on Vinh's plate; may or may not ship before the 2026-05-27 deadline depending on capacity.
+**Wave W + X (2026-05-18 ~01-02am):** second deep-review pass — 30+ atomic commits across security/observability/reliability/docs/DX. Highlights: per-sub circuit breaker bucket on OpenAI (was global, one sub's bad key opened the breaker for every sub); smart failure classifier (only 5xx/timeout/429 trip breaker, not auth errors); cost-gate parity on 3 endpoints; structured JSON logger w/ traceId + err.stack capture; deep-health probe; THREAT-MODEL.md + API.md + PRIVACY.md + data-retention.md shipped; React.memo on EventRow + RuleStatsTable; runRun goto-missing surfaces to dashboard. v0.3.1 + v0.3.2 tagged.
+
+**Wave Y (2026-05-18 ~02am-3pm):** "leave nothing on the table" finalize pass. Stats-rollup cron + real /api/stats counters; live Playwright AI explain button + 429 rate-limit click-through; README Mermaid security-chain sequence diagram; ARCHITECTURE.md w/ 10 ADR-style sections; Semgrep OWASP workflow; log.newTraceId per-request trace IDs; retry-with-jitter helper; sortable RuleStatsTable columns; vitest hot-path benchmarks; mobile-viewport Playwright; Node 20/22/24 matrix; release-drafter; preflight script. v0.4.0 tagged.
+
+**Wave Z (2026-05-18 ~3-4pm):** brain-dump completion. Print stylesheet; empty-state polish; fast-check fuzz; toast queue; Playwright cache; lazy-ready exports; dependency-cruiser layer rules; axe-core integration; Lighthouse audit; migration guide polish; light-mode MVP toggle; social preview SVG; banner image. v0.5.0 tagged.
+
+**Wave AA (2026-05-18 ~4pm):** husky pre-commit hook (scoped to staged eslint, opt-out via HUSKY=0); commitlint w/ Conventional Commits; .editorconfig; dependabot auto-merge for patch + dev-dep minor; depcruise in CI; coverage thresholds gate; react-window dep installed (deferred until events ring grows past ~100 OR a "show all" view lands). v0.5.1 tagged.
+
+**Wave AB review batch (2026-05-18 ~4:45pm):** 6 hardening fixes — light-mode CSS restored from a prettier reformat that ate it; rl.degraded on 3 cost endpoints; breaker NX probe lease (10s TTL); statsRollup persist return discriminator; retry default skip 401/AbortError; log.ts stack capture.
+
+**Wave AC (2026-05-18 ~5pm):** test-gap close — forms-simulate-rule + configSource breaker + ErrorBoundary + axe-toggle + log/retry edges + shared Result<T,E> type extracted (eliminated 8 hand-rolled discriminated-union duplicates). v0.5.2 tagged.
+
+**Wave AD (2026-05-18 ~5:15pm):** brutally-honest punch-list zero-out — 4 Tier-1 fixes (fetchRecentPostsSafe Result refactor + per-post skip counter; /api/explain-event catch classifier; /api/health/deep moderator auth gate); demo-fixture username obfuscation (`vinhbin`/`CowSufficient3840` → `demo_mod_alice`/`demo_mod_bob`); log.ts adoption across 5 files (49 console.* sites → structured emit); Result<T,E> adoption for ExplainResult + ValidationResult; husky scope fix to src/; CHANGELOG dup [0.3.2] removal. v0.5.3 tagged.
+
+**Wave AD-review (2026-05-18 ~6pm):** dispatched pr-review-toolkit:code-reviewer + silent-failure-hunter on v0.5.3 in parallel. Found 5 real regressions in v0.5.3: substring bug (`'5'` matched "JSON5" — empty-paste error was tripping the breaker); `'timed out'` vs `'timeout'` (real 30s OpenAI timeouts were NEVER tripping the breaker, defeating X37/X43 entirely); apiKey resolve outside try (Redis throw → silent 500); simulate-rule all-skipped toast contradiction; per-post catch swallowed actual error message. Plus extracted classifier to src/lib/openaiErrors.ts so future fixes can't drift. 11-test regression suite pinning both CRITICAL behaviors. v0.5.4 tagged.
+
+**Wave AE Critical Tier (2026-05-18 ~6-7pm):** dispatched 6 parallel sub-agents (code-explorer + 2 silent-failure-hunters + pr-test-analyzer + gemini-agent + general-purpose) across 6 project sections, surfaced 62 findings. 8 atomic fixes shipped: wiki path /wiki/contextmod → /wiki/botconfig/contextmod (5 surfaces); **hard-mute wiring** (isRuleMuted → runCheck — finally real after being false-advertised since v0.3.0); light-mode .glass override (cards no longer invisible when sun-icon flipped); /api/health/deep regression suite (6 tests pinning auth gate); configStore.publish() PublishError wrap (prevents rev-leak that would break moderation forever); **authorHistory 429-distinguish** (the single worst silent failure in the codebase — Reddit rate-limit blip was making commentCountLt rules fire false-positive on EVERY user, mass mis-moderation prevented); dryRun idempotency marker fix + bypassIdempotency safety flag. v0.5.5 tagged. **538 tests passing.**
+
+**What didn't get done:** Phase 0.10 image-decode + blockhash spike — Stephen has 90 min to take a standalone crack; even a measured NO-GO is writeup credibility. Phase 4.7 image-hash repost remains gated on that spike's GO call.
 
 ---
 
@@ -173,9 +194,11 @@ Four non-contract hotfixes shipped as separate atomic commits the same session (
 - [x] FoxxMD confirms bot username for "Original bot" field (`u/ContextModBot`, confirmed May 12, 2026)
 - [x] Written permission documentation captured (Discord transcript in `outreach-drafts.md` + GitHub [issue #152](https://github.com/FoxxMD/context-mod/issues/152))
 - [x] Repo flipped to public + GitHub Pages live for privacy/ToS (May 13, 2026)
-- [ ] App `--public` flag set + Devvit app review passed (post Phase 1+2)
+- [x] App `--public` flag set + Reddit App Review passed — cm-devvit@0.2.4 approved unlisted 2026-05-18
 - [x] `mhs` rule cut per `reddit/devvit-docs` PR #96 (2026-05-08) — documented in Section 3 "Gaps vs upstream (explicitly cut)"
-- [ ] Phase 4 image-hash repost detection either shipped OR explicitly downgraded in writeup
-- [ ] Demo video recorded + uploaded to YouTube (unlisted) — gated on Phase 1 backend live
+- [x] Phase 4 history/attribution/recentActivity SHIPPED 2026-05-18 + live-verified
+- [x] Phase 4.7 image-hash repost — explicitly downgraded in writeup (Section 3 "Gaps vs upstream")
+- [ ] Demo video recorded + uploaded to YouTube (unlisted) — Stephen records T-3 to T-1 (May 24-26)
+- [ ] Final `npm run launch` re-uploads v0.5.5 source as new Devvit version — T-2 (May 25)
 - [ ] Stephen rewrites every section of this draft in his own voice
 - [ ] Run `./scripts/check-ai-tone.sh --strict` against final pasted text
