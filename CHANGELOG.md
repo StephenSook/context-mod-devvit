@@ -6,7 +6,89 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.5.4): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.5.5): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.5.5] — 2026-05-18
+
+Wave AE Critical Tier (8 sections) — Stephen's deepest "what are you
+holding back?" audit: 6 parallel sub-agents (code-explorer, two
+silent-failure-hunters, pr-test-analyzer, gemini-agent, general-purpose)
+across 6 project sections returned 62 findings. Critical Tier shipped
+8 of them as atomic commits in this release.
+
+### Fixed — CRITICAL (judge-facing UX destroyers)
+
+- **Wiki path mismatch** — `ActionBar.tsx`, `EmptyState.tsx`, +3 demo
+  video docs pointed mods at `/wiki/contextmod` (upstream FoxxMD path).
+  Devvit port uses `/wiki/botconfig/contextmod`. Any judge installing
+  fresh + clicking the Wiki button got a 404 on their first attempt.
+  v0.5.2 closed the README side; v0.5.5 closes the remaining 5 surfaces.
+- **Light mode broken** — Z4 light-mode MVP (v0.5.0) added overrides for
+  body / text / borders / bg / pre but missed `.glass`. Cards, modals,
+  KeyboardOverlay all rendered invisible white-on-white when mode flipped
+  to `#fafaf9`. Frontend agent flagged as #1 destroyer. Added dark-on-
+  light glass overrides.
+- **Hard-mute claim was FALSE since v0.3.0** — dashboard mute button
+  wrote to `cm:muted-rules:{sub}` but `runCheck` never read it. README/
+  CHANGELOG/writeup all promised "dashboard mute stops the bot" — wrong
+  for 30+ days. Wired `isRuleMuted(sub, runName, checkName)` into
+  `runCheck.ts` with new `runName?` 5th param threaded from `runRun.ts`.
+  Mute button finally works as documented.
+
+### Fixed — CRITICAL (correctness / silent failures)
+
+- **AuthorHistory 429-swallow → mass false-positive moderation** —
+  `getPostsByUser` / `getCommentsByUser` caught Reddit errors broadly +
+  returned empty arrays. `commentCountLt: 5` then fired TRUE on EVERY
+  user during a Reddit rate-limit outage. The single worst silent
+  failure in the codebase. Added `degraded: boolean` flag — true on
+  fetch throw, NOT cached (preserves retry semantics), consulted by all
+  three Phase 4 rules to skip evaluation on degraded reads.
+- **configStore.publish() unwrapped** — Redis blip mid-INCR/SET leaked
+  an allocated rev with no payload → `getCurrentRev` threw "cfg payload
+  missing" forever, moderation permanently broken until manual Redis
+  intervention. Wrapped each phase with new `PublishError` class
+  (4-state discriminator: allocate-rev / write-payload / read-pointer /
+  advance-pointer) so callers can show "publish failed, retry" instead
+  of a 500.
+- **dryRun idempotency marker not written** — runAction short-circuited
+  BEFORE reserveAction in dry-run mode (despite the docstring promising
+  otherwise). Toggling `dryRun: false` after testing could re-fire
+  every action a Devvit retry re-delivered. Fixed: dry-run now reserves
+  + commits the done marker, skips ONLY the side-effect. Added
+  `bypassIdempotency` ActionContext flag for the mod-menu dryRunActivity
+  sibling (read-only, repeatable, no retry concern).
+
+### Added — test gap close
+
+- **`/api/health/deep` regression suite** (NEW, 6 tests) — the v0.5.3
+  requireModerator gate had ZERO coverage. Pins non-mod 403, rate-limit
+  60/min cap, Redis throw envelope, Reddit throw envelope, success
+  shape, and Redis-set-OK-but-get-mismatch failover edge case.
+- **`runCheck-mute` regression suite** (NEW, 4 tests) — pins the
+  hard-mute contract so a future refactor that drops the mute check
+  fails CI loudly. Verifies fail-open behavior + dry-run sibling safety.
+- **PublishError suite** (+4 in `configStore.test.ts`) — pins all 4
+  failure phases + `cause` preservation.
+- **AuthorHistory degraded suite** (+3 in `authorHistory.test.ts`) +
+  history-rule degraded skip (+2 in `history.test.ts`) — pins both the
+  cache-write semantics (degraded NOT cached) and the rule-side skip
+  semantics (Lt threshold never false-positives on degraded read).
+- **dryRun marker suite** (+4 in `runAction.test.ts`) — pins reserve +
+  commit on dry-run, skipped-locked behavior, commitAction failure
+  harmlessness, bypassIdempotency semantics, safety-violation refusal.
+
+### Changed — CI
+
+- **`.github/workflows/ci.yml` concurrency** — switched from per-ref +
+  cancel-in-progress=true (intermediate commits showed red ❌
+  "cancelled" on rapid push) to per-SHA + cancel-in-progress=false
+  (every commit runs full CI to completion). Zero compute cost on
+  public repos.
+
+### Tests
+
+516 → 538 passing (+22 across Critical Tier).
 
 ## [0.5.4] — 2026-05-18
 
