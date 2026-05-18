@@ -27,25 +27,29 @@ export interface ConfigSnapshot {
 /**
  * Publish a new config. Returns the new revision number.
  *
- * Codex H2 2026-05-16: previous read-modify-write of cfgCurrentRev raced
- * concurrent publishers (two cron-tick + manual-reload calls could both read
- * N, both write rev:N+1 with different payloads, last pointer wins). Fix:
- * atomic INCR on a dedicated rev-counter key. INCR returns the post-increment
- * value, so two concurrent callers get DISTINCT rev numbers (N and N+1)
- * regardless of interleaving. Pointer flip still happens last so readers
- * always see a fully-durable rev payload before the pointer points at it.
+ * Atomic INCR allocates a distinct rev per concurrent publisher (closes the
+ * read-modify-write race where two callers could both pick N+1 with different
+ * payloads). First INCR returns 1; subtract 1 so first-published rev is 0.
  *
- * NOTE: the rev-counter starts at 0 on the very first INCR (returns 1), so
- * first-published rev is now 1, not 0. We subtract 1 to keep the rev-0
- * historical contract — the counter stores last-allocated-rev + 1.
+ * W4: monotonic pointer guard. After INCR allocates next=N, read the current
+ * pointer and only advance if N > current. Without this, a slow writer
+ * holding rev=N could overwrite a faster writer's rev=N+1 pointer, rolling
+ * config backwards. Devvit Redis lacks CAS/Lua, so this is read-then-write
+ * (small TOCTOU window remains: a writer that succeeds between our read and
+ * our set still loses). Acceptable for hackathon scope — collision requires
+ * publishers in the same millisecond, which only happens if a manual reload
+ * lands on the cron tick.
  */
 export async function publish(config: AppConfig, sub?: string): Promise<number> {
   const counterKey = K.cfgRevCounter(sub);
-  // INCR returns the post-increment value; subtract 1 so first publish = rev 0.
   const allocated = await redis.incrBy(counterKey, 1);
   const next = allocated - 1;
   await redis.set(K.cfgRev(next, sub), JSON.stringify(config));
-  await redis.set(K.cfgCurrentRev(sub), String(next));
+  const currentStr = await redis.get(K.cfgCurrentRev(sub));
+  const current = currentStr ? Number.parseInt(currentStr, 10) : -1;
+  if (!Number.isFinite(current) || next > current) {
+    await redis.set(K.cfgCurrentRev(sub), String(next));
+  }
   return next;
 }
 

@@ -72,4 +72,23 @@ describe('configStore', () => {
     expect(snapA.runs[0]?.name).toBe('a');
     expect(snapB.runs[0]?.name).toBe('b');
   });
+
+  it('W4 — slow publisher does NOT roll the pointer backwards', async () => {
+    // Simulate the race: faster publisher already advanced cfg:current_rev to 10.
+    // Slow publisher now finishes its publish() with an allocated rev that is
+    // older. The monotonic guard must keep the pointer at 10 — without the
+    // guard, the slow writer would set it back to its (older) rev.
+    store.set('cm:_:cfg:current_rev', '10');
+    store.set('cm:_:cfg:rev-counter', '1'); // next INCR → 2 → next=1
+    const rev = await publish(cfgA);
+    expect(rev).toBe(1); // allocated rev is still returned to the caller
+    expect(store.get('cm:_:cfg:current_rev')).toBe('10'); // pointer untouched
+  });
+
+  it('W4 — first publish on fresh install still advances pointer (no existing pointer)', async () => {
+    expect(store.get('cm:_:cfg:current_rev')).toBeUndefined();
+    const rev = await publish(cfgA);
+    expect(rev).toBe(0);
+    expect(store.get('cm:_:cfg:current_rev')).toBe('0');
+  });
 });
