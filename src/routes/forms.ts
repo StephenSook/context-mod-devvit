@@ -21,7 +21,23 @@ import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSu
 import * as configStore from '../state/configStore';
 import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
 import { explainRule, formatExplainToast } from '../core/explainRule';
-import { settings } from '@devvit/web/server';
+import { settings, reddit as redditClient } from '@devvit/web/server';
+import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
+
+/**
+ * Wave V hotfix — resolve OpenAI API key with fallback chain:
+ *   1. Redis (preferred — set via "ContextMod: Set OpenAI API key" mod menu)
+ *   2. Devvit subreddit setting (fallback for mods who prefer settings UI)
+ *
+ * Devvit CLI for global-scope settings is broken (Unimplemented RPC).
+ * Subreddit-scope settings don't allow isSecret. Redis is the cleanest path.
+ */
+async function resolveOpenaiKey(sub: string): Promise<string> {
+  const fromRedis = await getOpenaiKey(sub);
+  if (fromRedis) return fromRedis;
+  const fromSettings = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  return fromSettings;
+}
 import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
@@ -255,13 +271,38 @@ forms.post('/explain-rule-submit', async (c) => {
     (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
     '';
   try {
-    const apiKey = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+    const sub = (await redditClient.getCurrentSubreddit()).name;
+    const apiKey = await resolveOpenaiKey(sub);
     const result = await explainRule(ruleJson5, apiKey);
     return c.json({ showToast: formatExplainToast(result) });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/forms/explain-rule-submit] failed:', err);
     return c.json({ showToast: `Explain failed: ${msg}` });
+  }
+});
+
+forms.post('/set-openai-key-submit', async (c) => {
+  const body = await c.req.json<Record<string, unknown>>();
+  const apiKey =
+    (body as { apiKey?: string }).apiKey ??
+    (body as { values?: { apiKey?: string } }).values?.apiKey ??
+    '';
+  if (!apiKey.trim()) {
+    return c.json({ showToast: 'Paste a key in the form field.' });
+  }
+  if (!apiKey.startsWith('sk-')) {
+    return c.json({ showToast: 'Key should start with sk-... — double-check + try again.' });
+  }
+  try {
+    const sub = (await redditClient.getCurrentSubreddit()).name;
+    await setOpenaiKey(sub, apiKey);
+    const masked = apiKey.slice(0, 7) + '...' + apiKey.slice(-4);
+    return c.json({ showToast: `OpenAI key saved for r/${sub} (${masked}).` });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/forms/set-openai-key-submit] failed:', err);
+    return c.json({ showToast: `Save failed: ${msg}` });
   }
 });
 

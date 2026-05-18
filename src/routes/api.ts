@@ -20,6 +20,7 @@ import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
 import { explainEvent, type EventSummary } from '../core/explainEvent';
 import { settings } from '@devvit/web/server';
+import { getOpenaiKey } from '../state/apiKeyStore';
 
 /**
  * Wave U BLOCKER fix — verify caller is a moderator of the current sub before
@@ -209,7 +210,8 @@ api.post('/explain-event', async (c) => {
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
   try {
-    const apiKey = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+    const fromRedis = await getOpenaiKey(auth.sub);
+    const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
     const result = await explainEvent(body.event, apiKey);
     if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
     return c.json({ ok: true, explanation: result.explanation });

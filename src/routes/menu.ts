@@ -107,6 +107,30 @@ menu.post('/recent-actions', async (c) => {
   }
 });
 
+menu.post('/set-openai-key', async (c) => {
+  await c.req.json<MenuItemRequest>();
+  return c.json({
+    showForm: {
+      name: 'setOpenaiKey',
+      form: {
+        title: 'ContextMod — Set OpenAI API key',
+        description:
+          'Stored in this sub\'s Redis (encrypted at rest). Required for "Explain a rule with AI" + "Explain with AI" on event drill-down. Get a key at platform.openai.com/api-keys. ~$0.0001 per call (gpt-4o-mini).',
+        fields: [
+          {
+            type: 'string',
+            name: 'apiKey',
+            label: 'OpenAI API key (sk-...)',
+            helpText: 'Paste your sk-proj-... key. Not echoed back after save.',
+          },
+        ],
+        acceptLabel: 'Save key',
+        cancelLabel: 'Cancel',
+      },
+    },
+  });
+});
+
 menu.post('/explain-rule', async (c) => {
   await c.req.json<MenuItemRequest>();
   return c.json({

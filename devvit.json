@@ -91,21 +91,28 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/explain-rule"
+      },
+      {
+        "label": "ContextMod: Set OpenAI API key",
+        "description": "Set the OpenAI key for this sub (required for AI features). Stored encrypted in Redis.",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/set-openai-key"
       }
     ]
   },
   "forms": {
     "testRules": "/internal/form/test-rules-submit",
     "simulateRule": "/internal/form/simulate-rule-submit",
-    "explainRule": "/internal/form/explain-rule-submit"
+    "explainRule": "/internal/form/explain-rule-submit",
+    "setOpenaiKey": "/internal/form/set-openai-key-submit"
   },
   "settings": {
     "subreddit": {
       "openai_api_key": {
         "type": "string",
-        "label": "OpenAI API key",
-        "helpText": "Required for 'Explain a rule with AI' menu + 'Explain with AI' button on event drill-down. Per-install (each subreddit's mods supply own key). Set via this sub's mod tools → Apps → cm-devvit → Settings. Get a key at platform.openai.com/api-keys. ~$0.0001 per AI call (gpt-4o-mini).",
-        "isSecret": true
+        "label": "OpenAI API key (alternative — Devvit subreddit-scope strings can't be secrets, use mod menu instead)",
+        "helpText": "Prefer the 'ContextMod: Set OpenAI API key' mod menu — that stores the key in encrypted Redis. This Devvit subreddit setting is a fallback (plaintext at rest per Devvit limitation — subreddit-scope strings can't be marked isSecret in this Devvit version). Get a key at platform.openai.com/api-keys."
       }
     }
   },
