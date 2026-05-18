@@ -25,11 +25,12 @@ function openedKey(bucket: string): string {
   return `cm:cb:${bucket}:opened-at`;
 }
 
-export interface BreakerCheck {
-  state: 'closed' | 'open' | 'half-open';
-  /** When state==='open', seconds until probe is allowed. */
-  retryInSec?: number;
-}
+// Tagged union — retryInSec is ONLY present when state==='open' so a caller
+// reading state==='closed' can't accidentally use an undefined retryInSec.
+export type BreakerCheck =
+  | { state: 'closed' }
+  | { state: 'half-open' }
+  | { state: 'open'; retryInSec: number };
 
 export async function checkCircuit(
   bucket: string,

@@ -17,12 +17,14 @@ type Level = 'info' | 'warn' | 'error';
 type Ctx = Record<string, unknown>;
 
 function emit(level: Level, tag: string, msg: string, ctx?: Ctx): void {
+  // Spread ctx FIRST so the structured fields (ts/level/tag/msg) can't be
+  // shadowed by a caller passing those keys in ctx. Type-design fix.
   const payload: Record<string, unknown> = {
+    ...(ctx ?? {}),
     ts: Date.now(),
     level,
     tag,
     msg,
-    ...(ctx ?? {}),
   };
   if (ctx?.err instanceof Error) {
     payload.err = ctx.err.message;

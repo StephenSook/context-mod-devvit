@@ -40,12 +40,14 @@ export async function checkRateLimit(
     if (count === 1) {
       await redis.expire(key, windowSec);
     }
-    const resetInSec = count >= max ? windowSec : windowSec;
+    // resetInSec is the fixed window size — caller can use this to render
+    // "try again in ~X minutes". TTL on the key in Redis is the actual
+    // ground truth, but we don't pay the round-trip to read it.
     return {
       allowed: count <= max,
       count,
       max,
-      resetInSec,
+      resetInSec: windowSec,
     };
   } catch (err) {
     // Fail-OPEN on Redis blip — better to let a mod's legit click through
