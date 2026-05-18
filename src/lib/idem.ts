@@ -17,6 +17,7 @@
 
 import { redis } from '@devvit/web/server';
 import { K } from '../state/keys';
+import { log } from './log';
 
 const PROC_TTL_SEC = 86_400; // 24 hours
 const PENDING_TTL_SEC = 5 * 60; // 5 min — caps lost-on-crash retry delay
@@ -41,7 +42,7 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
     });
     return result === 'OK';
   } catch (err) {
-    console.error('[cm/idem/firstSeen] redis err — fail-closed (skip):', thingId, err);
+    log.error('cm/idem/firstSeen', 'redis err — fail-closed (skip)', { thingId, err });
     return false;
   }
 }
@@ -100,11 +101,10 @@ export async function reserveAction(
     }
   }
   if (lockErr) {
-    console.error(
-      '[cm/idem/reserveAction/LOCK_FAIL]',
-      'fail-closed after retries (action dropped):',
-      actionId,
-      lockErr
+    log.error(
+      'cm/idem/reserveAction',
+      'LOCK_FAIL fail-closed after retries (action dropped)',
+      { actionId, err: lockErr }
     );
     return null;
   }
@@ -120,11 +120,10 @@ export async function reserveAction(
   } catch (err) {
     // ORPHANED_LEASE: pending-NX written but done-check threw. Lease will
     // TTL-expire in PENDING_TTL_SEC (5min); caller skips this attempt.
-    console.error(
-      '[cm/idem/reserveAction/ORPHANED_LEASE]',
-      'fail-closed (skip, TTL reaps in 5min):',
-      actionId,
-      err
+    log.error(
+      'cm/idem/reserveAction',
+      'ORPHANED_LEASE fail-closed (skip, TTL reaps in 5min)',
+      { actionId, err }
     );
     return null;
   }
@@ -166,13 +165,10 @@ export async function commitAction(actionId: string, token: string, sub?: string
   }
 
   if (lastErr) {
-    console.error(
-      '[cm/idem/commitAction/DONE_WRITE_FAIL]',
-      'side-effect already happened — idempotency marker NOT written after 3 retries. ' +
-        'Pending lease intentionally NOT released to prevent immediate double-action; ' +
-        'pending TTL will expire in 5 min then retry path can re-execute. Investigate this actionId:',
-      actionId,
-      lastErr
+    log.error(
+      'cm/idem/commitAction',
+      'DONE_WRITE_FAIL — side-effect already happened, idempotency marker NOT written after 3 retries. Pending lease intentionally NOT released to prevent immediate double-action; pending TTL will expire in 5 min then retry path can re-execute',
+      { actionId, err: lastErr }
     );
     throw lastErr;
   }
@@ -185,11 +181,10 @@ export async function commitAction(actionId: string, token: string, sub?: string
     const current = await redis.get(pendingKey);
     if (current === token) await redis.del(pendingKey);
   } catch (err) {
-    console.error(
-      '[cm/idem/commitAction/PENDING_DEL_FAIL]',
-      '(harmless, TTL reaps in 5min):',
-      actionId,
-      err
+    log.error(
+      'cm/idem/commitAction',
+      'PENDING_DEL_FAIL (harmless, TTL reaps in 5min)',
+      { actionId, err }
     );
   }
 }
@@ -209,10 +204,10 @@ export async function releaseAction(actionId: string, token: string, sub?: strin
     const current = await redis.get(pendingKey);
     if (current === token) await redis.del(pendingKey);
   } catch (err) {
-    console.error(
-      '[cm/idem/releaseAction] redis err (pending will expire in 5 min):',
-      actionId,
-      err
+    log.error(
+      'cm/idem/releaseAction',
+      'redis err (pending will expire in 5 min)',
+      { actionId, err }
     );
   }
 }
@@ -253,7 +248,10 @@ export async function acquireLock(
     });
     if (result !== 'OK') return null;
   } catch (err) {
-    console.error('[cm/idem/acquireLock] redis err — fail-closed (skip):', taskName, err);
+    log.error('cm/idem/acquireLock', 'redis err — fail-closed (skip)', {
+      taskName,
+      err,
+    });
     return null;
   }
   return async () => {
@@ -261,7 +259,10 @@ export async function acquireLock(
       const current = await redis.get(key);
       if (current === token) await redis.del(key);
     } catch (err) {
-      console.error('[cm/idem/releaseLock] err (lock TTL will reap):', taskName, err);
+      log.error('cm/idem/acquireLock', 'releaseLock err (lock TTL will reap)', {
+        taskName,
+        err,
+      });
     }
   };
 }
