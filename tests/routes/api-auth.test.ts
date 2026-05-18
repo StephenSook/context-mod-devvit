@@ -172,7 +172,7 @@ describe('POST /api/explain-event (W8)', () => {
     getOpenaiKey.mockResolvedValue('sk-x');
     explainEvent.mockResolvedValue({ ok: true, explanation: 'why' });
     await postJson('/explain-event', { event: { kind: 'remove' } });
-    expect(recordSuccess).toHaveBeenCalledWith('openai');
+    expect(recordSuccess).toHaveBeenCalledWith('openai:r_test');
     expect(recordFailure).not.toHaveBeenCalled();
   });
 
@@ -181,7 +181,7 @@ describe('POST /api/explain-event (W8)', () => {
     getOpenaiKey.mockResolvedValue('sk-x');
     explainEvent.mockResolvedValue({ ok: false, error: 'OpenAI 500' });
     await postJson('/explain-event', { event: { kind: 'remove' } });
-    expect(recordFailure).toHaveBeenCalledWith('openai');
+    expect(recordFailure).toHaveBeenCalledWith('openai:r_test');
     expect(recordSuccess).not.toHaveBeenCalled();
   });
 

@@ -124,15 +124,11 @@ api.get('/muted-rules', async (c) => {
   if (c.req.query('demo') === '1') {
     return c.json({ muted: [] });
   }
-  let subName: string | undefined;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/api/muted-rules] could not resolve current sub:', err);
-    return c.json({ error: `subreddit context unavailable: ${msg}` }, 500);
-  }
-  const muted = await listMutedRules(subName);
+  // X43 (Codex CRITICAL): gate behind mod-auth. Muted-rules state is mod-
+  // attribution-adjacent — leaks what config decisions mods have made.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ error: auth.error, muted: [] }, auth.status);
+  const muted = await listMutedRules(auth.sub);
   return c.json({ muted });
 });
 
@@ -185,19 +181,20 @@ api.post('/explain-event', async (c) => {
   // burn quota or rate-window tokens.
   const validated = validateEventSummary(body.event);
   if (!validated.ok) return c.json({ ok: false, error: validated.error }, 400);
+  // X43: per-sub circuit breaker bucket — one sub's bad OpenAI key (or
+  // local network blip) shouldn't open the breaker for other subs sharing
+  // this install (within Devvit's per-install Redis namespace).
+  const cbBucket = `openai:${auth.sub}`;
   // X39: check breaker FIRST (cheap Redis GET, no state mutation). If
-  // OpenAI is down, deny without burning a rate-limit token — otherwise
-  // the user sees 429 ("try again in 30min") when truer answer is 503
-  // ("OpenAI down for 60s").
-  const cb = await checkCircuit('openai');
+  // OpenAI is down, deny without burning a rate-limit token.
+  const cb = await checkCircuit(cbBucket);
   if (cb.state === 'open') {
     return c.json({
       ok: false,
       error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.`,
     }, 503);
   }
-  // X1: per-sub rate limit — 30 calls per hour. Stops a single mod from
-  // accidentally burning the OpenAI key on every event in a busy sub.
+  // X1: per-sub rate limit — 30 calls per hour.
   const rl = await checkRateLimit('explain', auth.sub, 30, 3600);
   if (!rl.allowed) {
     return c.json({
@@ -205,27 +202,51 @@ api.post('/explain-event', async (c) => {
       error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
     }, 429);
   }
-  // X39: resolve apiKey OUTSIDE the try wrapping explainEvent — settings.get
-  // / Redis errors aren't OpenAI failures and should NOT recordFailure
-  // against the OpenAI circuit breaker. Five settings hiccups would have
-  // opened the breaker for 60s against an unrelated infra problem.
+  // X39: resolve apiKey OUTSIDE the try wrapping explainEvent.
   const fromRedis = await getOpenaiKey(auth.sub);
   const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
     const result = await explainEvent(validated.event, apiKey);
     if (!result.ok) {
-      await recordFailure('openai');
+      // X43: classify failures — only recordFailure on transient OpenAI
+      // outages (5xx, network, timeout). Auth errors (401/missing key)
+      // are user-config issues, not OpenAI being down — they should NOT
+      // open the breaker against a real service.
+      const isTransient = isTransientOpenaiError(result.error);
+      if (isTransient) await recordFailure(cbBucket);
       return c.json({ ok: false, error: result.error }, 500);
     }
-    await recordSuccess('openai');
+    await recordSuccess(cbBucket);
     return c.json({ ok: true, explanation: result.explanation });
   } catch (err) {
-    await recordFailure('openai');
+    await recordFailure(cbBucket);
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/api/explain-event] failed:', err);
     return c.json({ ok: false, error: `Explain failed: ${msg}` }, 500);
   }
 });
+
+/**
+ * X43: classify OpenAI failure messages so the circuit breaker only opens
+ * on transient outages (5xx, network, timeout) — NOT on auth/missing-key
+ * errors that are user-config issues unrelated to OpenAI being down.
+ */
+function isTransientOpenaiError(error: string): boolean {
+  const lower = error.toLowerCase();
+  if (lower.includes('missing') || lower.includes('api key')) return false;
+  if (lower.includes('401') || lower.includes('invalid_api_key')) return false;
+  if (lower.includes('insufficient_quota')) return false;
+  return (
+    lower.includes('5') || // 5xx HTTP
+    lower.includes('timeout') ||
+    lower.includes('network') ||
+    lower.includes('fetch') ||
+    lower.includes('aborted') ||
+    lower.includes('econnreset') ||
+    lower.includes('429') ||
+    lower.includes('rate-limited')
+  );
+}
 
 function stripServerFields(e: RecentEvent) {
   // v + nonce are storage-internal — drop before sending to the client.
