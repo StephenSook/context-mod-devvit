@@ -174,6 +174,16 @@ function ruleNeedsAuthorEnrichment(rule: { kind: string; filter?: unknown; rules
     return (rule.rules as { kind: string; filter?: unknown; rules?: unknown }[])
       .some(ruleNeedsAuthorEnrichment);
   }
+  // Phase 4 — HistoryRule reads karma directly off the enriched Author. The
+  // other history-based rules (attribution, recentActivity) only need the
+  // username for the cache lookup, so they don't force enrichment.
+  if (rule.kind === 'history') {
+    const r = rule as Record<string, unknown>;
+    return (
+      r.linkKarmaLt != null || r.linkKarmaGt != null ||
+      r.commentKarmaLt != null || r.commentKarmaGt != null
+    );
+  }
   return false;
 }
 

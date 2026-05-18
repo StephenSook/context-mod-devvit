@@ -65,7 +65,10 @@
         { "$ref": "#/definitions/AuthorRule" },
         { "$ref": "#/definitions/RuleSetRule" },
         { "$ref": "#/definitions/NamedRuleRef" },
-        { "$ref": "#/definitions/RepostRule" }
+        { "$ref": "#/definitions/RepostRule" },
+        { "$ref": "#/definitions/HistoryRule" },
+        { "$ref": "#/definitions/AttributionRule" },
+        { "$ref": "#/definitions/RecentActivityRule" }
       ]
     },
     "RegexRule": {
@@ -121,6 +124,47 @@
         "kind":       { "const": "repost" },
         "name":       { "type": "string" },
         "windowDays": { "type": "number", "minimum": 1, "maximum": 365 }
+      }
+    },
+    "HistoryRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind":             { "const": "history" },
+        "name":             { "type": "string" },
+        "postCountLt":      { "type": "number", "minimum": 0 },
+        "postCountGt":      { "type": "number", "minimum": 0 },
+        "commentCountLt":   { "type": "number", "minimum": 0 },
+        "commentCountGt":   { "type": "number", "minimum": 0 },
+        "linkKarmaLt":      { "type": "number" },
+        "linkKarmaGt":      { "type": "number" },
+        "commentKarmaLt":   { "type": "number" },
+        "commentKarmaGt":   { "type": "number" }
+      }
+    },
+    "AttributionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "domains", "domainPercent"],
+      "properties": {
+        "kind":          { "const": "attribution" },
+        "name":          { "type": "string" },
+        "domains":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "domainPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+        "minPosts":      { "type": "number", "minimum": 1 }
+      }
+    },
+    "RecentActivityRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "subreddits"],
+      "properties": {
+        "kind":             { "const": "recentActivity" },
+        "name":             { "type": "string" },
+        "subreddits":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
+        "postCountGt":      { "type": "number", "minimum": 0 },
+        "commentCountGt":   { "type": "number", "minimum": 0 }
       }
     },
     "FilterSpec": {

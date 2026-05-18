@@ -128,7 +128,68 @@ export interface RepostRule {
   windowDays?: number;                // default 30
 }
 
-export type Rule = RegexRule | AuthorRule | RuleSetRule | NamedRuleRef | RepostRule;
+/**
+ * Phase 4 — history-based rules. All three read from the per-author cache in
+ * `src/state/authorHistory.ts` (Step 4.2). The cache fans out one Reddit
+ * listing fetch per author per hour; the rules below are pure predicates
+ * over the cached payload.
+ */
+
+/**
+ * HistoryRule (Step 4.3) — count + karma thresholds against the cached
+ * post/comment listings. Karma comes off the enriched `Author` (already
+ * fetched by `normalize.ts`); counts come from the cached listings.
+ * Triggers when ANY supplied threshold is satisfied (OR semantics) so
+ * mods can keep configs short.
+ */
+export interface HistoryRule {
+  kind: 'history';
+  name?: string;
+  postCountLt?: number;               // recent posts seen < N
+  postCountGt?: number;
+  commentCountLt?: number;
+  commentCountGt?: number;
+  linkKarmaLt?: number;
+  linkKarmaGt?: number;
+  commentKarmaLt?: number;
+  commentKarmaGt?: number;
+}
+
+/**
+ * AttributionRule (Step 4.4) — fraction of an author's recent posts that
+ * link to a configured set of domains. Catches drive-by self-promo even
+ * when each individual post looks fine.
+ */
+export interface AttributionRule {
+  kind: 'attribution';
+  name?: string;
+  domains: string[];                  // case-insensitive substring match against post.domain
+  domainPercent: number;              // 0..100 — trigger when matching% >= this
+  minPosts?: number;                  // default 5 — don't trigger on tiny samples
+}
+
+/**
+ * RecentActivityRule (Step 4.5) — per-target-sub thresholds on the cached
+ * listings. Catches "this user has 50 comments in r/spam this week" without
+ * a separate Reddit query.
+ */
+export interface RecentActivityRule {
+  kind: 'recentActivity';
+  name?: string;
+  subreddits: string[];               // case-insensitive
+  postCountGt?: number;
+  commentCountGt?: number;
+}
+
+export type Rule =
+  | RegexRule
+  | AuthorRule
+  | RuleSetRule
+  | NamedRuleRef
+  | RepostRule
+  | HistoryRule
+  | AttributionRule
+  | RecentActivityRule;
 
 // Action shapes — runtime dispatch lives in src/actions/*.
 export interface RemoveAction { kind: 'remove'; isSpam?: boolean; dryRun?: boolean; }
