@@ -6,7 +6,40 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.4.0): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.5.0): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.5.0] — 2026-05-18
+
+Wave Z — final brain-dump completion. After v0.4.0 Stephen requested explicit closure on every item I'd marked "genuinely skipped." 15+ commits across the previously-deferred Tier-D items + adjacent enhancements.
+
+### Added
+
+- **Z1-X61 print stylesheet** — `@media print` rules for black-on-white, hide interactive chrome, preserve event rows w/ break-inside:avoid.
+- **Z1-X59 empty-state CTA polish** — 11 example configs reference + "stuck?" pointer to Test-rules mod menu.
+- **Z1-X77 vitest shard script** — future-ready, no-op at current 3-second suite.
+- **Z2-X22 fast-check property fuzz** — 8 property tests over fnv1a64, actionId, eventMatchesQuery. 100 random samples each; counterexamples shrink.
+- **Z2-X57 toast queue** — ErrorBanner now accepts string OR string[], stacks w/ single dismiss button.
+- **Z2-X78 Playwright cache** — `~/.cache/ms-playwright` cached via actions/cache@v4.
+- **Z3-X51 lazy-ready exports** — OnboardingTour + ConfigDiffViewer expose default + named exports so React.lazy() can wire in a future pass without test breakage.
+- **Z3-X26 dependency-cruiser** — 4 layer rules; 0 violations across 93 modules / 197 deps. `npm run deps:check` + `npm run deps:graph`.
+- **Z3-X53 axe-core a11y E2E** — 2 specs fail on critical or serious WCAG 2.0/2.1 A+AA violations.
+- **Z3-X68 comparison vs AutoMod refresh** — README §Comparison +6 Wave X capability rows.
+- **Z3-X69 migration guide polish** — 7-step Quick-checklist prepended.
+- **Z3-X52 Lighthouse script** — `scripts/lighthouse.sh` for local manual runs.
+- **Z4-X58 light-mode MVP** — ThemeToggle in Header (Sun/Moon icon); data-theme="light" CSS-vars swap; localStorage persisted.
+- **Z4-X65 social preview SVG** — `assets/social-preview.svg` 1280x640. `scripts/set-social-preview.sh` for the SVG→PNG→upload chain.
+- **Z4-X54 WCAG AA pass** — audit confirmed 36 aria-* attributes across all interactive components; every `<button>` has aria-label/expanded/pressed. Combined w/ X55 reduced-motion + X53 axe-core CI = comprehensive AA.
+
+### Tests
+
+469 → 477 passing (+8 fuzz).
+
+### Genuinely held back (Stephen-choice or zero-value-at-current-scale)
+
+- **X17 husky pre-commit hooks** — Stephen's local workflow choice.
+- **X81 commitlint hook** — same.
+- **X50 react-window** — ring buffer caps events at 50; virtualization shows zero benefit. Tracked in ROADMAP for wire-when-needed.
+- **X79 dependabot auto-merge** — security_reminder hook blocked the env-pattern. Stephen reviews manually.
 
 ## [0.4.0] — 2026-05-18
 
