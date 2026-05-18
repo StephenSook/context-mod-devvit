@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Trash2, Check, Lock, MessageSquare, Flag, Ban, Tag, AlertTriangle, ChevronRight, type LucideIcon } from 'lucide-react';
 import type { ActionKind, EventRecord } from '../lib/types';
 import { SIGNAL } from '../lib/design-tokens';
@@ -35,7 +35,14 @@ function relTime(ts: number): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-export function EventRow({ event, idx }: { event: EventRecord; idx: number }) {
+// X127: memoized — events are immutable RecentEvent objects; parent re-renders
+// every POLL_MS (10s) but EventRow only needs to re-render when its own props
+// change. Reduces 50-event dashboard re-renders from O(N) every tick to O(0).
+export const EventRow = memo(EventRowImpl, (prev, next) =>
+  prev.idx === next.idx && prev.event === next.event,
+);
+
+function EventRowImpl({ event, idx }: { event: EventRecord; idx: number }) {
   const [expanded, setExpanded] = useState(false);
   const allOk = event.actions.every((a) => a.ok);
   const FirstIcon = event.actions[0] ? KIND_ICON[event.actions[0].kind] ?? AlertTriangle : AlertTriangle;

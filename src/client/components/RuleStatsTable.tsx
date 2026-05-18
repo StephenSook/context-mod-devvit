@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { EventRecord } from '../lib/types';
 
 export type RuleStat = {
@@ -43,7 +43,12 @@ export function aggregateRuleStats(events: EventRecord[]): RuleStat[] {
   });
 }
 
-export function RuleStatsTable({ events }: { events: EventRecord[] }) {
+// X127: memoized — aggregation is O(N) and re-runs on every 10s parent poll.
+// useMemo inside guards the heavy work; memo() on the wrapper avoids the
+// outer reconciliation when events array ref is unchanged.
+export const RuleStatsTable = memo(RuleStatsTableImpl, (prev, next) => prev.events === next.events);
+
+function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
   const stats = useMemo(() => aggregateRuleStats(events), [events]);
   if (stats.length === 0) return null;
   return (
