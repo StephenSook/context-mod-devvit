@@ -12,6 +12,11 @@ import {
   filterMatches,
   type EventFilter,
 } from './components/FilterChips';
+import { SkeletonRows } from './components/SkeletonRow';
+import {
+  EventSearchInput,
+  eventMatchesQuery,
+} from './components/EventSearchInput';
 import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
@@ -42,9 +47,14 @@ export default function App() {
   const [usingDemo, setUsingDemo] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [filter, setFilter] = useState<EventFilter>({ kind: 'all' });
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState<boolean>(() => !hasSeenTour());
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Y2-X56: track initial load so first paint shows shimmer skeletons
+  // instead of the empty-state CTA (which would mislead the mod into
+  // thinking the bot is idle when actually we just haven't fetched yet).
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const refresh = useCallback(async () => {
     const [recent, statsData] = await Promise.all([
@@ -87,6 +97,7 @@ export default function App() {
       setUsingDemo(false);
     }
     setRefreshedAt(Date.now());
+    setInitialLoad(false);
   }, []);
 
   useEffect(() => {
@@ -102,8 +113,11 @@ export default function App() {
       : 'cm_devvit_test';
 
   const visibleEvents = useMemo(
-    () => events.filter((e) => filterMatches(e, filter)),
-    [events, filter]
+    () =>
+      events.filter(
+        (e) => filterMatches(e, filter) && eventMatchesQuery(e, searchQuery)
+      ),
+    [events, filter, searchQuery]
   );
 
   const shortcuts = useMemo(
@@ -212,6 +226,9 @@ export default function App() {
           {events.length > 0 && (
             <FilterChips filter={filter} onChange={setFilter} />
           )}
+          {events.length > 0 && (
+            <EventSearchInput query={searchQuery} onChange={setSearchQuery} />
+          )}
 
           <div
             className="flex-1 min-h-0 overflow-y-auto border-t border-line"
@@ -220,16 +237,22 @@ export default function App() {
             aria-relevant="additions"
             aria-label="Recent moderation actions"
           >
-            {events.length === 0 ? (
+            {initialLoad && events.length === 0 ? (
+              <SkeletonRows count={5} />
+            ) : events.length === 0 ? (
               <EmptyState subreddit={subreddit} />
             ) : visibleEvents.length === 0 ? (
               <div className="px-5 py-6 text-center">
                 <p className="telemetry text-[11px] text-bone-300/80 mb-2">
-                  No events match the current filter.
+                  No events match the current filter
+                  {searchQuery ? ` + search "${searchQuery}"` : ''}.
                 </p>
                 <button
                   type="button"
-                  onClick={() => setFilter({ kind: 'all' })}
+                  onClick={() => {
+                    setFilter({ kind: 'all' });
+                    setSearchQuery('');
+                  }}
                   className="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border border-signal-info/60 text-signal-info hover:bg-signal-info/10 transition-colors"
                 >
                   show all
