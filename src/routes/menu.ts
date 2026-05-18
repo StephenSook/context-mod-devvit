@@ -52,6 +52,8 @@ menu.post('/reload-config', async (c) => {
       msg = `Wiki page "${WIKI_PAGE}" not found in r/${subName}. Create it first, then retry.`;
     } else if (loaded.reason === 'unreachable') {
       msg = `Wiki page unreachable (network/auth blip). Retry in ~30s.`;
+    } else if (loaded.reason === 'breaker-open') {
+      msg = `Wiki API has been failing repeatedly — circuit breaker open. ${String(loaded.details)}.`;
     } else {
       msg = `Config parse failed — check the wiki page for JSON5/schema errors.`;
     }
