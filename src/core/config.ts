@@ -31,7 +31,10 @@ export function parseConfig(json5Text: string): ParseResult {
   try {
     raw = JSON5.parse(json5Text);
   } catch (err) {
-    return { ok: false, errors: `JSON5 parse error: ${(err as Error).message}` };
+    return {
+      ok: false,
+      errors: `JSON5 parse error: ${(err as Error).message}`,
+    };
   }
   if (!validate(raw)) {
     return { ok: false, errors: validate.errors ?? [] };
@@ -45,7 +48,10 @@ export function parseConfig(json5Text: string): ParseResult {
   try {
     expanded = expandNamedRules(config);
   } catch (err) {
-    return { ok: false, errors: `Named-rule expansion failed: ${(err as Error).message}` };
+    return {
+      ok: false,
+      errors: `Named-rule expansion failed: ${(err as Error).message}`,
+    };
   }
   expanded.needsAuthorEnrichment = computeNeedsAuthorEnrichment(expanded);
   return { ok: true, config: expanded };

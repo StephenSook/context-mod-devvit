@@ -6,7 +6,10 @@
 import { reddit } from '@devvit/web/server';
 import type { ReportAction, ActionContext } from '../shared/types';
 
-export async function runReport(action: ReportAction, ctx: ActionContext): Promise<void> {
+export async function runReport(
+  action: ReportAction,
+  ctx: ActionContext
+): Promise<void> {
   const id = ctx.item.id;
   const thing = id.startsWith('t3_')
     ? await reddit.getPostById(id as `t3_${string}`)

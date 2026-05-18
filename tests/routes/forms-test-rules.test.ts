@@ -13,7 +13,11 @@ const getCurrentRev = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
 const getPostById = vi.fn();
 const getCommentById = vi.fn();
-const requireModeratorMock = vi.fn(async () => ({ ok: true, sub: 'r_test', username: 'mod_alice' }));
+const requireModeratorMock = vi.fn(async () => ({
+  ok: true,
+  sub: 'r_test',
+  username: 'mod_alice',
+}));
 
 vi.mock('@devvit/web/server', () => ({
   reddit: {
@@ -40,9 +44,39 @@ vi.mock('../../src/state/configStore', () => ({
 
 import { forms } from '../../src/routes/forms';
 
-const baseItem = { id: 't3_abc', title: 'free crypto giveaway', body: '', url: '', author: 'spammer', age: 60, score: 0, isSelf: true, over18: false, removed: false, approved: false, locked: false, stickied: false, linkFlairText: null };
-const baseAuthor = { name: 'spammer', id: 't2_x', age: 86400, linkKarma: 0, commentKarma: 0, flairText: null, isMod: false, isContributor: false, verified: false, shadowBanned: false };
-const baseSafe = { authorName: 'spammer', itemTitle: 'free crypto giveaway', itemBody: '' };
+const baseItem = {
+  id: 't3_abc',
+  title: 'free crypto giveaway',
+  body: '',
+  url: '',
+  author: 'spammer',
+  age: 60,
+  score: 0,
+  isSelf: true,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
+};
+const baseAuthor = {
+  name: 'spammer',
+  id: 't2_x',
+  age: 86400,
+  linkKarma: 0,
+  commentKarma: 0,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
+  shadowBanned: false,
+};
+const baseSafe = {
+  authorName: 'spammer',
+  itemTitle: 'free crypto giveaway',
+  itemBody: '',
+};
 
 beforeEach(() => {
   dryRunActivity.mockReset();
@@ -52,23 +86,51 @@ beforeEach(() => {
   getPostById.mockReset();
   getCommentById.mockReset();
   requireModeratorMock.mockReset();
-  requireModeratorMock.mockResolvedValue({ ok: true, sub: 'r_test', username: 'mod_alice' });
-  getCurrentRev.mockResolvedValue({ rev: 1, config: { runs: [], needsAuthorEnrichment: false } });
-  normalizePost.mockResolvedValue({ item: baseItem, author: baseAuthor, safe: baseSafe });
-  normalizeComment.mockResolvedValue({ item: { ...baseItem, id: 't1_xyz', title: '', body: 'a comment' }, author: baseAuthor, safe: baseSafe });
+  requireModeratorMock.mockResolvedValue({
+    ok: true,
+    sub: 'r_test',
+    username: 'mod_alice',
+  });
+  getCurrentRev.mockResolvedValue({
+    rev: 1,
+    config: { runs: [], needsAuthorEnrichment: false },
+  });
+  normalizePost.mockResolvedValue({
+    item: baseItem,
+    author: baseAuthor,
+    safe: baseSafe,
+  });
+  normalizeComment.mockResolvedValue({
+    item: { ...baseItem, id: 't1_xyz', title: '', body: 'a comment' },
+    author: baseAuthor,
+    safe: baseSafe,
+  });
 });
 
 describe('POST /test-rules-submit form handler', () => {
   it('Codex H1 — routes post through normalizePost (live-parity enrichment)', async () => {
     getPostById.mockResolvedValueOnce({
-      id: 't3_abc', title: 'free crypto giveaway', body: '', url: '',
-      authorName: 'spammer', authorId: 't2_x',
+      id: 't3_abc',
+      title: 'free crypto giveaway',
+      body: '',
+      url: '',
+      authorName: 'spammer',
+      authorId: 't2_x',
     });
     dryRunActivity.mockResolvedValueOnce({
       configPresent: true,
       configRev: 1,
-      runs: [{ runName: 'spam-removal', triggered: true, checkName: 'crypto-giveaway',
-               actions: [{ kind: 'remove', wouldHaveCalled: 'remove' }, { kind: 'comment', wouldHaveCalled: 'comment' }] }],
+      runs: [
+        {
+          runName: 'spam-removal',
+          triggered: true,
+          checkName: 'crypto-giveaway',
+          actions: [
+            { kind: 'remove', wouldHaveCalled: 'remove' },
+            { kind: 'comment', wouldHaveCalled: 'comment' },
+          ],
+        },
+      ],
     });
 
     const req = new Request('http://x/test-rules-submit', {
@@ -77,7 +139,7 @@ describe('POST /test-rules-submit form handler', () => {
       body: JSON.stringify({ values: { thingId: 't3_abc' } }),
     });
     const res = await forms.request(req);
-    const json = await res.json() as { showToast: string };
+    const json = (await res.json()) as { showToast: string };
 
     expect(getCurrentRev).toHaveBeenCalledWith('r_test');
     expect(normalizePost).toHaveBeenCalledTimes(1);
@@ -89,7 +151,13 @@ describe('POST /test-rules-submit form handler', () => {
   });
 
   it('reports no config when configPresent=false', async () => {
-    getPostById.mockResolvedValueOnce({ id: 't3_abc', title: '', body: '', url: '', authorName: 'x' });
+    getPostById.mockResolvedValueOnce({
+      id: 't3_abc',
+      title: '',
+      body: '',
+      url: '',
+      authorName: 'x',
+    });
     dryRunActivity.mockResolvedValueOnce({ configPresent: false, runs: [] });
 
     const req = new Request('http://x/test-rules-submit', {
@@ -98,12 +166,18 @@ describe('POST /test-rules-submit form handler', () => {
       body: JSON.stringify({ values: { thingId: 't3_abc' } }),
     });
     const res = await forms.request(req);
-    const json = await res.json() as { showToast: string };
+    const json = (await res.json()) as { showToast: string };
     expect(json.showToast).toMatch(/no config/i);
   });
 
   it('reports no triggered runs as explicit pass', async () => {
-    getPostById.mockResolvedValueOnce({ id: 't3_abc', title: 'a poem', body: '', url: '', authorName: 'x' });
+    getPostById.mockResolvedValueOnce({
+      id: 't3_abc',
+      title: 'a poem',
+      body: '',
+      url: '',
+      authorName: 'x',
+    });
     dryRunActivity.mockResolvedValueOnce({
       configPresent: true,
       configRev: 1,
@@ -116,26 +190,35 @@ describe('POST /test-rules-submit form handler', () => {
       body: JSON.stringify({ values: { thingId: 't3_abc' } }),
     });
     const res = await forms.request(req);
-    const json = await res.json() as { showToast: string };
+    const json = (await res.json()) as { showToast: string };
     expect(json.showToast).toMatch(/no rules triggered/i);
   });
 
   it('W1 — rejects non-mod caller with showToast + does NOT call dryRunActivity', async () => {
-    requireModeratorMock.mockResolvedValueOnce({ ok: false, status: 403, error: 'not a moderator of this sub' });
+    requireModeratorMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      error: 'not a moderator of this sub',
+    });
     const req = new Request('http://x/test-rules-submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ values: { thingId: 't3_abc' } }),
     });
     const res = await forms.request(req);
-    const json = await res.json() as { showToast: string };
+    const json = (await res.json()) as { showToast: string };
     expect(json.showToast).toMatch(/mod-only/i);
     expect(dryRunActivity).not.toHaveBeenCalled();
     expect(getPostById).not.toHaveBeenCalled();
   });
 
   it('Codex H1 — routes comments through normalizeComment (live-parity enrichment)', async () => {
-    getCommentById.mockResolvedValueOnce({ id: 't1_xyz', body: 'a comment', authorName: 'u', authorId: 't2_u' });
+    getCommentById.mockResolvedValueOnce({
+      id: 't1_xyz',
+      body: 'a comment',
+      authorName: 'u',
+      authorId: 't2_u',
+    });
     dryRunActivity.mockResolvedValueOnce({
       configPresent: true,
       configRev: 1,

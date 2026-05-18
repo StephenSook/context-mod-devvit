@@ -6,10 +6,14 @@ export type EventFilter =
   | { kind: 'failed' }
   | { kind: 'dry-run' };
 
-export function filterMatches(event: EventRecord, filter: EventFilter): boolean {
+export function filterMatches(
+  event: EventRecord,
+  filter: EventFilter
+): boolean {
   if (filter.kind === 'all') return true;
   if (filter.kind === 'failed') return event.actions.some((a) => !a.ok);
-  if (filter.kind === 'dry-run') return event.actions.some((a) => a.status === 'dry-run');
+  if (filter.kind === 'dry-run')
+    return event.actions.some((a) => a.status === 'dry-run');
   return event.actions.some((a) => a.kind === filter.action);
 }
 

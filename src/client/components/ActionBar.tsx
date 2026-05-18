@@ -67,22 +67,38 @@ export function ActionBar({
           <RefreshCw
             size={12}
             strokeWidth={1.8}
-            className={busy ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}
+            className={
+              busy
+                ? 'animate-spin'
+                : 'group-hover:rotate-180 transition-transform duration-500'
+            }
           />
           <span className="tracking-wide">
-            {flash === 'refreshed' ? <span className="text-signal-ok">refreshed</span> : 'Reload config'}
+            {flash === 'refreshed' ? (
+              <span className="text-signal-ok">refreshed</span>
+            ) : (
+              'Reload config'
+            )}
           </span>
         </button>
 
         <button
           onClick={handleExport}
           disabled={exportDisabled}
-          title={exportDisabled ? 'No events to export yet' : `Download last ${events.length} as CSV`}
+          title={
+            exportDisabled
+              ? 'No events to export yet'
+              : `Download last ${events.length} as CSV`
+          }
           className="group inline-flex items-center gap-1.5 text-[11px] text-bone-200 hover:text-bone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Download size={12} strokeWidth={1.8} />
           <span className="tracking-wide">
-            {flash === 'exported' ? <span className="text-signal-ok">downloaded</span> : 'Export CSV'}
+            {flash === 'exported' ? (
+              <span className="text-signal-ok">downloaded</span>
+            ) : (
+              'Export CSV'
+            )}
           </span>
         </button>
       </div>

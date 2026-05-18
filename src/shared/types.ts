@@ -10,12 +10,12 @@
 
 // Inputs — Item & Author (post-normalization, no `undefined` fields).
 export interface Item {
-  id: string;            // t3_xxx (post) or t1_xxx (comment)
-  title: string;         // empty for comments
-  body: string;          // selftext for posts, body for comments
+  id: string; // t3_xxx (post) or t1_xxx (comment)
+  title: string; // empty for comments
+  body: string; // selftext for posts, body for comments
   url: string;
-  author: string;        // username
-  age: number;           // seconds since creation
+  author: string; // username
+  age: number; // seconds since creation
   score: number;
   isSelf: boolean;
   over18: boolean;
@@ -24,14 +24,14 @@ export interface Item {
   locked: boolean;
   stickied: boolean;
   linkFlairText: string | null;
-  depth?: number;        // comments only
-  op?: boolean;          // comment was authored by OP
+  depth?: number; // comments only
+  op?: boolean; // comment was authored by OP
 }
 
 export interface Author {
   name: string;
   id: string;
-  age: number;           // seconds since account creation
+  age: number; // seconds since account creation
   linkKarma: number;
   commentKarma: number;
   flairText: string | null;
@@ -49,7 +49,7 @@ export interface Author {
 
 // Filters — predicates over Item / Author.
 export interface AuthorFilter {
-  nameIn?: string[];                  // exact-match usernames
+  nameIn?: string[]; // exact-match usernames
   nameNotIn?: string[];
   flairTextIn?: string[];
   flairTextNotIn?: string[];
@@ -76,7 +76,7 @@ export interface ItemFilter {
   scoreMax?: number;
   linkFlairTextIn?: string[];
   linkFlairTextNotIn?: string[];
-  titleMatches?: string;              // regex source
+  titleMatches?: string; // regex source
   bodyMatches?: string;
   urlMatches?: string;
 }
@@ -91,16 +91,16 @@ export type RegexTarget = 'title' | 'body' | 'url';
 
 export interface RegexRule {
   kind: 'regex';
-  name?: string;                      // optional for inline rules
-  pattern: string;                    // regex source
-  flags?: string;                     // 'i' / 'm' / 'mi' / etc.
-  target?: RegexTarget;               // default 'title'
+  name?: string; // optional for inline rules
+  pattern: string; // regex source
+  flags?: string; // 'i' / 'm' / 'mi' / etc.
+  target?: RegexTarget; // default 'title'
 }
 
 export interface AuthorRule {
   kind: 'author';
   name?: string;
-  filter: AuthorFilter;               // reuses the filter shape
+  filter: AuthorFilter; // reuses the filter shape
 }
 
 export interface RuleSetRule {
@@ -111,7 +111,7 @@ export interface RuleSetRule {
 }
 
 export interface NamedRuleRef {
-  kind: 'named';                      // alias to a top-level namedRules[name]
+  kind: 'named'; // alias to a top-level namedRules[name]
   name: string;
 }
 
@@ -125,7 +125,7 @@ export interface NamedRuleRef {
 export interface RepostRule {
   kind: 'repost';
   name?: string;
-  windowDays?: number;                // default 30
+  windowDays?: number; // default 30
 }
 
 /**
@@ -145,7 +145,7 @@ export interface RepostRule {
 export interface HistoryRule {
   kind: 'history';
   name?: string;
-  postCountLt?: number;               // recent posts seen < N
+  postCountLt?: number; // recent posts seen < N
   postCountGt?: number;
   commentCountLt?: number;
   commentCountGt?: number;
@@ -163,9 +163,9 @@ export interface HistoryRule {
 export interface AttributionRule {
   kind: 'attribution';
   name?: string;
-  domains: string[];                  // case-insensitive substring match against post.domain
-  domainPercent: number;              // 0..100 — trigger when matching% >= this
-  minPosts?: number;                  // default 5 — don't trigger on tiny samples
+  domains: string[]; // case-insensitive substring match against post.domain
+  domainPercent: number; // 0..100 — trigger when matching% >= this
+  minPosts?: number; // default 5 — don't trigger on tiny samples
 }
 
 /**
@@ -176,7 +176,7 @@ export interface AttributionRule {
 export interface RecentActivityRule {
   kind: 'recentActivity';
   name?: string;
-  subreddits: string[];               // case-insensitive
+  subreddits: string[]; // case-insensitive
   postCountGt?: number;
   commentCountGt?: number;
 }
@@ -192,14 +192,32 @@ export type Rule =
   | RecentActivityRule;
 
 // Action shapes — runtime dispatch lives in src/actions/*.
-export interface RemoveAction { kind: 'remove'; isSpam?: boolean; dryRun?: boolean; }
-export interface ApproveAction { kind: 'approve'; dryRun?: boolean; }
-export interface CommentAction { kind: 'comment'; template: string; dryRun?: boolean; }
-export interface LockAction { kind: 'lock'; dryRun?: boolean; }
-export interface ReportAction { kind: 'report'; reason: string; dryRun?: boolean; }
+export interface RemoveAction {
+  kind: 'remove';
+  isSpam?: boolean;
+  dryRun?: boolean;
+}
+export interface ApproveAction {
+  kind: 'approve';
+  dryRun?: boolean;
+}
+export interface CommentAction {
+  kind: 'comment';
+  template: string;
+  dryRun?: boolean;
+}
+export interface LockAction {
+  kind: 'lock';
+  dryRun?: boolean;
+}
+export interface ReportAction {
+  kind: 'report';
+  reason: string;
+  dryRun?: boolean;
+}
 export interface BanAction {
   kind: 'ban';
-  duration?: number;                  // 0 = permanent
+  duration?: number; // 0 = permanent
   reason?: string;
   note?: string;
   message?: string;
@@ -229,9 +247,9 @@ export interface Check {
   combinator: CheckCombinator;
   rules: Rule[];
   filters?: FilterSpec;
-  actions?: Action[];                 // fired when the check triggers; the run
-                                      // collects these in order on a triggered run.
-  postBehavior?: PostBehavior;        // default 'next'
+  actions?: Action[]; // fired when the check triggers; the run
+  // collects these in order on a triggered run.
+  postBehavior?: PostBehavior; // default 'next'
 }
 
 export interface Run {
@@ -242,10 +260,10 @@ export interface Run {
 export interface AppConfig {
   runs: Run[];
   namedRules?: Record<string, Rule>;
-  dryRun?: boolean;                   // global dry-run flag (Phase 2.5)
-  needsAuthorEnrichment?: boolean;    // set at parse time by inspecting rule kinds
-                                      // — gates the expensive getUserByUsername call
-                                      // (Step 1.3 short-circuit, Council Software Lead).
+  dryRun?: boolean; // global dry-run flag (Phase 2.5)
+  needsAuthorEnrichment?: boolean; // set at parse time by inspecting rule kinds
+  // — gates the expensive getUserByUsername call
+  // (Step 1.3 short-circuit, Council Software Lead).
 }
 
 // Engine output contracts.
@@ -256,15 +274,15 @@ export interface RuleResult {
 export interface CheckResult {
   triggered: boolean;
   checkName: string;
-  actions: Action[];                  // empty when triggered = false
+  actions: Action[]; // empty when triggered = false
 }
 
 export interface RunResult {
   triggered: boolean;
   checkName: string;
-  actions: Action[];                  // actions to fire when triggered === true
+  actions: Action[]; // actions to fire when triggered === true
   terminated?: 'iteration-limit' | 'goto-missing';
-  lastCheckName?: string;             // populated when terminated set
+  lastCheckName?: string; // populated when terminated set
   /** X47: target name when terminated === 'goto-missing'. */
   missingGotoTarget?: string;
 }
@@ -272,7 +290,7 @@ export interface RunResult {
 export interface ActionResult {
   status: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
   kind: string;
-  wouldHaveCalled?: string;           // populated when status === 'dry-run'
+  wouldHaveCalled?: string; // populated when status === 'dry-run'
 }
 
 // ActionContext.config is REQUIRED — the dry-run gate in runAction reads

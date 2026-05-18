@@ -21,10 +21,12 @@ export async function requireModerator(): Promise<ModAuthResult> {
   try {
     const sub = (await reddit.getCurrentSubreddit()).name;
     const user = await reddit.getCurrentUser();
-    if (!user?.username) return { ok: false, status: 401, error: 'not authenticated' };
+    if (!user?.username)
+      return { ok: false, status: 401, error: 'not authenticated' };
     const mods = await reddit.getModerators({ subredditName: sub }).all();
     const isMod = mods.some((m) => m.username === user.username);
-    if (!isMod) return { ok: false, status: 403, error: 'not a moderator of this sub' };
+    if (!isMod)
+      return { ok: false, status: 403, error: 'not a moderator of this sub' };
     return { ok: true, sub, username: user.username };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

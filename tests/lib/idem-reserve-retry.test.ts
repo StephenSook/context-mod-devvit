@@ -63,11 +63,9 @@ describe('reserveAction LOCK_FAIL retry (W3)', () => {
 
   it('skips action + cleans up own lease when done-marker is present (lock-then-check race winner)', async () => {
     redisSet.mockResolvedValueOnce('OK');
-    redisGet
-      .mockResolvedValueOnce('1')
-      .mockImplementationOnce(async () => {
-        return (redisSet.mock.calls[0]![1]) as string;
-      });
+    redisGet.mockResolvedValueOnce('1').mockImplementationOnce(async () => {
+      return redisSet.mock.calls[0]![1] as string;
+    });
     const result = await reserveAction('aid_xyz', 'r_test');
     expect(result).toBeNull();
     expect(redisDel).toHaveBeenCalledTimes(1);

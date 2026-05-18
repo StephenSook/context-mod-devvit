@@ -18,9 +18,9 @@
 import { redis } from '@devvit/web/server';
 import { K } from '../state/keys';
 
-const PROC_TTL_SEC = 86_400;          // 24 hours
-const PENDING_TTL_SEC = 5 * 60;        // 5 min — caps lost-on-crash retry delay
-const DONE_TTL_SEC = 7 * 86_400;       // 7 days — long enough to survive retries
+const PROC_TTL_SEC = 86_400; // 24 hours
+const PENDING_TTL_SEC = 5 * 60; // 5 min — caps lost-on-crash retry delay
+const DONE_TTL_SEC = 7 * 86_400; // 7 days — long enough to survive retries
 const LOCK_TTL_SEC = 60;
 
 /**
@@ -32,7 +32,10 @@ const LOCK_TTL_SEC = 60;
  * subreddit context (Step 2.4 onward) should thread it through for tenant
  * isolation. See src/state/keys.ts.
  */
-export async function firstSeen(thingId: string, sub?: string): Promise<boolean> {
+export async function firstSeen(
+  thingId: string,
+  sub?: string
+): Promise<boolean> {
   const key = K.proc(thingId, sub);
   try {
     const result = await redis.set(key, '1', {
@@ -41,7 +44,11 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
     });
     return result === 'OK';
   } catch (err) {
-    console.error('[cm/idem/firstSeen] redis err — fail-closed (skip):', thingId, err);
+    console.error(
+      '[cm/idem/firstSeen] redis err — fail-closed (skip):',
+      thingId,
+      err
+    );
     return false;
   }
 }
@@ -64,7 +71,10 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
  * caller completed during the lock attempt. The lock guarantees only one
  * caller proceeds into the side-effect for a given actionId at a time.
  */
-export async function reserveAction(actionId: string, sub?: string): Promise<{ token: string } | null> {
+export async function reserveAction(
+  actionId: string,
+  sub?: string
+): Promise<{ token: string } | null> {
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
   // X31: crypto.randomUUID() is cryptographically random (Web Crypto API,
@@ -97,7 +107,12 @@ export async function reserveAction(actionId: string, sub?: string): Promise<{ t
     }
   }
   if (lockErr) {
-    console.error('[cm/idem/reserveAction/LOCK_FAIL]', 'fail-closed after retries (action dropped):', actionId, lockErr);
+    console.error(
+      '[cm/idem/reserveAction/LOCK_FAIL]',
+      'fail-closed after retries (action dropped):',
+      actionId,
+      lockErr
+    );
     return null;
   }
   try {
@@ -112,7 +127,12 @@ export async function reserveAction(actionId: string, sub?: string): Promise<{ t
   } catch (err) {
     // ORPHANED_LEASE: pending-NX written but done-check threw. Lease will
     // TTL-expire in PENDING_TTL_SEC (5min); caller skips this attempt.
-    console.error('[cm/idem/reserveAction/ORPHANED_LEASE]', 'fail-closed (skip, TTL reaps in 5min):', actionId, err);
+    console.error(
+      '[cm/idem/reserveAction/ORPHANED_LEASE]',
+      'fail-closed (skip, TTL reaps in 5min):',
+      actionId,
+      err
+    );
     return null;
   }
 }
@@ -132,7 +152,11 @@ export async function reserveAction(actionId: string, sub?: string): Promise<{ t
  * token, blindly deleting pending would reopen the gate for a third execution.
  * The token check makes pending delete a no-op if we're no longer the owner.
  */
-export async function commitAction(actionId: string, token: string, sub?: string): Promise<void> {
+export async function commitAction(
+  actionId: string,
+  token: string,
+  sub?: string
+): Promise<void> {
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
   const doneExpiration = new Date(Date.now() + DONE_TTL_SEC * 1000);
@@ -147,7 +171,9 @@ export async function commitAction(actionId: string, token: string, sub?: string
     } catch (err) {
       lastErr = err;
       if (attempt < backoffsMs.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, backoffsMs[attempt]!));
+        await new Promise((resolve) =>
+          setTimeout(resolve, backoffsMs[attempt]!)
+        );
       }
     }
   }
@@ -156,10 +182,10 @@ export async function commitAction(actionId: string, token: string, sub?: string
     console.error(
       '[cm/idem/commitAction/DONE_WRITE_FAIL]',
       'side-effect already happened — idempotency marker NOT written after 3 retries. ' +
-      'Pending lease intentionally NOT released to prevent immediate double-action; ' +
-      'pending TTL will expire in 5 min then retry path can re-execute. Investigate this actionId:',
+        'Pending lease intentionally NOT released to prevent immediate double-action; ' +
+        'pending TTL will expire in 5 min then retry path can re-execute. Investigate this actionId:',
       actionId,
-      lastErr,
+      lastErr
     );
     throw lastErr;
   }
@@ -172,7 +198,12 @@ export async function commitAction(actionId: string, token: string, sub?: string
     const current = await redis.get(pendingKey);
     if (current === token) await redis.del(pendingKey);
   } catch (err) {
-    console.error('[cm/idem/commitAction/PENDING_DEL_FAIL]', '(harmless, TTL reaps in 5min):', actionId, err);
+    console.error(
+      '[cm/idem/commitAction/PENDING_DEL_FAIL]',
+      '(harmless, TTL reaps in 5min):',
+      actionId,
+      err
+    );
   }
 }
 
@@ -185,13 +216,21 @@ export async function commitAction(actionId: string, token: string, sub?: string
  * "slow-worker-releases-successor's-lease" race that would otherwise allow
  * a third execution of the same actionId.
  */
-export async function releaseAction(actionId: string, token: string, sub?: string): Promise<void> {
+export async function releaseAction(
+  actionId: string,
+  token: string,
+  sub?: string
+): Promise<void> {
   const pendingKey = K.actionPending(actionId, sub);
   try {
     const current = await redis.get(pendingKey);
     if (current === token) await redis.del(pendingKey);
   } catch (err) {
-    console.error('[cm/idem/releaseAction] redis err (pending will expire in 5 min):', actionId, err);
+    console.error(
+      '[cm/idem/releaseAction] redis err (pending will expire in 5 min):',
+      actionId,
+      err
+    );
   }
 }
 
@@ -199,7 +238,11 @@ export async function releaseAction(actionId: string, token: string, sub?: strin
  * Deterministic action ID for use with reserveAction. Combines thingId + kind + payload
  * digest via BigInt-correct FNV-1a 64.
  */
-export function actionId(thingId: string, actionType: string, payload: string): string {
+export function actionId(
+  thingId: string,
+  actionType: string,
+  payload: string
+): string {
   return fnv1a64(`${thingId}|${actionType}|${payload}`);
 }
 
@@ -213,7 +256,10 @@ export function actionId(thingId: string, actionType: string, payload: string): 
  *   if (!release) return c.json({ skipped: 'locked' });
  *   try { ...work... } finally { await release(); }
  */
-export async function acquireLock(taskName: string, sub?: string): Promise<(() => Promise<void>) | null> {
+export async function acquireLock(
+  taskName: string,
+  sub?: string
+): Promise<(() => Promise<void>) | null> {
   const key = K.lock(taskName, sub);
   // X31: crypto.randomUUID() is cryptographically random (Web Crypto API,
   // Devvit V8 runtime). Math.random was predictable enough that an attacker
@@ -228,7 +274,11 @@ export async function acquireLock(taskName: string, sub?: string): Promise<(() =
     });
     if (result !== 'OK') return null;
   } catch (err) {
-    console.error('[cm/idem/acquireLock] redis err — fail-closed (skip):', taskName, err);
+    console.error(
+      '[cm/idem/acquireLock] redis err — fail-closed (skip):',
+      taskName,
+      err
+    );
     return null;
   }
   return async () => {
@@ -236,7 +286,11 @@ export async function acquireLock(taskName: string, sub?: string): Promise<(() =
       const current = await redis.get(key);
       if (current === token) await redis.del(key);
     } catch (err) {
-      console.error('[cm/idem/releaseLock] err (lock TTL will reap):', taskName, err);
+      console.error(
+        '[cm/idem/releaseLock] err (lock TTL will reap):',
+        taskName,
+        err
+      );
     }
   };
 }

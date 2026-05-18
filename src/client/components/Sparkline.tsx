@@ -1,8 +1,20 @@
 import { useId, useState } from 'react';
 import { SIGNAL } from '../lib/design-tokens';
 
-export function Sparkline({ data, height = 36, width = 280 }: { data?: number[]; height?: number; width?: number }) {
-  const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
+export function Sparkline({
+  data,
+  height = 36,
+  width = 280,
+}: {
+  data?: number[];
+  height?: number;
+  width?: number;
+}) {
+  const [hover, setHover] = useState<{
+    idx: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const reactId = useId();
   const gradientId = `spark-fill-${reactId.replace(/:/g, '')}`;
   if (!data || !Array.isArray(data) || data.length < 2) return null;
@@ -11,7 +23,10 @@ export function Sparkline({ data, height = 36, width = 280 }: { data?: number[];
   // Length<2 guard above prevents degenerate SVG path when step=width.
   const max = data.reduce((m, v) => (Number.isFinite(v) && v > m ? v : m), 1);
   const step = width / (data.length - 1);
-  const coords = data.map((v, i) => ({ x: i * step, y: height - (v / max) * (height - 4) - 2 }));
+  const coords = data.map((v, i) => ({
+    x: i * step,
+    y: height - (v / max) * (height - 4) - 2,
+  }));
   const points = coords.map((c) => `${c.x},${c.y}`);
   const path = `M ${points[0]} L ${points.slice(1).join(' L ')}`;
   const area = `M 0,${height} L ${points.join(' L ')} L ${width},${height} Z`;

@@ -19,8 +19,9 @@ describe('fnv1a64 — canonical FNV-1a 64-bit test vectors', () => {
 
 describe('actionId — deterministic composite', () => {
   it('same inputs produce same output', () => {
-    expect(actionId('t3_abc', 'remove', 'spam=true'))
-      .toBe(actionId('t3_abc', 'remove', 'spam=true'));
+    expect(actionId('t3_abc', 'remove', 'spam=true')).toBe(
+      actionId('t3_abc', 'remove', 'spam=true')
+    );
   });
   it('different inputs produce different outputs', () => {
     const a = actionId('t3_abc', 'remove', 'spam=true');

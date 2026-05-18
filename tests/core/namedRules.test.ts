@@ -6,34 +6,47 @@ describe('expandNamedRules', () => {
   it('inlines a named regex rule', () => {
     const cfg: AppConfig = {
       namedRules: { spamRegex: { kind: 'regex', pattern: 'scam' } },
-      runs: [{
-        name: 'r',
-        checks: [{
-          name: 'c',
-          combinator: 'AND',
-          rules: [{ kind: 'named', name: 'spamRegex' }],
-        }],
-      }],
+      runs: [
+        {
+          name: 'r',
+          checks: [
+            {
+              name: 'c',
+              combinator: 'AND',
+              rules: [{ kind: 'named', name: 'spamRegex' }],
+            },
+          ],
+        },
+      ],
     };
     const out = expandNamedRules(cfg);
-    expect(out.runs[0]!.checks[0]!.rules[0]).toEqual({ kind: 'regex', pattern: 'scam' });
+    expect(out.runs[0]!.checks[0]!.rules[0]).toEqual({
+      kind: 'regex',
+      pattern: 'scam',
+    });
   });
 
   it('expands inside a ruleset', () => {
     const cfg: AppConfig = {
       namedRules: { spamRegex: { kind: 'regex', pattern: 'scam' } },
-      runs: [{
-        name: 'r',
-        checks: [{
-          name: 'c',
-          combinator: 'AND',
-          rules: [{
-            kind: 'ruleset',
-            combinator: 'AND',
-            rules: [{ kind: 'named', name: 'spamRegex' }],
-          }],
-        }],
-      }],
+      runs: [
+        {
+          name: 'r',
+          checks: [
+            {
+              name: 'c',
+              combinator: 'AND',
+              rules: [
+                {
+                  kind: 'ruleset',
+                  combinator: 'AND',
+                  rules: [{ kind: 'named', name: 'spamRegex' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
     };
     const out = expandNamedRules(cfg);
     const inner = out.runs[0]!.checks[0]!.rules[0] as { rules: unknown[] };
@@ -42,14 +55,18 @@ describe('expandNamedRules', () => {
 
   it('throws on unknown name', () => {
     const cfg: AppConfig = {
-      runs: [{
-        name: 'r',
-        checks: [{
-          name: 'c',
-          combinator: 'AND',
-          rules: [{ kind: 'named', name: 'doesNotExist' }],
-        }],
-      }],
+      runs: [
+        {
+          name: 'r',
+          checks: [
+            {
+              name: 'c',
+              combinator: 'AND',
+              rules: [{ kind: 'named', name: 'doesNotExist' }],
+            },
+          ],
+        },
+      ],
     };
     expect(() => expandNamedRules(cfg)).toThrow(/unknown rule name/);
   });
@@ -58,17 +75,29 @@ describe('expandNamedRules', () => {
     // a → ruleset(b), b → ruleset(a)
     const cfg: AppConfig = {
       namedRules: {
-        a: { kind: 'ruleset', combinator: 'AND', rules: [{ kind: 'named', name: 'b' }] },
-        b: { kind: 'ruleset', combinator: 'AND', rules: [{ kind: 'named', name: 'a' }] },
-      },
-      runs: [{
-        name: 'r',
-        checks: [{
-          name: 'c',
+        a: {
+          kind: 'ruleset',
+          combinator: 'AND',
+          rules: [{ kind: 'named', name: 'b' }],
+        },
+        b: {
+          kind: 'ruleset',
           combinator: 'AND',
           rules: [{ kind: 'named', name: 'a' }],
-        }],
-      }],
+        },
+      },
+      runs: [
+        {
+          name: 'r',
+          checks: [
+            {
+              name: 'c',
+              combinator: 'AND',
+              rules: [{ kind: 'named', name: 'a' }],
+            },
+          ],
+        },
+      ],
     };
     const out = expandNamedRules(cfg);
     // Don't crash + produce something rather than throw.

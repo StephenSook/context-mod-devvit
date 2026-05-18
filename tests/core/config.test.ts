@@ -147,7 +147,9 @@ describe('parseConfig — malformed configs', () => {
     const r = parseConfig(json5);
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(typeof r.errors === 'string' ? r.errors : JSON.stringify(r.errors)).toMatch(/unknown rule name/);
+      expect(
+        typeof r.errors === 'string' ? r.errors : JSON.stringify(r.errors)
+      ).toMatch(/unknown rule name/);
     }
   });
 });

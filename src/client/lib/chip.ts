@@ -41,7 +41,7 @@ export type ActionStatus = 'ok' | 'dry-run' | 'error' | 'skipped-locked';
 export function chipColorForStatus(
   status: ActionStatus | undefined,
   kind: ActionKind,
-  ok: boolean,
+  ok: boolean
 ): string {
   if (status === 'dry-run') return SIGNAL.info;
   if (status === 'error') return SIGNAL.err;
@@ -63,7 +63,7 @@ export function chipColorForStatus(
  */
 export function chipMarkerForStatus(
   status: ActionStatus | undefined,
-  ok: boolean,
+  ok: boolean
 ): string {
   if (status === 'dry-run') return ' ◆';
   if (status === 'error') return ' ✗';

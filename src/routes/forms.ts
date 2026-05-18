@@ -17,15 +17,28 @@
 import { Hono } from 'hono';
 import { reddit } from '@devvit/web/server';
 import { dryRunActivity } from '../core/dryRunActivity';
-import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
+import {
+  normalizePost,
+  normalizeComment,
+  type PostSubmitPayload,
+  type CommentSubmitPayload,
+} from '../shared/normalize';
 import * as configStore from '../state/configStore';
-import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
+import {
+  simulateRule,
+  formatSimulationToast,
+  type SimulationSample,
+} from '../core/simulateRule';
 import { explainRule, formatExplainToast } from '../core/explainRule';
 import { settings } from '@devvit/web/server';
 import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
-import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
+import {
+  checkCircuit,
+  recordFailure,
+  recordSuccess,
+} from '../lib/circuitBreaker';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -38,7 +51,9 @@ import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreake
 async function resolveOpenaiKey(sub: string): Promise<string> {
   const fromRedis = await getOpenaiKey(sub);
   if (fromRedis) return fromRedis;
-  const fromSettings = ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  const fromSettings = (
+    (await settings.get<string>('openai_api_key')) ?? ''
+  ).trim();
   return fromSettings;
 }
 import type { AppConfig } from '../shared/types';
@@ -72,7 +87,9 @@ interface FetchedComment {
   createdAt?: number | Date | string;
 }
 
-function asPayloadTimestamp(t?: number | Date | string): number | string | undefined {
+function asPayloadTimestamp(
+  t?: number | Date | string
+): number | string | undefined {
   if (t == null) return undefined;
   if (typeof t === 'number') return t;
   if (typeof t === 'string') return t;
@@ -87,17 +104,24 @@ forms.post('/test-rules-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can dry-run ContextMod.' });
+    return c.json({
+      showToast:
+        "Mod-only action. Only this sub's moderators can dry-run ContextMod.",
+    });
   }
   const thingId =
     (body as { thingId?: string }).thingId ??
     (body as { values?: { thingId?: string } }).values?.thingId ??
-    (body as { payload?: { values?: { thingId?: string } } }).payload?.values?.thingId ??
-    (body as { form?: { values?: { thingId?: string } } }).form?.values?.thingId;
+    (body as { payload?: { values?: { thingId?: string } } }).payload?.values
+      ?.thingId ??
+    (body as { form?: { values?: { thingId?: string } } }).form?.values
+      ?.thingId;
   console.log(`[cm/forms/test-rules-submit] thingId=${thingId}`);
 
   if (!thingId) {
-    return c.json({ showToast: 'Missing thingId — re-open the form from the menu.' });
+    return c.json({
+      showToast: 'Missing thingId — re-open the form from the menu.',
+    });
   }
 
   try {
@@ -109,26 +133,35 @@ forms.post('/test-rules-submit', async (c) => {
     // for rule eval — Codex H3 read-once invariant doesn't apply here since
     // dry-run is single-shot and not concurrent with a publish.
     const current = await configStore.getCurrentRev(sub.name);
-    const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
+    const config: AppConfig = current?.config ?? {
+      runs: [],
+      needsAuthorEnrichment: false,
+    };
 
     let item;
     let author;
     if (isComment) {
-      const cmt = (await reddit.getCommentById(thingId as `t1_${string}`)) as unknown as FetchedComment;
+      const cmt = (await reddit.getCommentById(
+        thingId as `t1_${string}`
+      )) as unknown as FetchedComment;
       const payload: CommentSubmitPayload = {
         comment: {
           id: cmt.id ?? thingId,
           body: cmt.body ?? '',
           parentId: cmt.parentId ?? '',
           score: cmt.score ?? 0,
-          ...(asPayloadTimestamp(cmt.createdAt) !== undefined ? { createdAt: asPayloadTimestamp(cmt.createdAt)! } : {}),
+          ...(asPayloadTimestamp(cmt.createdAt) !== undefined
+            ? { createdAt: asPayloadTimestamp(cmt.createdAt)! }
+            : {}),
         },
         author: { id: cmt.authorId ?? '', name: cmt.authorName ?? '' },
         subreddit: { name: sub.name },
       };
       ({ item, author } = await normalizeComment(payload, config));
     } else {
-      const post = (await reddit.getPostById(thingId as `t3_${string}`)) as unknown as FetchedPost;
+      const post = (await reddit.getPostById(
+        thingId as `t3_${string}`
+      )) as unknown as FetchedPost;
       const payload: PostSubmitPayload = {
         post: {
           id: post.id ?? thingId,
@@ -141,7 +174,9 @@ forms.post('/test-rules-submit', async (c) => {
           locked: post.locked ?? false,
           stickied: post.stickied ?? false,
           isSelf: post.isSelf ?? false,
-          ...(asPayloadTimestamp(post.createdAt) !== undefined ? { createdAt: asPayloadTimestamp(post.createdAt)! } : {}),
+          ...(asPayloadTimestamp(post.createdAt) !== undefined
+            ? { createdAt: asPayloadTimestamp(post.createdAt)! }
+            : {}),
         },
         author: { id: post.authorId ?? '', name: post.authorName ?? '' },
         subreddit: { name: sub.name },
@@ -153,7 +188,8 @@ forms.post('/test-rules-submit', async (c) => {
 
     if (!result.configPresent) {
       return c.json({
-        showToast: 'No config published yet — run "Reload config from wiki" first, then retry.',
+        showToast:
+          'No config published yet — run "Reload config from wiki" first, then retry.',
       });
     }
 
@@ -188,24 +224,33 @@ forms.post('/simulate-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can simulate rules.' });
+    return c.json({
+      showToast:
+        "Mod-only action. Only this sub's moderators can simulate rules.",
+    });
   }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
     (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
     '';
   if (!ruleJson5.trim()) {
-    return c.json({ showToast: 'Paste a rule JSON5 in the form field, then submit.' });
+    return c.json({
+      showToast: 'Paste a rule JSON5 in the form field, then submit.',
+    });
   }
   // X44: 10KB cap on pasted rule + per-sub rate limit (simulation fans
   // out 25 Reddit API reads). Without this, a mod could DOS the Reddit
   // API quota for their sub via rapid retry.
   if (ruleJson5.length > 10_000) {
-    return c.json({ showToast: 'Rule JSON5 too large (cap 10KB). Trim + retry.' });
+    return c.json({
+      showToast: 'Rule JSON5 too large (cap 10KB). Trim + retry.',
+    });
   }
   const rlSim = await checkRateLimit('simulate', auth.sub, 10, 3600);
   if (!rlSim.allowed) {
-    return c.json({ showToast: `Rate limit: ${rlSim.count}/${rlSim.max} simulations this hour. Try again in ~${Math.ceil(rlSim.resetInSec / 60)}min.` });
+    return c.json({
+      showToast: `Rate limit: ${rlSim.count}/${rlSim.max} simulations this hour. Try again in ~${Math.ceil(rlSim.resetInSec / 60)}min.`,
+    });
   }
 
   try {
@@ -245,7 +290,10 @@ forms.post('/simulate-rule-submit', async (c) => {
         samples.push({ item: normalized.item, author: normalized.author });
       } catch (perPostErr) {
         // skip individual normalization failures, keep going
-        console.warn('[cm/forms/simulate-rule-submit] skipped sample:', perPostErr);
+        console.warn(
+          '[cm/forms/simulate-rule-submit] skipped sample:',
+          perPostErr
+        );
       }
     }
 
@@ -258,11 +306,12 @@ forms.post('/simulate-rule-submit', async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     const name = err instanceof Error ? err.name : 'Error';
     console.error('[cm/forms/simulate-rule-submit] failed:', name, msg);
-    const phase = msg.includes('getCurrentSubreddit') || msg.includes('getNewPosts')
-      ? 'reddit-api'
-      : msg.includes('parse') || msg.includes('AJV')
-        ? 'rule-parse'
-        : 'unexpected';
+    const phase =
+      msg.includes('getCurrentSubreddit') || msg.includes('getNewPosts')
+        ? 'reddit-api'
+        : msg.includes('parse') || msg.includes('AJV')
+          ? 'rule-parse'
+          : 'unexpected';
     return c.json({ showToast: `Simulation failed (${phase}): ${msg}` });
   }
 });
@@ -289,7 +338,9 @@ forms.post('/explain-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can call OpenAI.' });
+    return c.json({
+      showToast: "Mod-only action. Only this sub's moderators can call OpenAI.",
+    });
   }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
@@ -301,11 +352,15 @@ forms.post('/explain-rule-submit', async (c) => {
   const cbBucket = `openai:${auth.sub}`;
   const cb = await checkCircuit(cbBucket);
   if (cb.state === 'open') {
-    return c.json({ showToast: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.` });
+    return c.json({
+      showToast: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.`,
+    });
   }
   const rl = await checkRateLimit('explain-rule', auth.sub, 30, 3600);
   if (!rl.allowed) {
-    return c.json({ showToast: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.` });
+    return c.json({
+      showToast: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
+    });
   }
   const apiKey = await resolveOpenaiKey(auth.sub);
   try {
@@ -349,7 +404,10 @@ forms.post('/set-openai-key-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({ showToast: 'Mod-only action. Only this sub\'s moderators can set the OpenAI key.' });
+    return c.json({
+      showToast:
+        "Mod-only action. Only this sub's moderators can set the OpenAI key.",
+    });
   }
   const apiKey =
     (body as { apiKey?: string }).apiKey ??
@@ -359,17 +417,23 @@ forms.post('/set-openai-key-submit', async (c) => {
     return c.json({ showToast: 'Paste a key in the form field.' });
   }
   if (!apiKey.startsWith('sk-')) {
-    return c.json({ showToast: 'Key should start with sk-... — double-check + try again.' });
+    return c.json({
+      showToast: 'Key should start with sk-... — double-check + try again.',
+    });
   }
   // X44: cap key length at 200 chars. OpenAI keys are ~50 chars; this
   // guards against accidental 5MB clipboard pastes from filling Redis.
   if (apiKey.length > 200) {
-    return c.json({ showToast: 'Key suspiciously long (>200 chars). Re-copy + try again.' });
+    return c.json({
+      showToast: 'Key suspiciously long (>200 chars). Re-copy + try again.',
+    });
   }
   try {
     await setOpenaiKey(auth.sub, apiKey);
     const masked = apiKey.slice(0, 7) + '...' + apiKey.slice(-4);
-    return c.json({ showToast: `OpenAI key saved for r/${auth.sub} (${masked}).` });
+    return c.json({
+      showToast: `OpenAI key saved for r/${auth.sub} (${masked}).`,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/forms/set-openai-key-submit] failed:', err);
@@ -381,7 +445,9 @@ interface RedditListingLike<T> {
   all?: () => Promise<T[]> | T[];
 }
 
-async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLike[]> {
+async function fetchRecentPostsSafe(
+  subredditName: string
+): Promise<RedditPostLike[]> {
   try {
     const redditAny = reddit as unknown as {
       getNewPosts?: (opts: {
@@ -400,8 +466,10 @@ async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLi
     const all = typeof listing.all === 'function' ? await listing.all() : [];
     return all.slice(0, SIMULATION_SAMPLE_LIMIT);
   } catch (err) {
-    console.warn('[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:', err);
+    console.warn(
+      '[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:',
+      err
+    );
     return [];
   }
 }
-

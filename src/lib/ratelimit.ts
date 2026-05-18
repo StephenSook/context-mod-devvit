@@ -35,7 +35,7 @@ export async function checkRateLimit(
   bucket: string,
   sub: string,
   max: number,
-  windowSec: number,
+  windowSec: number
 ): Promise<RateLimitResult> {
   const key = `cm:rl:${bucket}:${sub}`;
   try {
@@ -56,7 +56,18 @@ export async function checkRateLimit(
     // Fail-OPEN on Redis blip — better to let a mod's legit click through
     // than block them. The OpenAI quota itself is the ultimate cap.
     // degraded:true lets the caller decide to apply a soft cap.
-    console.error('[cm/ratelimit] check failed (fail-open, degraded):', bucket, sub, err);
-    return { allowed: true, count: 0, max, resetInSec: windowSec, degraded: true };
+    console.error(
+      '[cm/ratelimit] check failed (fail-open, degraded):',
+      bucket,
+      sub,
+      err
+    );
+    return {
+      allowed: true,
+      count: 0,
+      max,
+      resetInSec: windowSec,
+      degraded: true,
+    };
   }
 }

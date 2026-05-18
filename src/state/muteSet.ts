@@ -22,10 +22,17 @@ export function ruleKey(runName: string, checkName: string): string {
 
 export type MuteResult = { ok: true } | { ok: false; error: string };
 
-export async function muteRule(sub: string, runName: string, checkName: string): Promise<MuteResult> {
-  if (!sub || !runName || !checkName) return { ok: false, error: 'sub + runName + checkName required' };
+export async function muteRule(
+  sub: string,
+  runName: string,
+  checkName: string
+): Promise<MuteResult> {
+  if (!sub || !runName || !checkName)
+    return { ok: false, error: 'sub + runName + checkName required' };
   try {
-    await redis.hSet(key(sub), { [ruleKey(runName, checkName)]: new Date().toISOString() });
+    await redis.hSet(key(sub), {
+      [ruleKey(runName, checkName)]: new Date().toISOString(),
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -34,8 +41,13 @@ export async function muteRule(sub: string, runName: string, checkName: string):
   }
 }
 
-export async function unmuteRule(sub: string, runName: string, checkName: string): Promise<MuteResult> {
-  if (!sub || !runName || !checkName) return { ok: false, error: 'sub + runName + checkName required' };
+export async function unmuteRule(
+  sub: string,
+  runName: string,
+  checkName: string
+): Promise<MuteResult> {
+  if (!sub || !runName || !checkName)
+    return { ok: false, error: 'sub + runName + checkName required' };
   try {
     await redis.hDel(key(sub), [ruleKey(runName, checkName)]);
     return { ok: true };
@@ -46,7 +58,9 @@ export async function unmuteRule(sub: string, runName: string, checkName: string
   }
 }
 
-export async function listMutedRules(sub: string | undefined): Promise<string[]> {
+export async function listMutedRules(
+  sub: string | undefined
+): Promise<string[]> {
   if (!sub) return [];
   try {
     const all = await redis.hGetAll(key(sub));
@@ -57,7 +71,11 @@ export async function listMutedRules(sub: string | undefined): Promise<string[]>
   }
 }
 
-export async function isRuleMuted(sub: string, runName: string, checkName: string): Promise<boolean> {
+export async function isRuleMuted(
+  sub: string,
+  runName: string,
+  checkName: string
+): Promise<boolean> {
   if (!sub || !runName || !checkName) return false;
   try {
     const value = await redis.hGet(key(sub), ruleKey(runName, checkName));
@@ -66,7 +84,12 @@ export async function isRuleMuted(sub: string, runName: string, checkName: strin
     // X48: surface the failure instead of silent-false. Soft fail-open is
     // intentional (a Redis blip on the mute check shouldn't kill the rule),
     // but the log line gives ops visibility.
-    console.warn('[cm/muteSet] isRuleMuted failed (fail-open):', { sub, runName, checkName, err });
+    console.warn('[cm/muteSet] isRuleMuted failed (fail-open):', {
+      sub,
+      runName,
+      checkName,
+      err,
+    });
     return false;
   }
 }

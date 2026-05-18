@@ -46,25 +46,42 @@ export function aggregateRuleStats(events: EventRecord[]): RuleStat[] {
 // X127: memoized — aggregation is O(N) and re-runs on every 10s parent poll.
 // useMemo inside guards the heavy work; memo() on the wrapper avoids the
 // outer reconciliation when events array ref is unchanged.
-export const RuleStatsTable = memo(RuleStatsTableImpl, (prev, next) => prev.events === next.events);
+export const RuleStatsTable = memo(
+  RuleStatsTableImpl,
+  (prev, next) => prev.events === next.events
+);
 
 function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
   const stats = useMemo(() => aggregateRuleStats(events), [events]);
   if (stats.length === 0) return null;
   return (
-    <div className="cm-fade-up px-5 pt-3 pb-2" style={{ animationDelay: '0.5s' }}>
+    <div
+      className="cm-fade-up px-5 pt-3 pb-2"
+      style={{ animationDelay: '0.5s' }}
+    >
       <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium mb-2">
-        rule <span className="font-serif italic normal-case tracking-normal text-bone-200/80">stats</span>
+        rule{' '}
+        <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+          stats
+        </span>
       </h2>
       <div className="rounded-md border border-line overflow-hidden">
         <table className="w-full">
           <thead className="bg-white/[0.015]">
             <tr className="text-[9.5px] tracking-wider uppercase text-bone-300/80">
               <th className="text-left px-3 py-1.5 font-medium">rule</th>
-              <th className="text-right px-2 py-1.5 font-medium w-[60px]">fired</th>
-              <th className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell">ok</th>
-              <th className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell">err</th>
-              <th className="text-right px-2 py-1.5 font-medium w-[60px] hidden sm:table-cell">dry-run</th>
+              <th className="text-right px-2 py-1.5 font-medium w-[60px]">
+                fired
+              </th>
+              <th className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell">
+                ok
+              </th>
+              <th className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell">
+                err
+              </th>
+              <th className="text-right px-2 py-1.5 font-medium w-[60px] hidden sm:table-cell">
+                dry-run
+              </th>
             </tr>
           </thead>
           <tbody>

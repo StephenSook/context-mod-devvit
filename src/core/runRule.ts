@@ -19,16 +19,30 @@ import { runHistoryRule } from '../rules/history';
 import { runAttributionRule } from '../rules/attribution';
 import { runRecentActivityRule } from '../rules/recentActivity';
 
-export async function runRule(rule: Rule, item: Item, author: Author, sub?: string): Promise<RuleResult> {
+export async function runRule(
+  rule: Rule,
+  item: Item,
+  author: Author,
+  sub?: string
+): Promise<RuleResult> {
   switch (rule.kind) {
-    case 'regex':           return runRegexRule(rule, item);
-    case 'author':          return runAuthorRule(rule, item, author);
-    case 'ruleset':         return runRuleSet(rule, item, author, sub);
-    case 'repost':          return runRepostRule(rule, item, sub);
-    case 'history':         return runHistoryRule(rule, author, sub);
-    case 'attribution':     return runAttributionRule(rule, author.name, sub);
-    case 'recentActivity':  return runRecentActivityRule(rule, author.name, sub);
+    case 'regex':
+      return runRegexRule(rule, item);
+    case 'author':
+      return runAuthorRule(rule, item, author);
+    case 'ruleset':
+      return runRuleSet(rule, item, author, sub);
+    case 'repost':
+      return runRepostRule(rule, item, sub);
+    case 'history':
+      return runHistoryRule(rule, author, sub);
+    case 'attribution':
+      return runAttributionRule(rule, author.name, sub);
+    case 'recentActivity':
+      return runRecentActivityRule(rule, author.name, sub);
     case 'named':
-      throw new Error(`runRule: encountered un-expanded named rule "${rule.name}" — expandNamedRules must run at config-parse time`);
+      throw new Error(
+        `runRule: encountered un-expanded named rule "${rule.name}" — expandNamedRules must run at config-parse time`
+      );
   }
 }

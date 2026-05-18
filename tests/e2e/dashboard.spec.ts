@@ -55,7 +55,9 @@ test.describe('Observatory dashboard', () => {
     await expect(firstRow).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('header timestamp matches "Ns ago" pattern + self-ticks', async ({ page }) => {
+  test('header timestamp matches "Ns ago" pattern + self-ticks', async ({
+    page,
+  }) => {
     await expect(page.getByText('Actions today').first()).toBeVisible();
     const time = page.locator('time').first();
     const initial = (await time.textContent()) ?? '';
@@ -65,14 +67,17 @@ test.describe('Observatory dashboard', () => {
     expect(after).toMatch(/^\d+[smh] ago$/);
   });
 
-  test('no console errors or warnings on initial load (excluding dev-server 404 asset misses)', async ({ page }) => {
+  test('no console errors or warnings on initial load (excluding dev-server 404 asset misses)', async ({
+    page,
+  }) => {
     const messages: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error' || msg.type() === 'warning') {
         const text = msg.text();
         // Mock dev server doesn't serve fonts/favicon — those 404s are infra noise,
         // not app code errors. Filter them out so we still catch REAL app errors.
-        if (text.includes('Failed to load resource') && text.includes('404')) return;
+        if (text.includes('Failed to load resource') && text.includes('404'))
+          return;
         messages.push(`[${msg.type()}] ${text}`);
       }
     });
@@ -81,7 +86,9 @@ test.describe('Observatory dashboard', () => {
     expect(messages).toEqual([]);
   });
 
-  test('Y1-X9 — click Explain with AI on drill-down → POST /api/explain-event → render text', async ({ page }) => {
+  test('Y1-X9 — click Explain with AI on drill-down → POST /api/explain-event → render text', async ({
+    page,
+  }) => {
     // Mock the AI endpoint at the network layer — no real OpenAI call.
     await page.route('**/api/explain-event', async (route) => {
       await route.fulfill({
@@ -89,7 +96,8 @@ test.describe('Observatory dashboard', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           ok: true,
-          explanation: 'The crypto-giveaway regex matched the post title, and the rule fired a remove action.',
+          explanation:
+            'The crypto-giveaway regex matched the post title, and the rule fired a remove action.',
         }),
       });
     });
@@ -108,10 +116,14 @@ test.describe('Observatory dashboard', () => {
     const aiButton = page.getByRole('button', { name: /Explain with AI/i });
     await expect(aiButton).toBeVisible();
     await aiButton.click();
-    await expect(page.getByText(/crypto-giveaway regex matched/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/crypto-giveaway regex matched/i)).toBeVisible({
+      timeout: 5000,
+    });
   });
 
-  test('Y1-X9 — AI explain handles 429 rate-limit response', async ({ page }) => {
+  test('Y1-X9 — AI explain handles 429 rate-limit response', async ({
+    page,
+  }) => {
     await page.route('**/api/explain-event', async (route) => {
       await route.fulfill({
         status: 429,

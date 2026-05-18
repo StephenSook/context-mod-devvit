@@ -10,15 +10,22 @@ type ModActivity = {
 
 async function fetchModActivity(): Promise<ApiResult<ModActivity[]>> {
   try {
-    const demo = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+    const demo =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('demo') === '1';
     const res = await fetch(`/api/mod-activity${demo ? '?demo=1' : ''}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
-    const activity = Array.isArray(data?.activity) ? (data.activity as ModActivity[]) : [];
+    const activity = Array.isArray(data?.activity)
+      ? (data.activity as ModActivity[])
+      : [];
     if (activity.length === 0) return { ok: true, empty: true };
     return { ok: true, empty: false, data: activity };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
@@ -33,7 +40,10 @@ function relTimeShort(ts: number, now: number = Date.now()): string {
 }
 
 export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
-  const [state, setState] = useState<ApiResult<ModActivity[]>>({ ok: true, empty: true });
+  const [state, setState] = useState<ApiResult<ModActivity[]>>({
+    ok: true,
+    empty: true,
+  });
 
   useEffect(() => {
     void fetchModActivity().then(setState);
@@ -44,7 +54,10 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
     // unavailable" instead of silent null — visually identical to
     // genuinely-empty activity otherwise.
     return (
-      <div className="cm-fade-up px-5 py-2 border-t border-line/40" style={{ animationDelay: '0.6s' }}>
+      <div
+        className="cm-fade-up px-5 py-2 border-t border-line/40"
+        style={{ animationDelay: '0.6s' }}
+      >
         <p className="telemetry text-[10px] text-bone-300/60">
           mod activity feed unavailable: {state.error}
         </p>
@@ -54,9 +67,15 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
   if (state.empty) return null;
 
   return (
-    <div className="cm-fade-up px-5 py-2 border-t border-line/40" style={{ animationDelay: '0.6s' }}>
+    <div
+      className="cm-fade-up px-5 py-2 border-t border-line/40"
+      style={{ animationDelay: '0.6s' }}
+    >
       <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium mb-1.5">
-        mod <span className="font-serif italic normal-case tracking-normal text-bone-200/80">activity</span>
+        mod{' '}
+        <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+          activity
+        </span>
       </h2>
       <ul className="space-y-0.5">
         {state.data.slice(0, 5).map((a, i) => (
@@ -71,7 +90,9 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
             <span className="text-bone-300/70">·</span>
             <span className="telemetry text-bone-200/80">{a.kind}</span>
             {a.detail && (
-              <span className="telemetry text-bone-300/60 truncate">{a.detail}</span>
+              <span className="telemetry text-bone-300/60 truncate">
+                {a.detail}
+              </span>
             )}
           </li>
         ))}

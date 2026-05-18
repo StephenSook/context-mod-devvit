@@ -19,15 +19,15 @@
 import { redis, reddit } from '@devvit/web/server';
 import { K } from './keys';
 
-const TTL_SECONDS = 60 * 60;        // 1 hour
-const FETCH_LIMIT = 100;            // page once, no pagination loop
+const TTL_SECONDS = 60 * 60; // 1 hour
+const FETCH_LIMIT = 100; // page once, no pagination loop
 const SUB_DEFAULT = '_';
 
 export interface AuthorHistoryPost {
   id: string;
   subredditName: string;
   url: string;
-  domain: string;                   // host extracted from url
+  domain: string; // host extracted from url
   createdAtMs: number;
 }
 
@@ -74,7 +74,7 @@ function extractDomain(url: string): string {
  */
 export async function getAuthorHistory(
   name: string,
-  sub: string = SUB_DEFAULT,
+  sub: string = SUB_DEFAULT
 ): Promise<AuthorHistory> {
   if (!name) return EMPTY_HISTORY('');
   const key = K.authorHist(name, sub);
@@ -90,7 +90,11 @@ export async function getAuthorHistory(
       }
     }
   } catch (err) {
-    console.warn('[cm/authorHistory] redis get failed — fetching fresh:', name, err);
+    console.warn(
+      '[cm/authorHistory] redis get failed — fetching fresh:',
+      name,
+      err
+    );
   }
 
   const fresh = await fetchFromReddit(name);
@@ -100,7 +104,11 @@ export async function getAuthorHistory(
       expiration: new Date(Date.now() + TTL_SECONDS * 1000),
     });
   } catch (err) {
-    console.warn('[cm/authorHistory] redis set failed — returning uncached:', name, err);
+    console.warn(
+      '[cm/authorHistory] redis set failed — returning uncached:',
+      name,
+      err
+    );
   }
 
   return fresh;
@@ -120,10 +128,17 @@ async function fetchFromReddit(name: string): Promise<AuthorHistory> {
       subredditName: p.subredditName,
       url: p.url,
       domain: extractDomain(p.url),
-      createdAtMs: p.createdAt instanceof Date ? p.createdAt.getTime() : Number(p.createdAt) || 0,
+      createdAtMs:
+        p.createdAt instanceof Date
+          ? p.createdAt.getTime()
+          : Number(p.createdAt) || 0,
     }));
   } catch (err) {
-    console.warn('[cm/authorHistory] getPostsByUser failed — empty posts:', name, err);
+    console.warn(
+      '[cm/authorHistory] getPostsByUser failed — empty posts:',
+      name,
+      err
+    );
   }
   try {
     const commentsListing = reddit.getCommentsByUser({
@@ -136,10 +151,17 @@ async function fetchFromReddit(name: string): Promise<AuthorHistory> {
       id: c.id,
       subredditName: c.subredditName,
       body: c.body,
-      createdAtMs: c.createdAt instanceof Date ? c.createdAt.getTime() : Number(c.createdAt) || 0,
+      createdAtMs:
+        c.createdAt instanceof Date
+          ? c.createdAt.getTime()
+          : Number(c.createdAt) || 0,
     }));
   } catch (err) {
-    console.warn('[cm/authorHistory] getCommentsByUser failed — empty comments:', name, err);
+    console.warn(
+      '[cm/authorHistory] getCommentsByUser failed — empty comments:',
+      name,
+      err
+    );
   }
   return out;
 }

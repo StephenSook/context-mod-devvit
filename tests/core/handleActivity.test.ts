@@ -24,7 +24,10 @@ vi.mock('../../src/state/recentEvents', () => ({
 }));
 
 vi.mock('../../src/lib/idem', async () => {
-  const actual = await vi.importActual<typeof import('../../src/lib/idem')>('../../src/lib/idem');
+  const actual =
+    await vi.importActual<typeof import('../../src/lib/idem')>(
+      '../../src/lib/idem'
+    );
   return {
     ...actual,
     reserveAction: (...a: unknown[]) => reserveAction(...a),
@@ -44,35 +47,61 @@ import { handleActivity } from '../../src/core/handleActivity';
 import type { Item, Author, AppConfig } from '../../src/shared/types';
 
 const item: Item = {
-  id: 't3_abc', title: 'free crypto giveaway', body: '', url: 'https://x.example',
-  author: 'spammer', age: 100, score: 0, isSelf: false, over18: false,
-  removed: false, approved: false, locked: false, stickied: false, linkFlairText: null,
+  id: 't3_abc',
+  title: 'free crypto giveaway',
+  body: '',
+  url: 'https://x.example',
+  author: 'spammer',
+  age: 100,
+  score: 0,
+  isSelf: false,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
 };
 const author: Author = {
-  name: 'spammer', id: 't2_s', age: 0, linkKarma: 0, commentKarma: 0,
-  flairText: null, isMod: false, isContributor: false, verified: false, shadowBanned: false,
+  name: 'spammer',
+  id: 't2_s',
+  age: 0,
+  linkKarma: 0,
+  commentKarma: 0,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
+  shadowBanned: false,
 };
 
 const config: AppConfig = {
-  runs: [{
-    name: 'main',
-    checks: [{
-      name: 'spam-title',
-      combinator: 'OR',
-      rules: [{ kind: 'regex', pattern: 'crypto|giveaway', flags: 'i' }],
-      actions: [{ kind: 'remove', isSpam: true }],
-    }],
-  }],
+  runs: [
+    {
+      name: 'main',
+      checks: [
+        {
+          name: 'spam-title',
+          combinator: 'OR',
+          rules: [{ kind: 'regex', pattern: 'crypto|giveaway', flags: 'i' }],
+          actions: [{ kind: 'remove', isSpam: true }],
+        },
+      ],
+    },
+  ],
 };
 
 beforeEach(() => {
   getCurrentRev.mockReset();
   recordEvent.mockClear();
-  reserveAction.mockClear(); reserveAction.mockResolvedValue(true);
+  reserveAction.mockClear();
+  reserveAction.mockResolvedValue(true);
   commitAction.mockClear();
   releaseAction.mockClear();
-  redditRemove.mockClear(); redditRemove.mockResolvedValue(undefined);
-  redditApprove.mockClear(); redditApprove.mockResolvedValue(undefined);
+  redditRemove.mockClear();
+  redditRemove.mockResolvedValue(undefined);
+  redditApprove.mockClear();
+  redditApprove.mockResolvedValue(undefined);
 });
 
 describe('handleActivity', () => {
@@ -90,7 +119,10 @@ describe('handleActivity', () => {
 
     expect(redditRemove).toHaveBeenCalledWith('t3_abc', true);
     expect(recordEvent).toHaveBeenCalledTimes(1);
-    const [event, subPassed] = recordEvent.mock.calls[0] as [Record<string, unknown>, string];
+    const [event, subPassed] = recordEvent.mock.calls[0] as [
+      Record<string, unknown>,
+      string,
+    ];
     expect(subPassed).toBe('cm_devvit_test');
     expect(event.activityId).toBe('t3_abc');
     expect(event.runName).toBe('main');
@@ -106,22 +138,28 @@ describe('handleActivity', () => {
     await handleActivity(item, author, 'sub');
 
     const event = recordEvent.mock.calls[0]![0] as Record<string, unknown>;
-    expect(event.actions).toEqual([{ kind: 'remove', ok: false, status: 'error' }]);
+    expect(event.actions).toEqual([
+      { kind: 'remove', ok: false, status: 'error' },
+    ]);
   });
 
   it('does not record an event when no run triggered', async () => {
     getCurrentRev.mockResolvedValueOnce({
       rev: 0,
       config: {
-        runs: [{
-          name: 'main',
-          checks: [{
-            name: 'never',
-            combinator: 'OR',
-            rules: [{ kind: 'regex', pattern: '^never-matches$' }],
-            actions: [{ kind: 'remove' }],
-          }],
-        }],
+        runs: [
+          {
+            name: 'main',
+            checks: [
+              {
+                name: 'never',
+                combinator: 'OR',
+                rules: [{ kind: 'regex', pattern: '^never-matches$' }],
+                actions: [{ kind: 'remove' }],
+              },
+            ],
+          },
+        ],
       } as AppConfig,
     });
 
@@ -133,8 +171,12 @@ describe('handleActivity', () => {
 
   it('dispatches actions in declared order across multiple runs', async () => {
     const order: string[] = [];
-    redditRemove.mockImplementationOnce(async () => { order.push('remove'); });
-    redditApprove.mockImplementationOnce(async () => { order.push('approve'); });
+    redditRemove.mockImplementationOnce(async () => {
+      order.push('remove');
+    });
+    redditApprove.mockImplementationOnce(async () => {
+      order.push('approve');
+    });
 
     getCurrentRev.mockResolvedValueOnce({
       rev: 0,
@@ -142,19 +184,25 @@ describe('handleActivity', () => {
         runs: [
           {
             name: 'r1',
-            checks: [{
-              name: 'c1', combinator: 'OR',
-              rules: [{ kind: 'regex', pattern: 'crypto', flags: 'i' }],
-              actions: [{ kind: 'remove' }],
-            }],
+            checks: [
+              {
+                name: 'c1',
+                combinator: 'OR',
+                rules: [{ kind: 'regex', pattern: 'crypto', flags: 'i' }],
+                actions: [{ kind: 'remove' }],
+              },
+            ],
           },
           {
             name: 'r2',
-            checks: [{
-              name: 'c2', combinator: 'OR',
-              rules: [{ kind: 'regex', pattern: 'crypto', flags: 'i' }],
-              actions: [{ kind: 'approve' }],
-            }],
+            checks: [
+              {
+                name: 'c2',
+                combinator: 'OR',
+                rules: [{ kind: 'regex', pattern: 'crypto', flags: 'i' }],
+                actions: [{ kind: 'approve' }],
+              },
+            ],
           },
         ],
       } as AppConfig,
@@ -167,7 +215,10 @@ describe('handleActivity', () => {
   });
 
   it('respects config.dryRun globally — no Reddit calls, but event recorded', async () => {
-    getCurrentRev.mockResolvedValueOnce({ rev: 0, config: { ...config, dryRun: true } });
+    getCurrentRev.mockResolvedValueOnce({
+      rev: 0,
+      config: { ...config, dryRun: true },
+    });
 
     await handleActivity(item, author, 'sub');
 
@@ -178,7 +229,12 @@ describe('handleActivity', () => {
     // 2026-05-16: now carries status:'dry-run' + wouldHaveCalled so dashboard
     // can render distinct chip.
     expect(event.actions).toEqual([
-      { kind: 'remove', ok: false, status: 'dry-run', wouldHaveCalled: 'remove' },
+      {
+        kind: 'remove',
+        ok: false,
+        status: 'dry-run',
+        wouldHaveCalled: 'remove',
+      },
     ]);
   });
 

@@ -36,21 +36,31 @@ export function validateEventSummary(input: unknown): ValidationResult {
     return { ok: false, error: 'event must be an object' };
   }
   const e = input as Record<string, unknown>;
-  const stringFields = ['runName', 'checkName', 'matchedRule', 'matchedSubstring'] as const;
+  const stringFields = [
+    'runName',
+    'checkName',
+    'matchedRule',
+    'matchedSubstring',
+  ] as const;
   for (const f of stringFields) {
     const v = e[f];
     if (v === undefined) continue;
-    if (typeof v !== 'string') return { ok: false, error: `${f} must be a string` };
-    if (v.length > FIELD_MAX) return { ok: false, error: `${f} exceeds ${FIELD_MAX} chars` };
+    if (typeof v !== 'string')
+      return { ok: false, error: `${f} must be a string` };
+    if (v.length > FIELD_MAX)
+      return { ok: false, error: `${f} exceeds ${FIELD_MAX} chars` };
     if (v.includes(DELIMITER_OPEN) || v.includes(DELIMITER_CLOSE)) {
       return { ok: false, error: `${f} contains reserved delimiter` };
     }
   }
   const actions = e.actions;
-  if (!Array.isArray(actions)) return { ok: false, error: 'actions must be an array' };
-  if (actions.length > ACTIONS_MAX) return { ok: false, error: `actions exceeds ${ACTIONS_MAX} items` };
+  if (!Array.isArray(actions))
+    return { ok: false, error: 'actions must be an array' };
+  if (actions.length > ACTIONS_MAX)
+    return { ok: false, error: `actions exceeds ${ACTIONS_MAX} items` };
   for (const a of actions) {
-    if (!a || typeof a !== 'object') return { ok: false, error: 'each action must be an object' };
+    if (!a || typeof a !== 'object')
+      return { ok: false, error: 'each action must be an object' };
     const ao = a as Record<string, unknown>;
     if (typeof ao.kind !== 'string' || ao.kind.length > 50) {
       return { ok: false, error: 'action.kind must be a string ≤50 chars' };
@@ -61,13 +71,20 @@ export function validateEventSummary(input: unknown): ValidationResult {
     if (ao.kind.includes(DELIMITER_OPEN) || ao.kind.includes(DELIMITER_CLOSE)) {
       return { ok: false, error: 'action.kind contains reserved delimiter' };
     }
-    if (typeof ao.ok !== 'boolean') return { ok: false, error: 'action.ok must be boolean' };
+    if (typeof ao.ok !== 'boolean')
+      return { ok: false, error: 'action.ok must be boolean' };
     if (ao.status !== undefined) {
       if (typeof ao.status !== 'string' || ao.status.length > 50) {
         return { ok: false, error: 'action.status must be a string ≤50 chars' };
       }
-      if (ao.status.includes(DELIMITER_OPEN) || ao.status.includes(DELIMITER_CLOSE)) {
-        return { ok: false, error: 'action.status contains reserved delimiter' };
+      if (
+        ao.status.includes(DELIMITER_OPEN) ||
+        ao.status.includes(DELIMITER_CLOSE)
+      ) {
+        return {
+          ok: false,
+          error: 'action.status contains reserved delimiter',
+        };
       }
     }
   }
@@ -82,12 +99,13 @@ const SYSTEM_PROMPT = `You are explaining a single moderation action taken by Co
 export async function explainEvent(
   event: EventSummary,
   apiKey: string,
-  fetcher: Fetcher = fetch,
+  fetcher: Fetcher = fetch
 ): Promise<ExplainResult> {
   if (!apiKey || !apiKey.trim()) {
     return {
       ok: false,
-      error: 'OpenAI API key is missing. Set it in the app installation settings.',
+      error:
+        'OpenAI API key is missing. Set it in the app installation settings.',
     };
   }
 
@@ -118,7 +136,8 @@ export async function explainEvent(
       try {
         const body = await res.json();
         if (body && typeof body === 'object' && 'error' in body) {
-          const e = (body as { error: { message?: string; code?: string } }).error;
+          const e = (body as { error: { message?: string; code?: string } })
+            .error;
           if (e.message) serverMsg = e.message;
           else if (e.code) serverMsg = e.code;
         }
@@ -126,9 +145,15 @@ export async function explainEvent(
         // body not JSON
       }
       const hint =
-        res.status === 401 ? ' (check the openai_api_key app setting)' :
-        res.status === 429 ? ' (rate-limited or billing exhausted)' : '';
-      return { ok: false, error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}` };
+        res.status === 401
+          ? ' (check the openai_api_key app setting)'
+          : res.status === 429
+            ? ' (rate-limited or billing exhausted)'
+            : '';
+      return {
+        ok: false,
+        error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}`,
+      };
     }
     const data: unknown = await res.json();
     const text = extractCompletionText(data);
@@ -139,7 +164,8 @@ export async function explainEvent(
   } catch (err) {
     const name = err instanceof Error ? err.name : 'Error';
     const msg = err instanceof Error ? err.message : String(err);
-    if (name === 'AbortError') return { ok: false, error: 'OpenAI request timed out after 30s. Retry.' };
+    if (name === 'AbortError')
+      return { ok: false, error: 'OpenAI request timed out after 30s. Retry.' };
     return { ok: false, error: `OpenAI fetch failed: ${msg}` };
   } finally {
     clearTimeout(timeoutId);
@@ -151,14 +177,19 @@ export function buildUserPrompt(event: EventSummary): string {
   if (event.runName) lines.push(`Run: ${event.runName}`);
   if (event.checkName) lines.push(`Check: ${event.checkName}`);
   if (event.matchedRule) lines.push(`Matched rule: ${event.matchedRule}`);
-  if (event.matchedSubstring) lines.push(`Matched substring: "${event.matchedSubstring}"`);
+  if (event.matchedSubstring)
+    lines.push(`Matched substring: "${event.matchedSubstring}"`);
   const actionsLine = event.actions
-    .map((a) => `${a.kind}${a.ok ? '' : ' (failed)'}${a.status ? ` [${a.status}]` : ''}`)
+    .map(
+      (a) =>
+        `${a.kind}${a.ok ? '' : ' (failed)'}${a.status ? ` [${a.status}]` : ''}`
+    )
     .join(', ');
   if (actionsLine) lines.push(`Actions taken: ${actionsLine}`);
-  const body = lines.length === 0
-    ? 'No event metadata supplied — describe what kind of moderation event this might be.'
-    : lines.join('\n');
+  const body =
+    lines.length === 0
+      ? 'No event metadata supplied — describe what kind of moderation event this might be.'
+      : lines.join('\n');
   return `${DELIMITER_OPEN}\n${body}\n${DELIMITER_CLOSE}`;
 }
 

@@ -14,32 +14,46 @@ export function EventDetails({ event }: { event: EventRecord }) {
         <dl className="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1 text-[11px]">
           {event.runName && (
             <>
-              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">run</dt>
+              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
+                run
+              </dt>
               <dd className="text-bone-100">{event.runName}</dd>
             </>
           )}
           {event.checkName && (
             <>
-              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">check</dt>
+              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
+                check
+              </dt>
               <dd className="text-bone-100">{event.checkName}</dd>
             </>
           )}
           {event.matchedRule && (
             <>
-              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">rule</dt>
+              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
+                rule
+              </dt>
               <dd className="text-bone-100">{event.matchedRule}</dd>
             </>
           )}
           {event.runPath && (
             <>
-              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">path</dt>
-              <dd className="telemetry text-bone-100 text-[10px]">{event.runPath}</dd>
+              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
+                path
+              </dt>
+              <dd className="telemetry text-bone-100 text-[10px]">
+                {event.runPath}
+              </dd>
             </>
           )}
           {event.matchedSubstring && (
             <>
-              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">matched</dt>
-              <dd className="telemetry text-signal-ok text-[10px] break-all">"{event.matchedSubstring}"</dd>
+              <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
+                matched
+              </dt>
+              <dd className="telemetry text-signal-ok text-[10px] break-all">
+                "{event.matchedSubstring}"
+              </dd>
             </>
           )}
         </dl>
@@ -50,13 +64,18 @@ export function EventDetails({ event }: { event: EventRecord }) {
           {event.actions.map((a, i) => {
             const marker = actionMarker(a.status, a.ok);
             return (
-              <li key={`${a.kind}-${i}`} className="flex items-baseline gap-2 text-[11px]">
+              <li
+                key={`${a.kind}-${i}`}
+                className="flex items-baseline gap-2 text-[11px]"
+              >
                 <span className="telemetry text-bone-200 min-w-[64px]">
                   {a.kind}
                   {marker}
                 </span>
                 {a.status && (
-                  <span className="telemetry text-[10px] text-bone-300/80">{a.status}</span>
+                  <span className="telemetry text-[10px] text-bone-300/80">
+                    {a.status}
+                  </span>
                 )}
                 {a.wouldHaveCalled && (
                   <span className="telemetry text-[10px] text-signal-info/80 break-all">
@@ -94,7 +113,11 @@ export function EventDetails({ event }: { event: EventRecord }) {
  * inline. Mod-auth gated server-side (no client UI for non-mods).
  */
 function AiExplainButton({ event }: { event: EventRecord }) {
-  const [state, setState] = useState<{ loading: boolean; explanation?: string; error?: string }>({
+  const [state, setState] = useState<{
+    loading: boolean;
+    explanation?: string;
+    error?: string;
+  }>({
     loading: false,
   });
 
@@ -125,7 +148,10 @@ function AiExplainButton({ event }: { event: EventRecord }) {
         setState({ loading: false, error: data.error ?? `HTTP ${res.status}` });
       }
     } catch (err) {
-      setState({ loading: false, error: err instanceof Error ? err.message : String(err) });
+      setState({
+        loading: false,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -153,7 +179,13 @@ function AiExplainButton({ event }: { event: EventRecord }) {
   );
 }
 
-function DetailSection({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <h3 className="telemetry text-[9.5px] uppercase tracking-wider text-bone-300/70 mb-1.5">

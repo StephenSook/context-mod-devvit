@@ -10,8 +10,14 @@ const expiries = new Map<string, number>();
 vi.mock('@devvit/web/server', () => ({
   redis: {
     get: vi.fn(async (k: string) => store.get(k) ?? null),
-    set: vi.fn(async (k: string, v: string) => { store.set(k, v); return 'OK'; }),
-    del: vi.fn(async (k: string) => { store.delete(k); expiries.delete(k); }),
+    set: vi.fn(async (k: string, v: string) => {
+      store.set(k, v);
+      return 'OK';
+    }),
+    del: vi.fn(async (k: string) => {
+      store.delete(k);
+      expiries.delete(k);
+    }),
     incrBy: vi.fn(async (k: string, n: number) => {
       const cur = Number.parseInt(store.get(k) ?? '0', 10);
       const next = cur + n;
@@ -24,7 +30,11 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
-import { checkCircuit, recordFailure, recordSuccess } from '../../src/lib/circuitBreaker';
+import {
+  checkCircuit,
+  recordFailure,
+  recordSuccess,
+} from '../../src/lib/circuitBreaker';
 
 beforeEach(() => {
   store.clear();
@@ -44,7 +54,8 @@ describe('circuit breaker (X37)', () => {
   });
 
   it('opens when failures reach threshold', async () => {
-    for (let i = 0; i < 5; i++) await recordFailure('openai', { threshold: 5, openSec: 60 });
+    for (let i = 0; i < 5; i++)
+      await recordFailure('openai', { threshold: 5, openSec: 60 });
     const r = await checkCircuit('openai', { openSec: 60 });
     expect(r.state).toBe('open');
     expect(r.retryInSec).toBeGreaterThan(0);

@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { simulateRule, formatSimulationToast, type SimulationSample } from '../../src/core/simulateRule';
+import {
+  simulateRule,
+  formatSimulationToast,
+  type SimulationSample,
+} from '../../src/core/simulateRule';
 import * as runRuleModule from '../../src/core/runRule';
 import type { Item, Author } from '../../src/shared/types';
 
@@ -39,7 +43,10 @@ const DEFAULT_AUTHOR: Author = {
   flairText: null,
 };
 
-function sample(item: Partial<Item>, author?: Partial<Author>): SimulationSample {
+function sample(
+  item: Partial<Item>,
+  author?: Partial<Author>
+): SimulationSample {
   return {
     item: { ...DEFAULT_ITEM, ...item },
     author: { ...DEFAULT_AUTHOR, ...author },
@@ -84,9 +91,15 @@ describe('simulateRule', () => {
     // happy path. Force runRule to throw to pin that simulateRule actually
     // surfaces per-sample errors (Codex CR3 BLOCKER #1 — mod sees "0/25 fired"
     // when every sample crashed, looks like the rule was safe).
-    const spy = vi.spyOn(runRuleModule, 'runRule').mockRejectedValue(new Error('regex backtrack limit exceeded'));
+    const spy = vi
+      .spyOn(runRuleModule, 'runRule')
+      .mockRejectedValue(new Error('regex backtrack limit exceeded'));
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
-    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
+    const samples = [
+      sample({ id: 't3_a' }),
+      sample({ id: 't3_b' }),
+      sample({ id: 't3_c' }),
+    ];
     const r = await simulateRule(ruleJson5, samples);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -100,13 +113,19 @@ describe('simulateRule', () => {
 
   it('W5 — partial failures: some samples throw, others succeed', async () => {
     let call = 0;
-    const spy = vi.spyOn(runRuleModule, 'runRule').mockImplementation(async () => {
-      call++;
-      if (call === 2) throw new Error('flaky regex');
-      return { triggered: true, name: 'r1', kind: 'regex' };
-    });
+    const spy = vi
+      .spyOn(runRuleModule, 'runRule')
+      .mockImplementation(async () => {
+        call++;
+        if (call === 2) throw new Error('flaky regex');
+        return { triggered: true, name: 'r1', kind: 'regex' };
+      });
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
-    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
+    const samples = [
+      sample({ id: 't3_a' }),
+      sample({ id: 't3_b' }),
+      sample({ id: 't3_c' }),
+    ];
     const r = await simulateRule(ruleJson5, samples);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -121,7 +140,9 @@ describe('simulateRule', () => {
 
   it('U1 fix — breakdown includes errored flag per sample', async () => {
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'foo', target: 'title' }`;
-    const r = await simulateRule(ruleJson5, [sample({ id: 't3_x', title: 'foo' })]);
+    const r = await simulateRule(ruleJson5, [
+      sample({ id: 't3_x', title: 'foo' }),
+    ]);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.breakdown[0]?.errored).toBe(false);
@@ -141,8 +162,12 @@ describe('simulateRule', () => {
     if (r.ok) {
       expect(r.totalSamples).toBe(3);
       expect(r.firedCount).toBe(2);
-      expect(r.breakdown.find((b) => b.activityId === 't3_a')?.triggered).toBe(true);
-      expect(r.breakdown.find((b) => b.activityId === 't3_b')?.triggered).toBe(false);
+      expect(r.breakdown.find((b) => b.activityId === 't3_a')?.triggered).toBe(
+        true
+      );
+      expect(r.breakdown.find((b) => b.activityId === 't3_b')?.triggered).toBe(
+        false
+      );
     }
   });
 
@@ -163,7 +188,13 @@ describe('simulateRule', () => {
 
 describe('formatSimulationToast', () => {
   it('renders zero-samples message', () => {
-    const r = { ok: true as const, totalSamples: 0, firedCount: 0, erroredCount: 0, breakdown: [] };
+    const r = {
+      ok: true as const,
+      totalSamples: 0,
+      firedCount: 0,
+      erroredCount: 0,
+      breakdown: [],
+    };
     expect(formatSimulationToast(r)).toMatch(/No recent posts/i);
   });
 
@@ -190,7 +221,13 @@ describe('formatSimulationToast', () => {
       triggered: true,
       errored: false,
     }));
-    const r = { ok: true as const, totalSamples: 8, firedCount: 8, erroredCount: 0, breakdown };
+    const r = {
+      ok: true as const,
+      totalSamples: 8,
+      firedCount: 8,
+      erroredCount: 0,
+      breakdown,
+    };
     const toast = formatSimulationToast(r);
     expect((toast.match(/t3_/g) ?? []).length).toBe(3);
   });

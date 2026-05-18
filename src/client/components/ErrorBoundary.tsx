@@ -31,14 +31,19 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(err: Error, info: ErrorInfo) {
-    console.error('[cm/error-boundary] uncaught render error:', err, info.componentStack);
+    console.error(
+      '[cm/error-boundary] uncaught render error:',
+      err,
+      info.componentStack
+    );
   }
 
   reset = () => this.setState({ err: null });
 
   override render() {
     if (this.state.err) {
-      if (this.props.fallback) return this.props.fallback(this.state.err, this.reset);
+      if (this.props.fallback)
+        return this.props.fallback(this.state.err, this.reset);
       return (
         <div
           role="alert"
@@ -47,8 +52,8 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md text-center space-y-4">
             <div className="text-2xl font-mono">⚠ Dashboard hit an error</div>
             <p className="text-bone-300 text-sm">
-              The dashboard component crashed while rendering. Your moderation engine is
-              unaffected — only the view layer broke.
+              The dashboard component crashed while rendering. Your moderation
+              engine is unaffected — only the view layer broke.
             </p>
             <pre className="text-left text-xs bg-bone-900/30 border border-line/40 rounded p-3 overflow-x-auto">
               {this.state.err.message}

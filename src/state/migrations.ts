@@ -27,7 +27,9 @@ export async function runMigrations(from: string, to: string): Promise<void> {
   if (from === to) return;
   const target = MIGRATIONS[to];
   if (!target) {
-    console.log(`[cm/migrations] no migration registered for ${from} → ${to} (no-op)`);
+    console.log(
+      `[cm/migrations] no migration registered for ${from} → ${to} (no-op)`
+    );
     return;
   }
   try {

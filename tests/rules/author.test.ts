@@ -3,14 +3,32 @@ import { runAuthorRule } from '../../src/rules/author';
 import type { Item, Author } from '../../src/shared/types';
 
 const baseItem: Item = {
-  id: 't3_a', title: '', body: '', url: '', author: 'u', age: 0, score: 0,
-  isSelf: false, over18: false, removed: false, approved: false,
-  locked: false, stickied: false, linkFlairText: null,
+  id: 't3_a',
+  title: '',
+  body: '',
+  url: '',
+  author: 'u',
+  age: 0,
+  score: 0,
+  isSelf: false,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
 };
 
 const baseAuthor: Author = {
-  name: 'u', id: 't2_z', age: 86_400, linkKarma: 5, commentKarma: 10,
-  flairText: null, isMod: false, isContributor: false, verified: false,
+  name: 'u',
+  id: 't2_z',
+  age: 86_400,
+  linkKarma: 5,
+  commentKarma: 10,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
   shadowBanned: false,
 };
 
@@ -19,7 +37,7 @@ describe('runAuthorRule', () => {
     const res = runAuthorRule(
       { kind: 'author', filter: { linkKarmaMax: 10 } },
       baseItem,
-      baseAuthor,
+      baseAuthor
     );
     expect(res.triggered).toBe(true);
   });
@@ -28,7 +46,7 @@ describe('runAuthorRule', () => {
     const res = runAuthorRule(
       { kind: 'author', filter: { linkKarmaMin: 100 } },
       baseItem,
-      baseAuthor,
+      baseAuthor
     );
     expect(res.triggered).toBe(false);
   });
@@ -37,7 +55,7 @@ describe('runAuthorRule', () => {
     const res = runAuthorRule(
       { kind: 'author', filter: { nameIn: ['u'] } },
       baseItem,
-      baseAuthor,
+      baseAuthor
     );
     expect(res.triggered).toBe(true);
   });

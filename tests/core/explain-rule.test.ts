@@ -1,11 +1,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { explainRule, formatExplainToast } from '../../src/core/explainRule';
 
-function mockFetcher(response: { ok: boolean; status?: number; body: unknown }) {
-  return vi.fn(async () =>
-    new Response(JSON.stringify(response.body), {
-      status: response.status ?? (response.ok ? 200 : 500),
-    }),
+function mockFetcher(response: {
+  ok: boolean;
+  status?: number;
+  body: unknown;
+}) {
+  return vi.fn(
+    async () =>
+      new Response(JSON.stringify(response.body), {
+        status: response.status ?? (response.ok ? 200 : 500),
+      })
   );
 }
 
@@ -31,16 +36,28 @@ describe('explainRule', () => {
   it('parses successful OpenAI response', async () => {
     const fetcher = mockFetcher({
       ok: true,
-      body: { choices: [{ message: { content: 'This rule matches posts about crypto.' } }] },
+      body: {
+        choices: [
+          { message: { content: 'This rule matches posts about crypto.' } },
+        ],
+      },
     });
-    const r = await explainRule("{kind:'regex',pattern:'crypto'}", 'sk-fake', fetcher);
+    const r = await explainRule(
+      "{kind:'regex',pattern:'crypto'}",
+      'sk-fake',
+      fetcher
+    );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.explanation).toContain('crypto');
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it('surfaces OpenAI HTTP error', async () => {
-    const fetcher = mockFetcher({ ok: false, status: 401, body: { error: 'invalid_api_key' } });
+    const fetcher = mockFetcher({
+      ok: false,
+      status: 401,
+      body: { error: 'invalid_api_key' },
+    });
     const r = await explainRule('{kind:"regex"}', 'sk-bad', fetcher);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toContain('401');
@@ -63,14 +80,20 @@ describe('explainRule', () => {
   });
 
   it('sets correct headers + body shape', async () => {
-    const fetcher = vi.fn(async () =>
-      new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 }),
+    const fetcher = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ choices: [{ message: { content: 'ok' } }] }),
+          { status: 200 }
+        )
     );
     await explainRule("{kind:'regex'}", 'sk-test', fetcher);
     const call = fetcher.mock.calls[0];
     expect(call?.[0]).toBe('https://api.openai.com/v1/chat/completions');
     const init = call?.[1] as RequestInit;
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer sk-test');
+    expect((init.headers as Record<string, string>)['Authorization']).toBe(
+      'Bearer sk-test'
+    );
     const body = JSON.parse(init.body as string);
     expect(body.model).toBe('gpt-4o-mini');
     expect(body.messages).toHaveLength(2);

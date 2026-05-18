@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { render, escapeMarkdown, type TemplateContext } from '../../src/core/template';
+import {
+  render,
+  escapeMarkdown,
+  type TemplateContext,
+} from '../../src/core/template';
 import type { Item, Author } from '../../src/shared/types';
 
 function makeCtx(): TemplateContext {
@@ -41,9 +45,11 @@ describe('render', () => {
   it('substitutes author.name and item.title', () => {
     const out = render(
       'Hello {{author.name}}, your post {{item.title}} was removed',
-      makeCtx(),
+      makeCtx()
     );
-    expect(out).toBe('Hello someUser, your post free crypto giveaway scam was removed');
+    expect(out).toBe(
+      'Hello someUser, your post free crypto giveaway scam was removed'
+    );
   });
 
   it('does NOT HTML-escape ampersands or apostrophes (Reddit is markdown, not HTML)', () => {
@@ -81,11 +87,15 @@ describe('render', () => {
 
 describe('escapeMarkdown', () => {
   it('escapes the markdown-active char set', () => {
-    expect(escapeMarkdown('*bold* _italic_ `code`')).toBe('\\*bold\\* \\_italic\\_ \\`code\\`');
+    expect(escapeMarkdown('*bold* _italic_ `code`')).toBe(
+      '\\*bold\\* \\_italic\\_ \\`code\\`'
+    );
   });
 
   it('defangs u/ pings on a word boundary', () => {
-    expect(escapeMarkdown('u/spammer pinged you')).toBe('u\\/spammer pinged you');
+    expect(escapeMarkdown('u/spammer pinged you')).toBe(
+      'u\\/spammer pinged you'
+    );
   });
 
   it('defangs r/ subreddit links on a word boundary', () => {
@@ -127,10 +137,14 @@ describe('escapeMarkdown', () => {
   // renders the URL auto-link / defanged ping / literal brackets).
   describe('Phase 2.5 mandatory fixtures', () => {
     it('fixture 1 — YouTube URL: only the dot is escaped; auto-link survives', () => {
-      expect(escapeMarkdown('https://youtu.be/abc')).toBe('https://youtu\\.be/abc');
+      expect(escapeMarkdown('https://youtu.be/abc')).toBe(
+        'https://youtu\\.be/abc'
+      );
     });
     it('fixture 2 — user ping is defanged', () => {
-      expect(escapeMarkdown('u/spammer pinged you')).toBe('u\\/spammer pinged you');
+      expect(escapeMarkdown('u/spammer pinged you')).toBe(
+        'u\\/spammer pinged you'
+      );
     });
     it('fixture 3 — subreddit ping is defanged', () => {
       expect(escapeMarkdown('check r/funny')).toBe('check r\\/funny');

@@ -23,7 +23,7 @@ const DEFAULT_MIN_POSTS = 5;
 export async function runAttributionRule(
   rule: AttributionRule,
   authorName: string,
-  sub: string = SUB_DEFAULT,
+  sub: string = SUB_DEFAULT
 ): Promise<RuleResult> {
   if (!authorName || !rule.domains?.length) return { triggered: false };
 

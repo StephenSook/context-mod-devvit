@@ -1,6 +1,13 @@
 import type { EventRecord } from './types';
 
-const CSV_HEADER = ['ts', 'activityId', 'runName', 'checkName', 'actions', 'allOk'] as const;
+const CSV_HEADER = [
+  'ts',
+  'activityId',
+  'runName',
+  'checkName',
+  'actions',
+  'allOk',
+] as const;
 
 // RFC 4180: rows separated by CRLF; UTF-8 BOM helps Excel locale detection.
 const CRLF = '\r\n';
@@ -36,13 +43,13 @@ const DANGEROUS_PREFIXES = new Set(['=', '+', '-', '@', '\t', '\r']);
 /* eslint-disable no-control-regex */
 const LEADING_STRIP_RE = new RegExp(
   '^[\\s\\u0000-\\u001F\\u200B-\\u200F\\u2028-\\u202F\\u2060-\\u206F\\uFEFF]+',
-  'u',
+  'u'
 );
 /* eslint-enable no-control-regex */
 
 export function actionMarker(
   status: 'ok' | 'skipped-locked' | 'dry-run' | 'error' | undefined,
-  ok: boolean,
+  ok: boolean
 ): string {
   if (status === 'dry-run') return '\u25C6';
   if (status === 'skipped-locked') return '\u2298';
@@ -86,7 +93,7 @@ export function eventsToCsv(events: EventRecord[]): string {
       e.actions.every((a) => a.ok) ? 'true' : 'false',
     ]
       .map((v) => escapeCsvField(String(v)))
-      .join(','),
+      .join(',')
   );
   return UTF8_BOM + [CSV_HEADER.join(','), ...rows].join(CRLF);
 }

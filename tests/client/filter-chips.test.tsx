@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { filterMatches, type EventFilter } from '../../src/client/components/FilterChips';
+import {
+  filterMatches,
+  type EventFilter,
+} from '../../src/client/components/FilterChips';
 import type { EventRecord } from '../../src/client/lib/types';
 
 const baseEvent: EventRecord = {
@@ -18,11 +21,15 @@ describe('filterMatches', () => {
   });
 
   it('action:remove → matches event w/ remove action', () => {
-    expect(filterMatches(baseEvent, { kind: 'action', action: 'remove' })).toBe(true);
+    expect(filterMatches(baseEvent, { kind: 'action', action: 'remove' })).toBe(
+      true
+    );
   });
 
   it('action:approve → does NOT match event w/ only remove', () => {
-    expect(filterMatches(baseEvent, { kind: 'action', action: 'approve' })).toBe(false);
+    expect(
+      filterMatches(baseEvent, { kind: 'action', action: 'approve' })
+    ).toBe(false);
   });
 
   it('action:remove → matches when one of multiple actions is remove', () => {
@@ -33,7 +40,9 @@ describe('filterMatches', () => {
         { kind: 'remove', ok: true, status: 'ok' },
       ],
     };
-    expect(filterMatches(event, { kind: 'action', action: 'remove' })).toBe(true);
+    expect(filterMatches(event, { kind: 'action', action: 'remove' })).toBe(
+      true
+    );
   });
 
   it('failed → matches event w/ any action ok:false', () => {

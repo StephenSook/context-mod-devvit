@@ -50,7 +50,9 @@ describe('actionMarker', () => {
 describe('eventsToCsv', () => {
   it('empty events array → BOM + header-only CSV', () => {
     const out = eventsToCsv([]);
-    expect(out).toBe(UTF8_BOM + 'ts,activityId,runName,checkName,actions,allOk');
+    expect(out).toBe(
+      UTF8_BOM + 'ts,activityId,runName,checkName,actions,allOk'
+    );
   });
 
   it('starts with UTF-8 BOM for Excel locale auto-detect', () => {
@@ -96,7 +98,12 @@ describe('eventsToCsv', () => {
     const event: EventRecord = {
       ...baseEvent,
       actions: [
-        { kind: 'remove', ok: false, status: 'dry-run', wouldHaveCalled: 'reddit.remove(t3_abc123, true)' },
+        {
+          kind: 'remove',
+          ok: false,
+          status: 'dry-run',
+          wouldHaveCalled: 'reddit.remove(t3_abc123, true)',
+        },
       ],
     };
     const out = eventsToCsv([event]);
@@ -157,7 +164,9 @@ describe('eventsToCsv', () => {
 
 describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () => {
   it('prefixes = with single quote to neutralize formula', () => {
-    expect(neutralizeCsvFormula('=cmd|"/c calc"!A1')).toBe('\'=cmd|"/c calc"!A1');
+    expect(neutralizeCsvFormula('=cmd|"/c calc"!A1')).toBe(
+      '\'=cmd|"/c calc"!A1'
+    );
   });
 
   it('prefixes + with single quote', () => {
@@ -205,7 +214,7 @@ describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () 
 
     it('prefixes when leading multiple spaces hide the =', () => {
       expect(neutralizeCsvFormula('   =HYPERLINK("evil","x")')).toBe(
-        '\'   =HYPERLINK("evil","x")',
+        '\'   =HYPERLINK("evil","x")'
       );
     });
 
@@ -258,7 +267,7 @@ describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () 
     };
     const out = eventsToCsv([evilEvent]);
     expect(out).toContain(
-      '"\'=HYPERLINK(""https://attacker.test"",""click"")"',
+      '"\'=HYPERLINK(""https://attacker.test"",""click"")"'
     );
     // No bare =HYPERLINK that Excel would evaluate
     expect(out).not.toContain('"=HYPERLINK');
@@ -276,8 +285,13 @@ describe('neutralizeCsvFormula (Codex BLOCKER fix — OWASP CSV injection)', () 
 
 describe('csvFilename', () => {
   it('replaces unsafe filename chars in subreddit', () => {
-    const out = csvFilename('test/sub with spaces', new Date('2026-05-17T01:00:00Z'));
-    expect(out).toBe('contextmod-events-test_sub_with_spaces-2026-05-17T01-00.csv');
+    const out = csvFilename(
+      'test/sub with spaces',
+      new Date('2026-05-17T01:00:00Z')
+    );
+    expect(out).toBe(
+      'contextmod-events-test_sub_with_spaces-2026-05-17T01-00.csv'
+    );
   });
 
   it('uses safe subreddit name unchanged', () => {

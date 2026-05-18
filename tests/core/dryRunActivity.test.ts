@@ -9,7 +9,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('@devvit/web/server', () => ({
-  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), zAdd: vi.fn(), zRemRangeByRank: vi.fn() },
+  redis: {
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+    zAdd: vi.fn(),
+    zRemRangeByRank: vi.fn(),
+  },
   reddit: {},
 }));
 vi.mock('../../src/state/recentEvents', () => ({
@@ -24,29 +30,61 @@ import type { Item, Author, AppConfig } from '../../src/shared/types';
 
 const sub = 'r_test';
 const item: Item = {
-  id: 't3_abc', title: 'free crypto giveaway', body: '', url: '',
-  author: 'spammer', age: 60, score: 0, isSelf: true, over18: false,
-  removed: false, approved: false, locked: false, stickied: false, linkFlairText: null,
+  id: 't3_abc',
+  title: 'free crypto giveaway',
+  body: '',
+  url: '',
+  author: 'spammer',
+  age: 60,
+  score: 0,
+  isSelf: true,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
 };
 const author: Author = {
-  name: 'spammer', id: 't2_x', age: 86400 * 30,
-  linkKarma: 0, commentKarma: 0, flairText: null,
-  isMod: false, isContributor: false, verified: false, shadowBanned: false,
+  name: 'spammer',
+  id: 't2_x',
+  age: 86400 * 30,
+  linkKarma: 0,
+  commentKarma: 0,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
+  shadowBanned: false,
 };
 const cfg: AppConfig = {
   dryRun: false,
-  runs: [{
-    name: 'spam-removal',
-    checks: [{
-      name: 'crypto-giveaway',
-      combinator: 'OR',
-      rules: [{ kind: 'regex', name: 'scam-words', pattern: 'crypto|giveaway', flags: 'i' }],
-      actions: [
-        { kind: 'remove', isSpam: true },
-        { kind: 'comment', template: 'Hi {{author.nameSafe}}, removed as spam.' },
+  runs: [
+    {
+      name: 'spam-removal',
+      checks: [
+        {
+          name: 'crypto-giveaway',
+          combinator: 'OR',
+          rules: [
+            {
+              kind: 'regex',
+              name: 'scam-words',
+              pattern: 'crypto|giveaway',
+              flags: 'i',
+            },
+          ],
+          actions: [
+            { kind: 'remove', isSpam: true },
+            {
+              kind: 'comment',
+              template: 'Hi {{author.nameSafe}}, removed as spam.',
+            },
+          ],
+        },
       ],
-    }],
-  }],
+    },
+  ],
 };
 
 beforeEach(() => {
@@ -56,7 +94,10 @@ beforeEach(() => {
 
 describe('dryRunActivity', () => {
   it('returns triggered runs with action wouldHaveCalled list', async () => {
-    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({ rev: 1, config: cfg });
+    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({
+      rev: 1,
+      config: cfg,
+    });
     const result = await dryRunActivity(item, author, sub);
     expect(result.configPresent).toBe(true);
     expect(result.configRev).toBe(1);
@@ -73,7 +114,10 @@ describe('dryRunActivity', () => {
   });
 
   it('NEVER writes to recentEvents ZSET (safety: pipeline is read-only)', async () => {
-    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({ rev: 1, config: cfg });
+    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({
+      rev: 1,
+      config: cfg,
+    });
     await dryRunActivity(item, author, sub);
     expect(recentEvents.recordEvent).not.toHaveBeenCalled();
   });
@@ -85,8 +129,14 @@ describe('dryRunActivity', () => {
   });
 
   it('reports non-triggered runs explicitly so the form UI can show "no rules matched"', async () => {
-    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({ rev: 1, config: cfg });
-    const peacefulItem: Item = { ...item, title: 'a peaceful poem about flowers' };
+    vi.mocked(configStore.getCurrentRev).mockResolvedValueOnce({
+      rev: 1,
+      config: cfg,
+    });
+    const peacefulItem: Item = {
+      ...item,
+      title: 'a peaceful poem about flowers',
+    };
     const result = await dryRunActivity(peacefulItem, author, sub);
     expect(result.runs).toHaveLength(1);
     expect(result.runs[0]).toMatchObject({

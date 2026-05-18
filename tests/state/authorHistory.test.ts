@@ -57,22 +57,28 @@ beforeEach(() => {
 describe('getAuthorHistory', () => {
   it('on first call fetches from Reddit, writes JSON with TTL, returns enriched shape', async () => {
     redisGet.mockResolvedValueOnce(null);
-    getPostsByUser.mockReturnValueOnce(stubListing([
-      post({ url: 'https://Example.COM/path?q=1' }),
-      post({ id: 't3_p2', url: 'not-a-url' }),
-    ]));
+    getPostsByUser.mockReturnValueOnce(
+      stubListing([
+        post({ url: 'https://Example.COM/path?q=1' }),
+        post({ id: 't3_p2', url: 'not-a-url' }),
+      ])
+    );
     getCommentsByUser.mockReturnValueOnce(stubListing([comment()]));
 
     const h = await getAuthorHistory('alice', 'sub1');
 
     expect(h.username).toBe('alice');
     expect(h.posts).toHaveLength(2);
-    expect(h.posts[0]!.domain).toBe('example.com');             // lowercased + extracted
-    expect(h.posts[1]!.domain).toBe('');                         // parse fail → ''
+    expect(h.posts[0]!.domain).toBe('example.com'); // lowercased + extracted
+    expect(h.posts[1]!.domain).toBe(''); // parse fail → ''
     expect(h.comments).toHaveLength(1);
 
     expect(redisSet).toHaveBeenCalledTimes(1);
-    const [key, value, opts] = redisSet.mock.calls[0] as [string, string, { expiration: Date }];
+    const [key, value, opts] = redisSet.mock.calls[0] as [
+      string,
+      string,
+      { expiration: Date },
+    ];
     expect(key).toBe('cm:sub1:author:hist:alice');
     expect(JSON.parse(value).username).toBe('alice');
     expect(opts.expiration.getTime()).toBeGreaterThan(Date.now());
@@ -82,7 +88,15 @@ describe('getAuthorHistory', () => {
     const cached = {
       username: 'alice',
       fetchedAtMs: Date.now() - 1000,
-      posts: [{ id: 't3_p9', subredditName: 'subA', url: 'u', domain: '', createdAtMs: 0 }],
+      posts: [
+        {
+          id: 't3_p9',
+          subredditName: 'subA',
+          url: 'u',
+          domain: '',
+          createdAtMs: 0,
+        },
+      ],
       comments: [],
     };
     redisGet.mockResolvedValueOnce(JSON.stringify(cached));
@@ -108,10 +122,14 @@ describe('getAuthorHistory', () => {
   });
 
   it('treats cache with wrong username as a miss', async () => {
-    redisGet.mockResolvedValueOnce(JSON.stringify({
-      username: 'someone-else',
-      fetchedAtMs: 0, posts: [], comments: [],
-    }));
+    redisGet.mockResolvedValueOnce(
+      JSON.stringify({
+        username: 'someone-else',
+        fetchedAtMs: 0,
+        posts: [],
+        comments: [],
+      })
+    );
     getPostsByUser.mockReturnValueOnce(stubListing([]));
     getCommentsByUser.mockReturnValueOnce(stubListing([]));
 
@@ -130,8 +148,12 @@ describe('getAuthorHistory', () => {
 
   it('fails OPEN on Reddit fetch error — returns empty posts/comments', async () => {
     redisGet.mockResolvedValueOnce(null);
-    getPostsByUser.mockImplementationOnce(() => { throw new Error('reddit down'); });
-    getCommentsByUser.mockImplementationOnce(() => { throw new Error('reddit down'); });
+    getPostsByUser.mockImplementationOnce(() => {
+      throw new Error('reddit down');
+    });
+    getCommentsByUser.mockImplementationOnce(() => {
+      throw new Error('reddit down');
+    });
 
     const h = await getAuthorHistory('alice', 'sub1');
     expect(h.posts).toEqual([]);

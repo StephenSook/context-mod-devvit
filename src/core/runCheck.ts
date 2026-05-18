@@ -8,7 +8,12 @@ import type { Check, CheckResult, Item, Author } from '../shared/types';
 import { passesFilters } from './filters';
 import { runRule } from './runRule';
 
-export async function runCheck(check: Check, item: Item, author: Author, sub?: string): Promise<CheckResult> {
+export async function runCheck(
+  check: Check,
+  item: Item,
+  author: Author,
+  sub?: string
+): Promise<CheckResult> {
   if (!passesFilters(check.filters, item, author)) {
     return { triggered: false, checkName: check.name, actions: [] };
   }
@@ -22,13 +27,21 @@ export async function runCheck(check: Check, item: Item, author: Author, sub?: s
         return { triggered: false, checkName: check.name, actions: [] };
       }
     }
-    return { triggered: true, checkName: check.name, actions: check.actions ?? [] };
+    return {
+      triggered: true,
+      checkName: check.name,
+      actions: check.actions ?? [],
+    };
   }
   // OR
   for (const r of check.rules) {
     const res = await runRule(r, item, author, sub);
     if (res.triggered) {
-      return { triggered: true, checkName: check.name, actions: check.actions ?? [] };
+      return {
+        triggered: true,
+        checkName: check.name,
+        actions: check.actions ?? [],
+      };
     }
   }
   return { triggered: false, checkName: check.name, actions: [] };

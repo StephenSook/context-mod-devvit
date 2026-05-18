@@ -8,7 +8,13 @@ import { AlertTriangle, X } from 'lucide-react';
  * Dismissable so a transient failure doesn't permanently bury the dashboard.
  * Auto-clears on next successful refresh.
  */
-export function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+export function ErrorBanner({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
   return (
     <div
       role="alert"

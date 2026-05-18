@@ -14,7 +14,13 @@ export function relTime(refreshedAt: number, now: number): string {
   return `${hours}h`;
 }
 
-export function Header({ subreddit, refreshedAt }: { subreddit: string; refreshedAt: number }) {
+export function Header({
+  subreddit,
+  refreshedAt,
+}: {
+  subreddit: string;
+  refreshedAt: number;
+}) {
   // Self-tick at 1s cadence so 'Ns ago' increments smoothly between 10s polls.
   // Without this the display freezes at the post-fetch time until the next poll
   // rerenders, which looks stale on a "live" dashboard (Stephen's polish ask).
@@ -43,13 +49,29 @@ export function Header({ subreddit, refreshedAt }: { subreddit: string; refreshe
     >
       <div className="flex items-center gap-3">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <circle cx="12" cy="12" r="10" stroke="rgba(245,245,244,0.4)" strokeWidth="1" />
-          <circle cx="12" cy="12" r="6" stroke="rgba(245,245,244,0.7)" strokeWidth="1" />
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="rgba(245,245,244,0.4)"
+            strokeWidth="1"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="6"
+            stroke="rgba(245,245,244,0.7)"
+            strokeWidth="1"
+          />
           <circle cx="12" cy="12" r="2" fill="#4ADE80" />
         </svg>
         <div className="flex items-baseline gap-2">
-          <span className="font-medium tracking-tight text-[14px] text-bone-50">ContextMod</span>
-          <span className="font-serif italic text-[14px] text-bone-200/70">observatory</span>
+          <span className="font-medium tracking-tight text-[14px] text-bone-50">
+            ContextMod
+          </span>
+          <span className="font-serif italic text-[14px] text-bone-200/70">
+            observatory
+          </span>
         </div>
       </div>
 
@@ -59,7 +81,9 @@ export function Header({ subreddit, refreshedAt }: { subreddit: string; refreshe
           <span className="telemetry text-[11px] text-bone-200">live</span>
         </span>
         <span className="text-bone-300 text-[11px]">·</span>
-        <span className="telemetry text-[11px] text-bone-200">r/{subreddit}</span>
+        <span className="telemetry text-[11px] text-bone-200">
+          r/{subreddit}
+        </span>
         <span className="text-bone-300 text-[11px]">·</span>
         <time
           className={`telemetry text-[11px] text-bone-300 ${pulsing ? 'cm-refresh-pulse' : ''}`}

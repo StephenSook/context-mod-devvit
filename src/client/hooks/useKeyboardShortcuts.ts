@@ -16,7 +16,8 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
       const target = e.target as HTMLElement | null;
       if (!target) return;
       const tag = target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable)
+        return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const match = shortcuts.find((s) => s.key === e.key);
       if (match) {

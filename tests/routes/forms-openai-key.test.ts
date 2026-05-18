@@ -47,19 +47,30 @@ vi.mock('../../src/core/simulateRule', () => ({
 import { forms } from '../../src/routes/forms';
 
 const AS_MOD = { ok: true as const, sub: 'r_test', username: 'mod_alice' };
-const NON_MOD = { ok: false as const, status: 403 as const, error: 'not a moderator of this sub' };
+const NON_MOD = {
+  ok: false as const,
+  status: 403 as const,
+  error: 'not a moderator of this sub',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  formatExplainToastMock.mockImplementation((r: { explanation?: string }) => r?.explanation ?? '');
+  formatExplainToastMock.mockImplementation(
+    (r: { explanation?: string }) => r?.explanation ?? ''
+  );
 });
 
-async function postForm(path: string, body: unknown): Promise<{ status: number; showToast: string }> {
-  const res = await forms.request(new Request(`http://x${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  }));
+async function postForm(
+  path: string,
+  body: unknown
+): Promise<{ status: number; showToast: string }> {
+  const res = await forms.request(
+    new Request(`http://x${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  );
   const json = (await res.json()) as { showToast?: string };
   return { status: res.status, showToast: json.showToast ?? '' };
 }
@@ -67,7 +78,9 @@ async function postForm(path: string, body: unknown): Promise<{ status: number; 
 describe('POST /set-openai-key-submit (W9)', () => {
   it('rejects non-mod with Mod-only toast + does NOT call setOpenaiKey', async () => {
     requireModeratorMock.mockResolvedValue(NON_MOD);
-    const r = await postForm('/set-openai-key-submit', { apiKey: 'sk-proj-anything' });
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: 'sk-proj-anything',
+    });
     expect(r.showToast).toMatch(/mod-only/i);
     expect(setOpenaiKeyMock).not.toHaveBeenCalled();
   });
@@ -81,7 +94,9 @@ describe('POST /set-openai-key-submit (W9)', () => {
 
   it('rejects key not starting with sk-', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
-    const r = await postForm('/set-openai-key-submit', { apiKey: 'bearer xyz' });
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: 'bearer xyz',
+    });
     expect(r.showToast).toMatch(/sk-/);
     expect(setOpenaiKeyMock).not.toHaveBeenCalled();
   });
@@ -89,23 +104,35 @@ describe('POST /set-openai-key-submit (W9)', () => {
   it('accepts flat envelope {apiKey}', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     setOpenaiKeyMock.mockResolvedValue(undefined);
-    const r = await postForm('/set-openai-key-submit', { apiKey: 'sk-proj-abcdef1234567890' });
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: 'sk-proj-abcdef1234567890',
+    });
     expect(r.showToast).toMatch(/saved/i);
-    expect(setOpenaiKeyMock).toHaveBeenCalledWith('r_test', 'sk-proj-abcdef1234567890');
+    expect(setOpenaiKeyMock).toHaveBeenCalledWith(
+      'r_test',
+      'sk-proj-abcdef1234567890'
+    );
   });
 
   it('accepts nested envelope {values: {apiKey}}', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     setOpenaiKeyMock.mockResolvedValue(undefined);
-    const r = await postForm('/set-openai-key-submit', { values: { apiKey: 'sk-proj-abcdef1234567890' } });
+    const r = await postForm('/set-openai-key-submit', {
+      values: { apiKey: 'sk-proj-abcdef1234567890' },
+    });
     expect(r.showToast).toMatch(/saved/i);
-    expect(setOpenaiKeyMock).toHaveBeenCalledWith('r_test', 'sk-proj-abcdef1234567890');
+    expect(setOpenaiKeyMock).toHaveBeenCalledWith(
+      'r_test',
+      'sk-proj-abcdef1234567890'
+    );
   });
 
   it('masks the key in the success toast (first 7 + last 4 only)', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     setOpenaiKeyMock.mockResolvedValue(undefined);
-    const r = await postForm('/set-openai-key-submit', { apiKey: 'sk-proj-SECRET_BODY_HERE_abcd' });
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: 'sk-proj-SECRET_BODY_HERE_abcd',
+    });
     expect(r.showToast).toContain('sk-proj');
     expect(r.showToast).toContain('abcd');
     expect(r.showToast).not.toContain('SECRET_BODY_HERE');
@@ -114,7 +141,9 @@ describe('POST /set-openai-key-submit (W9)', () => {
   it('surfaces Redis throw in toast', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     setOpenaiKeyMock.mockRejectedValue(new Error('redis offline'));
-    const r = await postForm('/set-openai-key-submit', { apiKey: 'sk-proj-abcdef1234567890' });
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: 'sk-proj-abcdef1234567890',
+    });
     expect(r.showToast).toMatch(/save failed/i);
     expect(r.showToast).toContain('redis offline');
   });
@@ -133,10 +162,15 @@ describe('POST /explain-rule-submit (W9)', () => {
     getOpenaiKeyMock.mockResolvedValue('sk-redis-key');
     explainRuleMock.mockResolvedValue({ explanation: 'this rule does X' });
     await postForm('/explain-rule-submit', { ruleJson5: '{ kind: "regex" }' });
-    expect(explainRuleMock).toHaveBeenCalledWith('{ kind: "regex" }', 'sk-redis-key');
+    expect(explainRuleMock).toHaveBeenCalledWith(
+      '{ kind: "regex" }',
+      'sk-redis-key'
+    );
 
     vi.clearAllMocks();
-    formatExplainToastMock.mockImplementation((r: { explanation?: string }) => r?.explanation ?? '');
+    formatExplainToastMock.mockImplementation(
+      (r: { explanation?: string }) => r?.explanation ?? ''
+    );
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKeyMock.mockResolvedValue(null);
     settingsGet.mockResolvedValue('sk-settings-key');

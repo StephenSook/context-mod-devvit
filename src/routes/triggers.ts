@@ -23,7 +23,12 @@
 import { Hono } from 'hono';
 import { reddit, redis } from '@devvit/web/server';
 import { firstSeen } from '../lib/idem';
-import { normalizePost, normalizeComment, type PostSubmitPayload, type CommentSubmitPayload } from '../shared/normalize';
+import {
+  normalizePost,
+  normalizeComment,
+  type PostSubmitPayload,
+  type CommentSubmitPayload,
+} from '../shared/normalize';
 import { handleActivity } from '../core/handleActivity';
 import * as configStore from '../state/configStore';
 import { parseConfig } from '../core/config';
@@ -78,23 +83,32 @@ triggers.post('/app-install', async (c) => {
   }
 
   if (!subName) {
-    console.warn('[cm/app-install] subreddit.name missing — skipping default-config seed');
+    console.warn(
+      '[cm/app-install] subreddit.name missing — skipping default-config seed'
+    );
     return c.json({ status: 'ok' });
   }
 
   const existing = await redis.get(K.cfgCurrentRev(subName));
   if (existing) {
-    console.log(`[cm/app-install] sub=${subName} already has cfg:current_rev=${existing} — skip seed`);
+    console.log(
+      `[cm/app-install] sub=${subName} already has cfg:current_rev=${existing} — skip seed`
+    );
     return c.json({ status: 'ok' });
   }
 
   const parsed = parseConfig(DEFAULT_CONFIG_JSON5);
   if (!parsed.ok) {
-    console.error('[cm/app-install] default config failed to parse:', parsed.errors);
+    console.error(
+      '[cm/app-install] default config failed to parse:',
+      parsed.errors
+    );
     return c.json({ status: 'ok' });
   }
   const rev = await configStore.publish(parsed.config, subName);
-  console.log(`[cm/app-install] seeded default config rev=${rev} for sub=${subName}`);
+  console.log(
+    `[cm/app-install] seeded default config rev=${rev} for sub=${subName}`
+  );
   return c.json({ status: 'ok' });
 });
 
@@ -113,7 +127,9 @@ triggers.post('/app-upgrade', async (c) => {
   const subName = input.subreddit?.name;
   if (subName) {
     await stashInstallPointer(subName);
-    console.log(`[cm/app-upgrade] backfilled install pointer for sub=${subName}`);
+    console.log(
+      `[cm/app-upgrade] backfilled install pointer for sub=${subName}`
+    );
   }
 
   const stored = (await redis.get(K.schemaVersion())) ?? '0';
@@ -136,7 +152,9 @@ triggers.post('/post-submit', async (c) => {
   }
   const authorName = input.author?.name;
   if (!authorName) {
-    console.warn('[cm/post-submit] author.name missing — recursion guard skipped');
+    console.warn(
+      '[cm/post-submit] author.name missing — recursion guard skipped'
+    );
   }
 
   // Recursion guard. getAppUser() returns User | undefined per
@@ -145,7 +163,8 @@ triggers.post('/post-submit', async (c) => {
   // own post on a private test sub.
   if (authorName) {
     const appUser = await reddit.getAppUser();
-    if (appUser && authorName === appUser.username) return c.json({ status: 'ok' });
+    if (appUser && authorName === appUser.username)
+      return c.json({ status: 'ok' });
   }
 
   // X39: wrap getCurrentSubreddit — Reddit context loss would otherwise 500
@@ -153,7 +172,8 @@ triggers.post('/post-submit', async (c) => {
   // so Devvit acks and we don't burn retries on a transient context blip.
   let subName: string;
   try {
-    subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+    subName =
+      input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
     console.error('[cm/post-submit] subreddit context unavailable:', err);
     return c.json({ status: 'subreddit-unavailable' });
@@ -163,7 +183,10 @@ triggers.post('/post-submit', async (c) => {
   // (potentially expensive) getUserByUsername call when the config needs it.
   const seen = await firstSeen(post.id, subName);
   if (!seen) {
-    console.warn('[cm/post-submit] firstSeen=false (already-seen OR Redis fail-closed):', post.id);
+    console.warn(
+      '[cm/post-submit] firstSeen=false (already-seen OR Redis fail-closed):',
+      post.id
+    );
     return c.json({ status: 'skipped-already-seen' });
   }
 
@@ -179,18 +202,34 @@ triggers.post('/post-submit', async (c) => {
     // triggers which could spam). Record an error event so the dashboard
     // turns red + the mod sees their bot has stopped working.
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/post-submit] config read failed — moderation stopped:', err);
-    await recordEvent({
-      ts: Date.now(),
-      activityId: post.id,
-      runName: 'config-read-fail',
-      checkName: '(infrastructure)',
-      triggered: false,
-      actions: [{ kind: 'config-read', ok: false, status: 'error', wouldHaveCalled: msg.slice(0, 200) }],
-    }, subName);
+    console.error(
+      '[cm/post-submit] config read failed — moderation stopped:',
+      err
+    );
+    await recordEvent(
+      {
+        ts: Date.now(),
+        activityId: post.id,
+        runName: 'config-read-fail',
+        checkName: '(infrastructure)',
+        triggered: false,
+        actions: [
+          {
+            kind: 'config-read',
+            ok: false,
+            status: 'error',
+            wouldHaveCalled: msg.slice(0, 200),
+          },
+        ],
+      },
+      subName
+    );
     return c.json({ status: 'config-read-fail' });
   }
-  const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
+  const config: AppConfig = current?.config ?? {
+    runs: [],
+    needsAuthorEnrichment: false,
+  };
   const { item, author } = await normalizePost(input, config);
   await handleActivity(item, author, subName, current ?? undefined);
 
@@ -206,12 +245,15 @@ triggers.post('/comment-submit', async (c) => {
   }
   const authorName = input.author?.name;
   if (!authorName) {
-    console.warn('[cm/comment-submit] author.name missing — recursion guard skipped');
+    console.warn(
+      '[cm/comment-submit] author.name missing — recursion guard skipped'
+    );
   }
 
   if (authorName) {
     const appUser = await reddit.getAppUser();
-    if (appUser && authorName === appUser.username) return c.json({ status: 'ok' });
+    if (appUser && authorName === appUser.username)
+      return c.json({ status: 'ok' });
   }
 
   // X39: wrap getCurrentSubreddit in try/catch — without it, a Reddit
@@ -219,7 +261,8 @@ triggers.post('/comment-submit', async (c) => {
   // Devvit's retry storm.
   let subName: string;
   try {
-    subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
+    subName =
+      input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
     console.error('[cm/comment-submit] subreddit context unavailable:', err);
     return c.json({ status: 'subreddit-unavailable' });
@@ -227,7 +270,10 @@ triggers.post('/comment-submit', async (c) => {
 
   const seen = await firstSeen(comment.id, subName);
   if (!seen) {
-    console.warn('[cm/comment-submit] firstSeen=false (already-seen OR Redis fail-closed):', comment.id);
+    console.warn(
+      '[cm/comment-submit] firstSeen=false (already-seen OR Redis fail-closed):',
+      comment.id
+    );
     return c.json({ status: 'skipped-already-seen' });
   }
 
@@ -237,18 +283,34 @@ triggers.post('/comment-submit', async (c) => {
     current = await configStore.getCurrentRev(subName);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/comment-submit] config read failed — moderation stopped:', err);
-    await recordEvent({
-      ts: Date.now(),
-      activityId: comment.id,
-      runName: 'config-read-fail',
-      checkName: '(infrastructure)',
-      triggered: false,
-      actions: [{ kind: 'config-read', ok: false, status: 'error', wouldHaveCalled: msg.slice(0, 200) }],
-    }, subName);
+    console.error(
+      '[cm/comment-submit] config read failed — moderation stopped:',
+      err
+    );
+    await recordEvent(
+      {
+        ts: Date.now(),
+        activityId: comment.id,
+        runName: 'config-read-fail',
+        checkName: '(infrastructure)',
+        triggered: false,
+        actions: [
+          {
+            kind: 'config-read',
+            ok: false,
+            status: 'error',
+            wouldHaveCalled: msg.slice(0, 200),
+          },
+        ],
+      },
+      subName
+    );
     return c.json({ status: 'config-read-fail' });
   }
-  const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
+  const config: AppConfig = current?.config ?? {
+    runs: [],
+    needsAuthorEnrichment: false,
+  };
   const { item, author } = await normalizeComment(input, config);
   await handleActivity(item, author, subName, current ?? undefined);
 

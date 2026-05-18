@@ -37,9 +37,18 @@ describe('aggregateRuleStats', () => {
 
   it('counts success / failed / dry-run separately', () => {
     const stats = aggregateRuleStats([
-      event({ activityId: '1', actions: [{ kind: 'remove', ok: true, status: 'ok' }] }),
-      event({ activityId: '2', actions: [{ kind: 'remove', ok: false, status: 'error' }] }),
-      event({ activityId: '3', actions: [{ kind: 'remove', ok: false, status: 'dry-run' }] }),
+      event({
+        activityId: '1',
+        actions: [{ kind: 'remove', ok: true, status: 'ok' }],
+      }),
+      event({
+        activityId: '2',
+        actions: [{ kind: 'remove', ok: false, status: 'error' }],
+      }),
+      event({
+        activityId: '3',
+        actions: [{ kind: 'remove', ok: false, status: 'dry-run' }],
+      }),
     ]);
     expect(stats[0]?.successCount).toBe(1);
     expect(stats[0]?.failedCount).toBe(1);

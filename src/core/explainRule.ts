@@ -22,19 +22,26 @@ const SYSTEM_PROMPT = `You are an assistant explaining ContextMod moderation rul
 export async function explainRule(
   ruleJson5: string,
   apiKey: string,
-  fetcher: Fetcher = fetch,
+  fetcher: Fetcher = fetch
 ): Promise<ExplainResult> {
   if (!apiKey || !apiKey.trim()) {
     return {
       ok: false,
-      error: 'OpenAI API key is missing. Set it in the app installation settings.',
+      error:
+        'OpenAI API key is missing. Set it in the app installation settings.',
     };
   }
   if (!ruleJson5 || !ruleJson5.trim()) {
-    return { ok: false, error: 'Paste a rule JSON5 in the form field, then submit.' };
+    return {
+      ok: false,
+      error: 'Paste a rule JSON5 in the form field, then submit.',
+    };
   }
   if (ruleJson5.length > 4000) {
-    return { ok: false, error: 'Rule too long (max 4000 chars). Trim and try again.' };
+    return {
+      ok: false,
+      error: 'Rule too long (max 4000 chars). Trim and try again.',
+    };
   }
 
   try {
@@ -61,7 +68,8 @@ export async function explainRule(
       try {
         const body = await res.json();
         if (body && typeof body === 'object' && 'error' in body) {
-          const e = (body as { error: { message?: string; code?: string } }).error;
+          const e = (body as { error: { message?: string; code?: string } })
+            .error;
           if (e.message) serverMsg = e.message;
           else if (e.code) serverMsg = e.code;
         }
@@ -69,9 +77,15 @@ export async function explainRule(
         // body not JSON — fall through to statusText
       }
       const hint =
-        res.status === 401 ? ' (check the openai_api_key app setting)' :
-        res.status === 429 ? ' (rate-limited or billing exhausted)' : '';
-      return { ok: false, error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}` };
+        res.status === 401
+          ? ' (check the openai_api_key app setting)'
+          : res.status === 429
+            ? ' (rate-limited or billing exhausted)'
+            : '';
+      return {
+        ok: false,
+        error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}`,
+      };
     }
     const data: unknown = await res.json();
     const text = extractCompletionText(data);
@@ -83,8 +97,10 @@ export async function explainRule(
     // Branch on error class so toast tells the mod what to retry.
     const name = err instanceof Error ? err.name : 'Error';
     const msg = err instanceof Error ? err.message : String(err);
-    if (name === 'AbortError') return { ok: false, error: 'OpenAI request aborted (timeout). Retry.' };
-    if (msg.toLowerCase().includes('fetch')) return { ok: false, error: `OpenAI network failure: ${msg}` };
+    if (name === 'AbortError')
+      return { ok: false, error: 'OpenAI request aborted (timeout). Retry.' };
+    if (msg.toLowerCase().includes('fetch'))
+      return { ok: false, error: `OpenAI network failure: ${msg}` };
     return { ok: false, error: `OpenAI fetch failed: ${msg}` };
   }
 }

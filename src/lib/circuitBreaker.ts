@@ -34,7 +34,7 @@ export type BreakerCheck =
 
 export async function checkCircuit(
   bucket: string,
-  opts: { openSec?: number } = {},
+  opts: { openSec?: number } = {}
 ): Promise<BreakerCheck> {
   const openSec = opts.openSec ?? DEFAULT_OPEN_SEC;
   try {
@@ -42,7 +42,10 @@ export async function checkCircuit(
     if (!openedAt) return { state: 'closed' };
     const elapsedMs = Date.now() - Number.parseInt(openedAt, 10);
     if (elapsedMs >= openSec * 1000) return { state: 'half-open' };
-    return { state: 'open', retryInSec: Math.ceil((openSec * 1000 - elapsedMs) / 1000) };
+    return {
+      state: 'open',
+      retryInSec: Math.ceil((openSec * 1000 - elapsedMs) / 1000),
+    };
   } catch (err) {
     console.warn('[cm/circuitBreaker] check failed (fail-open):', bucket, err);
     return { state: 'closed' };
@@ -51,7 +54,7 @@ export async function checkCircuit(
 
 export async function recordFailure(
   bucket: string,
-  opts: { threshold?: number; openSec?: number } = {},
+  opts: { threshold?: number; openSec?: number } = {}
 ): Promise<void> {
   const threshold = opts.threshold ?? DEFAULT_THRESHOLD;
   const openSec = opts.openSec ?? DEFAULT_OPEN_SEC;

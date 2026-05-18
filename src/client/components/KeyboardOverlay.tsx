@@ -27,7 +27,10 @@ export function KeyboardOverlay({
             id="cm-shortcuts-title"
             className="text-[13px] tracking-tight text-bone-50 font-medium"
           >
-            Keyboard <span className="font-serif italic text-bone-200/70">shortcuts</span>
+            Keyboard{' '}
+            <span className="font-serif italic text-bone-200/70">
+              shortcuts
+            </span>
           </h2>
           <button
             type="button"
@@ -50,8 +53,8 @@ export function KeyboardOverlay({
         </ul>
 
         <p className="telemetry text-[10px] text-bone-300/60 mt-3 leading-relaxed">
-          Shortcuts ignored when typing in inputs / textareas. Click outside or press
-          escape to dismiss.
+          Shortcuts ignored when typing in inputs / textareas. Click outside or
+          press escape to dismiss.
         </p>
       </div>
     </div>

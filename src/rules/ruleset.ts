@@ -5,7 +5,12 @@ import { runRule } from '../core/runRule';
  * Nested AND/OR group. Short-circuits: AND stops on first false, OR stops on
  * first true. Cycles into runRule (the dispatcher) so nested rulesets work.
  */
-export async function runRuleSet(rule: RuleSetRule, item: Item, author: Author, sub?: string): Promise<RuleResult> {
+export async function runRuleSet(
+  rule: RuleSetRule,
+  item: Item,
+  author: Author,
+  sub?: string
+): Promise<RuleResult> {
   if (rule.rules.length === 0) {
     // Empty AND = vacuously true is surprising; empty OR = false is also
     // surprising. Default to false — namedRules cycle break uses an empty

@@ -24,7 +24,9 @@ export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
     const res = await fetch(`/api/recent${demoSuffix()}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
-    const events = Array.isArray(data?.events) ? (data.events as EventRecord[]) : [];
+    const events = Array.isArray(data?.events)
+      ? (data.events as EventRecord[])
+      : [];
     if (events.length === 0) return { ok: true, empty: true };
     return { ok: true, empty: false, data: events };
   } catch (err) {
@@ -67,6 +69,9 @@ export const ZERO_STATS: StatsRollup = {
  * shared with src/routes/api.ts server-side branch). Re-export here so existing
  * client imports (App.tsx) keep working without a deeper import path change.
  */
-import { demoEvents, DEMO_STATS as SHARED_DEMO_STATS } from '../../lib/demo-fixtures';
+import {
+  demoEvents,
+  DEMO_STATS as SHARED_DEMO_STATS,
+} from '../../lib/demo-fixtures';
 export const DEMO_EVENTS: EventRecord[] = demoEvents() as EventRecord[];
 export const DEMO_STATS: StatsRollup = SHARED_DEMO_STATS as StatsRollup;

@@ -4,8 +4,13 @@ const store = new Map<string, string>();
 vi.mock('@devvit/web/server', () => ({
   redis: {
     get: vi.fn(async (k: string) => store.get(k) ?? null),
-    set: vi.fn(async (k: string, v: string) => { store.set(k, v); return 'OK'; }),
-    del: vi.fn(async (k: string) => { store.delete(k); }),
+    set: vi.fn(async (k: string, v: string) => {
+      store.set(k, v);
+      return 'OK';
+    }),
+    del: vi.fn(async (k: string) => {
+      store.delete(k);
+    }),
     incrBy: vi.fn(async (k: string, n: number) => {
       const cur = parseInt(store.get(k) ?? '0', 10);
       const next = cur + n;
@@ -21,7 +26,9 @@ import type { AppConfig } from '../../src/shared/types';
 const cfgA: AppConfig = { runs: [{ name: 'a', checks: [] }] };
 const cfgB: AppConfig = { runs: [{ name: 'b', checks: [] }] };
 
-beforeEach(() => { store.clear(); });
+beforeEach(() => {
+  store.clear();
+});
 
 describe('configStore', () => {
   it('first publish writes rev=0 and getCurrentRev returns it', async () => {

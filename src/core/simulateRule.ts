@@ -49,7 +49,9 @@ export type SimulationResult =
  * (`{kind: 'regex', ...}`) OR a full check (with `rules: [...]`). We accept both
  * and return the parsed Rule (first rule of first check if a check was pasted).
  */
-function parseRuleInput(json5Text: string): { ok: true; rule: Rule } | { ok: false; error: string } {
+function parseRuleInput(
+  json5Text: string
+): { ok: true; rule: Rule } | { ok: false; error: string } {
   // Wrap user's JSON5 as a minimal AppConfig for AJV reuse — gives the same
   // schema errors as production wiki edits.
   const wrappedJson5 = `{
@@ -65,9 +67,10 @@ function parseRuleInput(json5Text: string): { ok: true; rule: Rule } | { ok: fal
   }`;
   const parsed = parseConfig(wrappedJson5);
   if (!parsed.ok) {
-    const errStr = typeof parsed.errors === 'string'
-      ? parsed.errors
-      : JSON.stringify(parsed.errors);
+    const errStr =
+      typeof parsed.errors === 'string'
+        ? parsed.errors
+        : JSON.stringify(parsed.errors);
     return { ok: false, error: `Rule parse failed: ${errStr}` };
   }
   const rule = parsed.config.runs[0]?.checks[0]?.rules[0];
@@ -80,7 +83,7 @@ function parseRuleInput(json5Text: string): { ok: true; rule: Rule } | { ok: fal
 export async function simulateRule(
   ruleJson5: string,
   samples: SimulationSample[],
-  sub?: string,
+  sub?: string
 ): Promise<SimulationResult> {
   const parsed = parseRuleInput(ruleJson5);
   if (!parsed.ok) {
@@ -95,7 +98,12 @@ export async function simulateRule(
     let triggered = false;
     let errored = false;
     try {
-      const result = await runRule(parsed.rule, sample.item, sample.author, sub);
+      const result = await runRule(
+        parsed.rule,
+        sample.item,
+        sample.author,
+        sub
+      );
       triggered = result.triggered;
     } catch (err) {
       // Surface per-sample errors instead of silently marking triggered=false.
@@ -137,11 +145,13 @@ export function formatSimulationToast(result: SimulationResult): string {
     .filter((b) => b.triggered)
     .slice(0, 3)
     .map((b) => b.activityId);
-  const sampleLine = samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
+  const sampleLine =
+    samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
   // Surface errored samples so mod knows the rule crashed rather than just
   // didn't match. Without this, an erroring rule looks safe.
-  const errorLine = result.erroredCount > 0
-    ? ` ⚠ ${result.erroredCount} sample${result.erroredCount === 1 ? '' : 's'} errored${result.firstError ? `: ${result.firstError.slice(0, 100)}` : ''}.`
-    : '';
+  const errorLine =
+    result.erroredCount > 0
+      ? ` ⚠ ${result.erroredCount} sample${result.erroredCount === 1 ? '' : 's'} errored${result.firstError ? `: ${result.firstError.slice(0, 100)}` : ''}.`
+      : '';
   return `Rule would fire on ${result.firedCount}/${result.totalSamples} (${pct}%) recent items.${sampleLine}${errorLine}`;
 }

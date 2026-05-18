@@ -58,10 +58,14 @@ describe('commitAction — done-marker durability + pending-lease safety', () =>
     // mockImplementation avoids eager rejected-promise creation that
     // mockRejectedValueOnce produces (which vitest flags as unhandled even when
     // ultimately awaited inside our retry loop).
-    redisSet.mockImplementation(async () => { throw new Error('redis down hard'); });
+    redisSet.mockImplementation(async () => {
+      throw new Error('redis down hard');
+    });
 
-    await expect(commitAction('abc', 'tk-test', 'sub1')).rejects.toThrow(/redis down hard/);
-    expect(redisSet).toHaveBeenCalledTimes(3);  // attempted retries
+    await expect(commitAction('abc', 'tk-test', 'sub1')).rejects.toThrow(
+      /redis down hard/
+    );
+    expect(redisSet).toHaveBeenCalledTimes(3); // attempted retries
     // SAFETY: pending lease must NOT be deleted — otherwise the next retry
     // path would see neither marker and fire the side-effect AGAIN.
     expect(redisDel).not.toHaveBeenCalled();
@@ -71,20 +75,22 @@ describe('commitAction — done-marker durability + pending-lease safety', () =>
     redisSet.mockResolvedValueOnce('OK');
     redisDel.mockRejectedValueOnce(new Error('del failed'));
 
-    await expect(commitAction('abc', 'tk-test', 'sub1')).resolves.toBeUndefined();
+    await expect(
+      commitAction('abc', 'tk-test', 'sub1')
+    ).resolves.toBeUndefined();
   });
 
   it('Codex C2 — pending del is no-op when token mismatches (successor lease protected)', async () => {
     // Worker A's TTL expired, Worker B took over with a new token. A finally
     // completes side-effect + commitAction. The pending key now holds B's
     // token. A must NOT delete B's lease (would allow a third execution).
-    redisSet.mockResolvedValueOnce('OK');           // done write succeeds
-    redisGet.mockResolvedValueOnce('different-token-from-B');  // pending owned by B
+    redisSet.mockResolvedValueOnce('OK'); // done write succeeds
+    redisGet.mockResolvedValueOnce('different-token-from-B'); // pending owned by B
 
     await commitAction('abc', 'tk-A', 'sub1');
 
-    expect(redisSet).toHaveBeenCalledTimes(1);  // done marker
-    expect(redisGet).toHaveBeenCalledTimes(1);  // token check
-    expect(redisDel).not.toHaveBeenCalled();    // B's lease NOT deleted
+    expect(redisSet).toHaveBeenCalledTimes(1); // done marker
+    expect(redisGet).toHaveBeenCalledTimes(1); // token check
+    expect(redisDel).not.toHaveBeenCalled(); // B's lease NOT deleted
   });
 });

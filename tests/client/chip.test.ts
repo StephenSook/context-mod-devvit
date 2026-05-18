@@ -5,7 +5,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { chipColorForStatus, chipMarkerForStatus } from '../../src/client/lib/chip';
+import {
+  chipColorForStatus,
+  chipMarkerForStatus,
+} from '../../src/client/lib/chip';
 import { SIGNAL } from '../../src/client/lib/design-tokens';
 
 describe('chipColorForStatus', () => {
@@ -28,7 +31,9 @@ describe('chipColorForStatus', () => {
   });
 
   it('status skipped-locked renders muted gray', () => {
-    expect(chipColorForStatus('skipped-locked', 'remove', false)).toBe(SIGNAL.muted);
+    expect(chipColorForStatus('skipped-locked', 'remove', false)).toBe(
+      SIGNAL.muted
+    );
   });
 
   it('back-compat: undefined status + ok=true falls back to kind color', () => {

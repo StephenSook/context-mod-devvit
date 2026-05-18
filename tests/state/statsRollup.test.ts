@@ -11,22 +11,44 @@ const store = new Map<string, string>();
 vi.mock('@devvit/web/server', () => ({
   redis: {
     get: vi.fn(async (k: string) => store.get(k) ?? null),
-    set: vi.fn(async (k: string, v: string) => { store.set(k, v); return 'OK'; }),
+    set: vi.fn(async (k: string, v: string) => {
+      store.set(k, v);
+      return 'OK';
+    }),
   },
 }));
 vi.mock('../../src/state/recentEvents', () => ({
   readRecent: (...a: unknown[]) => readRecentMock(...a),
 }));
 
-import { computeStats, readStatsSnapshot, writeStatsSnapshot } from '../../src/state/statsRollup';
+import {
+  computeStats,
+  readStatsSnapshot,
+  writeStatsSnapshot,
+} from '../../src/state/statsRollup';
 
 beforeEach(() => {
   store.clear();
   readRecentMock.mockReset();
 });
 
-function event(ts: number, runName: string, checkName: string, kind: string, ok = true) {
-  return { v: 1, nonce: 'n', ts, activityId: 't3_x', runName, checkName, triggered: true, actions: [{ kind, ok }] };
+function event(
+  ts: number,
+  runName: string,
+  checkName: string,
+  kind: string,
+  ok = true
+) {
+  return {
+    v: 1,
+    nonce: 'n',
+    ts,
+    activityId: 't3_x',
+    runName,
+    checkName,
+    triggered: true,
+    actions: [{ kind, ok }],
+  };
 }
 
 describe('computeStats (Y1-X7)', () => {
@@ -75,7 +97,9 @@ describe('computeStats (Y1-X7)', () => {
   it('caps topRules at 5', async () => {
     const now = Date.now();
     readRecentMock.mockResolvedValue(
-      Array.from({ length: 10 }, (_, i) => event(now, 'r', `check${i}`, 'remove')),
+      Array.from({ length: 10 }, (_, i) =>
+        event(now, 'r', `check${i}`, 'remove')
+      )
     );
     const stats = await computeStats('r_test');
     expect(stats.topRules.length).toBe(5);
@@ -91,7 +115,10 @@ describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
 
   it('returns fresh snapshot when present + recent', async () => {
     const fresh: unknown = {
-      total: 7, lastHour: 2, today: 5, failedActions: 0,
+      total: 7,
+      lastHour: 2,
+      today: 5,
+      failedActions: 0,
       topRules: [{ ruleKey: 'a/b', count: 3 }],
       computedAt: Date.now() - 60_000,
     };
@@ -105,7 +132,10 @@ describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
 
   it('recomputes when snapshot is stale (>1h)', async () => {
     const stale: unknown = {
-      total: 99, lastHour: 99, today: 99, failedActions: 99,
+      total: 99,
+      lastHour: 99,
+      today: 99,
+      failedActions: 99,
       topRules: [],
       computedAt: Date.now() - 7_200_000,
     };

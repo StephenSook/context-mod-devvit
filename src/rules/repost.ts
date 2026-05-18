@@ -31,7 +31,7 @@ const SUB_DEFAULT = '_';
 export async function runRepostRule(
   rule: RepostRule,
   item: Item,
-  sub: string = SUB_DEFAULT,
+  sub: string = SUB_DEFAULT
 ): Promise<RuleResult> {
   if (!item.url) return { triggered: false };
   const urlHash = fnv1a64(item.url);
@@ -52,7 +52,11 @@ export async function runRepostRule(
   } catch (err) {
     // Fail-OPEN on Redis error — repost is a soft signal, not a safety gate.
     // Bias toward letting posts through rather than mass-flagging during outage.
-    console.error('[cm/rules/repost] redis err — fail-open (no trigger):', item.id, err);
+    console.error(
+      '[cm/rules/repost] redis err — fail-open (no trigger):',
+      item.id,
+      err
+    );
     return { triggered: false };
   }
 }

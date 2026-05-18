@@ -36,34 +36,66 @@ import { runLock } from '../../src/actions/lock';
 import { runReport } from '../../src/actions/report';
 import { runBan } from '../../src/actions/ban';
 import { runUserFlair } from '../../src/actions/userFlair';
-import type { ActionContext, Item, Author, AppConfig } from '../../src/shared/types';
+import type {
+  ActionContext,
+  Item,
+  Author,
+  AppConfig,
+} from '../../src/shared/types';
 
 const post: Item = {
-  id: 't3_abc', title: 'hi', body: 'body', url: 'https://x.example/p',
-  author: 'alice', age: 100, score: 5, isSelf: true, over18: false,
-  removed: false, approved: false, locked: false, stickied: false,
+  id: 't3_abc',
+  title: 'hi',
+  body: 'body',
+  url: 'https://x.example/p',
+  author: 'alice',
+  age: 100,
+  score: 5,
+  isSelf: true,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
   linkFlairText: null,
 };
 
 const comment: Item = { ...post, id: 't1_xyz', title: '', body: 'a comment' };
 
 const author: Author = {
-  name: 'alice', id: 't2_a', age: 86400, linkKarma: 10, commentKarma: 20,
-  flairText: null, isMod: false, isContributor: false, verified: false,
+  name: 'alice',
+  id: 't2_a',
+  age: 86400,
+  linkKarma: 10,
+  commentKarma: 20,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
   shadowBanned: false,
 };
 
 const config: AppConfig = { runs: [] };
 
 const baseCtx = (item: Item): ActionContext => ({
-  item, author, subredditName: 'cm_devvit_test', rev: 0, config,
+  item,
+  author,
+  subredditName: 'cm_devvit_test',
+  rev: 0,
+  config,
 });
 
 beforeEach(() => {
-  remove.mockClear(); approve.mockClear(); submitComment.mockClear();
-  report.mockClear(); banUser.mockClear(); setUserFlair.mockClear();
-  postLock.mockClear(); commentLock.mockClear();
-  getPostById.mockClear(); getCommentById.mockClear();
+  remove.mockClear();
+  approve.mockClear();
+  submitComment.mockClear();
+  report.mockClear();
+  banUser.mockClear();
+  setUserFlair.mockClear();
+  postLock.mockClear();
+  commentLock.mockClear();
+  getPostById.mockClear();
+  getCommentById.mockClear();
 });
 
 describe('runRemove', () => {
@@ -86,7 +118,8 @@ describe('runApprove', () => {
 
 describe('runComment', () => {
   it('renders Safe variants in the template', async () => {
-    const tpl = 'Hi {{author.nameSafe}}, your post "{{item.titleSafe}}" was flagged.';
+    const tpl =
+      'Hi {{author.nameSafe}}, your post "{{item.titleSafe}}" was flagged.';
     await runComment({ kind: 'comment', template: tpl }, baseCtx(post));
     expect(submitComment).toHaveBeenCalledTimes(1);
     const arg = submitComment.mock.calls[0]![0] as { id: string; text: string };
@@ -99,7 +132,7 @@ describe('runComment', () => {
     const dangerous: Item = { ...post, title: '[click](https://evil.example)' };
     await runComment(
       { kind: 'comment', template: 'Title: {{item.titleSafe}}' },
-      baseCtx(dangerous),
+      baseCtx(dangerous)
     );
     const text = (submitComment.mock.calls[0]![0] as { text: string }).text;
     expect(text).not.toMatch(/\[click\]\(https:\/\/evil\.example\)/);
@@ -176,7 +209,7 @@ describe('runUserFlair', () => {
   it('passes username + subredditName + optional flair fields', async () => {
     await runUserFlair(
       { kind: 'userFlair', text: 'verified', cssClass: 'green' },
-      baseCtx(post),
+      baseCtx(post)
     );
     expect(setUserFlair).toHaveBeenCalledWith({
       subredditName: 'cm_devvit_test',

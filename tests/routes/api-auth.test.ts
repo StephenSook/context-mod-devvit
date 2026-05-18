@@ -67,24 +67,38 @@ vi.mock('../../src/lib/circuitBreaker', () => ({
 
 import { api } from '../../src/routes/api';
 
-const NON_MOD = { ok: false as const, status: 403 as const, error: 'not a moderator of this sub' };
+const NON_MOD = {
+  ok: false as const,
+  status: 403 as const,
+  error: 'not a moderator of this sub',
+};
 const AS_MOD = { ok: true as const, sub: 'r_test', username: 'mod_alice' };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  validateEventSummary.mockImplementation((event: unknown) => ({ ok: true, event }));
-  checkRateLimit.mockResolvedValue({ allowed: true, count: 1, max: 30, resetInSec: 3600 });
+  validateEventSummary.mockImplementation((event: unknown) => ({
+    ok: true,
+    event,
+  }));
+  checkRateLimit.mockResolvedValue({
+    allowed: true,
+    count: 1,
+    max: 30,
+    resetInSec: 3600,
+  });
   checkCircuit.mockResolvedValue({ state: 'closed' });
   recordFailure.mockResolvedValue(undefined);
   recordSuccess.mockResolvedValue(undefined);
 });
 
 async function postJson(path: string, body: unknown): Promise<Response> {
-  return api.request(new Request(`http://x${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  }));
+  return api.request(
+    new Request(`http://x${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  );
 }
 
 async function getJson(path: string): Promise<Response> {
@@ -94,7 +108,10 @@ async function getJson(path: string): Promise<Response> {
 describe('POST /api/mute-rule (W8)', () => {
   it('rejects non-mod with 403 and does NOT call muteRule', async () => {
     requireModeratorMock.mockResolvedValue(NON_MOD);
-    const res = await postJson('/mute-rule', { runName: 'spam', checkName: 'crypto' });
+    const res = await postJson('/mute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
     expect(res.status).toBe(403);
     expect(muteRule).not.toHaveBeenCalled();
     expect(logModActivity).not.toHaveBeenCalled();
@@ -103,7 +120,11 @@ describe('POST /api/mute-rule (W8)', () => {
   it('allows mod + logs activity with auth.username (not body) — prevents log spoofing', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     muteRule.mockResolvedValue({ ok: true });
-    const res = await postJson('/mute-rule', { runName: 'spam', checkName: 'crypto', actor: 'evil_user' });
+    const res = await postJson('/mute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+      actor: 'evil_user',
+    });
     expect(res.status).toBe(200);
     expect(muteRule).toHaveBeenCalledWith('r_test', 'spam', 'crypto');
     const entry = logModActivity.mock.calls[0]?.[1] as { actor: string };
@@ -121,7 +142,10 @@ describe('POST /api/mute-rule (W8)', () => {
 describe('POST /api/unmute-rule (W8)', () => {
   it('rejects non-mod with 403 and does NOT call unmuteRule', async () => {
     requireModeratorMock.mockResolvedValue(NON_MOD);
-    const res = await postJson('/unmute-rule', { runName: 'spam', checkName: 'crypto' });
+    const res = await postJson('/unmute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
     expect(res.status).toBe(403);
     expect(unmuteRule).not.toHaveBeenCalled();
   });
@@ -144,8 +168,13 @@ describe('POST /api/explain-event (W8)', () => {
 
   it('X1 returns 400 when validation rejects payload', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
-    validateEventSummary.mockReturnValueOnce({ ok: false, error: 'matchedSubstring exceeds 200 chars' });
-    const res = await postJson('/explain-event', { event: { matchedSubstring: 'x' } });
+    validateEventSummary.mockReturnValueOnce({
+      ok: false,
+      error: 'matchedSubstring exceeds 200 chars',
+    });
+    const res = await postJson('/explain-event', {
+      event: { matchedSubstring: 'x' },
+    });
     expect(res.status).toBe(400);
     expect(explainEvent).not.toHaveBeenCalled();
     expect(checkRateLimit).not.toHaveBeenCalled();
@@ -153,7 +182,12 @@ describe('POST /api/explain-event (W8)', () => {
 
   it('X1 returns 429 when rate-limit denies', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
-    checkRateLimit.mockResolvedValueOnce({ allowed: false, count: 31, max: 30, resetInSec: 1800 });
+    checkRateLimit.mockResolvedValueOnce({
+      allowed: false,
+      count: 31,
+      max: 30,
+      resetInSec: 1800,
+    });
     const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(res.status).toBe(429);
     expect(explainEvent).not.toHaveBeenCalled();
@@ -192,7 +226,10 @@ describe('POST /api/explain-event (W8)', () => {
     explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
     const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(res.status).toBe(200);
-    expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-redis-key');
+    expect(explainEvent).toHaveBeenCalledWith(
+      { kind: 'remove' },
+      'sk-redis-key'
+    );
   });
 
   it('falls back to Devvit setting when Redis returns null', async () => {
@@ -201,7 +238,10 @@ describe('POST /api/explain-event (W8)', () => {
     settingsGet.mockResolvedValue('sk-settings-key');
     explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
     await postJson('/explain-event', { event: { kind: 'remove' } });
-    expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-settings-key');
+    expect(explainEvent).toHaveBeenCalledWith(
+      { kind: 'remove' },
+      'sk-settings-key'
+    );
   });
 });
 

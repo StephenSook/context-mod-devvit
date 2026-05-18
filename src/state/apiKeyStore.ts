@@ -22,7 +22,9 @@ export async function setOpenaiKey(sub: string, apiKey: string): Promise<void> {
   await redis.set(key(sub), apiKey.trim());
 }
 
-export async function getOpenaiKey(sub: string | undefined): Promise<string | null> {
+export async function getOpenaiKey(
+  sub: string | undefined
+): Promise<string | null> {
   if (!sub) return null;
   try {
     const v = await redis.get(key(sub));

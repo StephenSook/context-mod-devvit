@@ -6,7 +6,10 @@
 import { reddit } from '@devvit/web/server';
 import type { LockAction, ActionContext } from '../shared/types';
 
-export async function runLock(_action: LockAction, ctx: ActionContext): Promise<void> {
+export async function runLock(
+  _action: LockAction,
+  ctx: ActionContext
+): Promise<void> {
   const id = ctx.item.id;
   if (id.startsWith('t3_')) {
     const post = await reddit.getPostById(id as `t3_${string}`);

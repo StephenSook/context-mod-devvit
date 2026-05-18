@@ -16,7 +16,10 @@ import { loadFromWiki, WIKI_PAGE } from '../core/configSource';
 import { K } from '../state/keys';
 import { logModActivity, type ModActivityKind } from '../state/modActivity';
 
-async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<void> {
+async function logMenuAction(
+  kind: ModActivityKind,
+  detail?: string
+): Promise<void> {
   try {
     const [sub, user] = await Promise.all([
       reddit.getCurrentSubreddit(),
@@ -31,7 +34,10 @@ async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<vo
   } catch (err) {
     // X48: best-effort — never blocks the menu action — but surface the
     // failure so ops sees activity-log writes are dropping when they are.
-    console.warn('[cm/menu/logMenuAction] best-effort log failed:', { kind, err });
+    console.warn('[cm/menu/logMenuAction] best-effort log failed:', {
+      kind,
+      err,
+    });
   }
 }
 
@@ -43,8 +49,13 @@ menu.post('/reload-config', async (c) => {
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
-    console.error('[cm/menu/reload-config] could not resolve current sub:', err);
-    return c.json({ showToast: 'Could not resolve current subreddit — try again.' });
+    console.error(
+      '[cm/menu/reload-config] could not resolve current sub:',
+      err
+    );
+    return c.json({
+      showToast: 'Could not resolve current subreddit — try again.',
+    });
   }
 
   const loaded = await loadFromWiki(subName);
@@ -68,7 +79,9 @@ menu.post('/reload-config', async (c) => {
     const ruleCount = loaded.config.runs
       .flatMap((r) => r.checks)
       .flatMap((ch) => ch.rules).length;
-    console.log(`[cm/menu/reload-config] published rev=${rev} (wiki=${loaded.revisionId}) sub=${subName}`);
+    console.log(
+      `[cm/menu/reload-config] published rev=${rev} (wiki=${loaded.revisionId}) sub=${subName}`
+    );
     await logMenuAction('reload-config', `${ruleCount} rules @ rev ${rev}`);
     return c.json({ showToast: `Loaded ${ruleCount} rules (rev ${rev}).` });
   } catch (err) {
@@ -107,9 +120,16 @@ menu.post('/recent-actions', async (c) => {
     console.error(`[cm/menu/recent-actions] failed:`, name, msg, err);
 
     let toast = `Could not create dashboard post: ${msg}`;
-    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('scope')) {
-      toast = 'App is missing the submit-post permission. Reinstall or contact app author.';
-    } else if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('429')) {
+    if (
+      msg.toLowerCase().includes('permission') ||
+      msg.toLowerCase().includes('scope')
+    ) {
+      toast =
+        'App is missing the submit-post permission. Reinstall or contact app author.';
+    } else if (
+      msg.toLowerCase().includes('rate') ||
+      msg.toLowerCase().includes('429')
+    ) {
       toast = 'Reddit rate-limited us. Try again in 60 seconds.';
     }
     return c.json({ showToast: toast });
@@ -195,7 +215,8 @@ menu.post('/test-rules', async (c) => {
   console.log(`[cm/menu/test-rules] targetId=${evt.targetId}`);
   if (!evt.targetId) {
     return c.json({
-      showToast: 'Right-click a post or comment to select it, then re-open this menu to test rules.',
+      showToast:
+        'Right-click a post or comment to select it, then re-open this menu to test rules.',
     });
   }
   return c.json({
@@ -203,7 +224,8 @@ menu.post('/test-rules', async (c) => {
       name: 'testRules',
       form: {
         title: 'ContextMod — Dry-run rules',
-        description: 'Evaluate the live rule set against this item. No Reddit actions will fire.',
+        description:
+          'Evaluate the live rule set against this item. No Reddit actions will fire.',
         fields: [
           {
             type: 'string',

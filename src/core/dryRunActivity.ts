@@ -40,7 +40,7 @@ export interface DryRunResult {
 export async function dryRunActivity(
   item: Item,
   author: Author,
-  subredditName: string,
+  subredditName: string
 ): Promise<DryRunResult> {
   const current = await configStore.getCurrentRev(subredditName);
   if (!current) {
@@ -70,7 +70,7 @@ export async function dryRunActivity(
       actions.push(
         res.status === 'dry-run' && res.wouldHaveCalled
           ? { kind: action.kind, wouldHaveCalled: res.wouldHaveCalled }
-          : { kind: action.kind },
+          : { kind: action.kind }
       );
     }
 

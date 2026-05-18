@@ -91,7 +91,7 @@ const AUTHOR_DEFAULTS: Omit<Author, 'name' | 'id'> = {
 async function enrichAuthor(
   name: string,
   id: string,
-  needsEnrichment: boolean,
+  needsEnrichment: boolean
 ): Promise<Author> {
   if (!needsEnrichment || !name) {
     return { ...AUTHOR_DEFAULTS, name, id };
@@ -105,7 +105,12 @@ async function enrichAuthor(
     return {
       name,
       id: id || (user as { id?: string }).id || '',
-      age: ageSeconds((user as { createdAt?: Date | number | string }).createdAt as number | string | undefined),
+      age: ageSeconds(
+        (user as { createdAt?: Date | number | string }).createdAt as
+          | number
+          | string
+          | undefined
+      ),
       linkKarma: (user as { linkKarma?: number }).linkKarma ?? 0,
       commentKarma: (user as { commentKarma?: number }).commentKarma ?? 0,
       flairText: null,
@@ -115,7 +120,11 @@ async function enrichAuthor(
       shadowBanned: false,
     };
   } catch (err) {
-    console.warn('[cm/normalize] getUserByUsername failed — defaulting author + tagging enrichmentFailed:', name, err);
+    console.warn(
+      '[cm/normalize] getUserByUsername failed — defaulting author + tagging enrichmentFailed:',
+      name,
+      err
+    );
     return { ...AUTHOR_DEFAULTS, name, id, enrichmentFailed: true };
   }
 }
@@ -147,32 +156,48 @@ export function computeNeedsAuthorEnrichment(config: AppConfig): boolean {
       if (check.filters?.authorIs) {
         const f = check.filters.authorIs;
         if (
-          f.ageMinSec != null || f.ageMaxSec != null ||
-          f.linkKarmaMin != null || f.linkKarmaMax != null ||
-          f.commentKarmaMin != null || f.commentKarmaMax != null ||
-          f.isMod != null || f.isContributor != null ||
-          f.verified != null || f.shadowBanned != null
-        ) return true;
+          f.ageMinSec != null ||
+          f.ageMaxSec != null ||
+          f.linkKarmaMin != null ||
+          f.linkKarmaMax != null ||
+          f.commentKarmaMin != null ||
+          f.commentKarmaMax != null ||
+          f.isMod != null ||
+          f.isContributor != null ||
+          f.verified != null ||
+          f.shadowBanned != null
+        )
+          return true;
       }
     }
   }
   return false;
 }
 
-function ruleNeedsAuthorEnrichment(rule: { kind: string; filter?: unknown; rules?: unknown }): boolean {
+function ruleNeedsAuthorEnrichment(rule: {
+  kind: string;
+  filter?: unknown;
+  rules?: unknown;
+}): boolean {
   if (rule.kind === 'author' && rule.filter) {
     const f = rule.filter as Record<string, unknown>;
     return (
-      f.ageMinSec != null || f.ageMaxSec != null ||
-      f.linkKarmaMin != null || f.linkKarmaMax != null ||
-      f.commentKarmaMin != null || f.commentKarmaMax != null ||
-      f.isMod != null || f.isContributor != null ||
-      f.verified != null || f.shadowBanned != null
+      f.ageMinSec != null ||
+      f.ageMaxSec != null ||
+      f.linkKarmaMin != null ||
+      f.linkKarmaMax != null ||
+      f.commentKarmaMin != null ||
+      f.commentKarmaMax != null ||
+      f.isMod != null ||
+      f.isContributor != null ||
+      f.verified != null ||
+      f.shadowBanned != null
     );
   }
   if (rule.kind === 'ruleset' && Array.isArray(rule.rules)) {
-    return (rule.rules as { kind: string; filter?: unknown; rules?: unknown }[])
-      .some(ruleNeedsAuthorEnrichment);
+    return (
+      rule.rules as { kind: string; filter?: unknown; rules?: unknown }[]
+    ).some(ruleNeedsAuthorEnrichment);
   }
   // Phase 4 — HistoryRule reads karma directly off the enriched Author. The
   // other history-based rules (attribution, recentActivity) only need the
@@ -180,8 +205,10 @@ function ruleNeedsAuthorEnrichment(rule: { kind: string; filter?: unknown; rules
   if (rule.kind === 'history') {
     const r = rule as Record<string, unknown>;
     return (
-      r.linkKarmaLt != null || r.linkKarmaGt != null ||
-      r.commentKarmaLt != null || r.commentKarmaGt != null
+      r.linkKarmaLt != null ||
+      r.linkKarmaGt != null ||
+      r.commentKarmaLt != null ||
+      r.commentKarmaGt != null
     );
   }
   return false;
@@ -189,7 +216,7 @@ function ruleNeedsAuthorEnrichment(rule: { kind: string; filter?: unknown; rules
 
 export async function normalizePost(
   payload: PostSubmitPayload,
-  config: AppConfig,
+  config: AppConfig
 ): Promise<NormalizedActivity> {
   const p = payload.post ?? {};
   const a = payload.author ?? {};
@@ -197,7 +224,7 @@ export async function normalizePost(
   const author = await enrichAuthor(
     authorName,
     a.id ?? p.authorId ?? '',
-    config.needsAuthorEnrichment ?? false,
+    config.needsAuthorEnrichment ?? false
   );
   const item: Item = {
     ...ITEM_DEFAULTS,
@@ -227,7 +254,7 @@ export async function normalizePost(
 
 export async function normalizeComment(
   payload: CommentSubmitPayload,
-  config: AppConfig,
+  config: AppConfig
 ): Promise<NormalizedActivity> {
   const c = payload.comment ?? {};
   const a = payload.author ?? {};
@@ -235,7 +262,7 @@ export async function normalizeComment(
   const author = await enrichAuthor(
     authorName,
     a.id ?? '',
-    config.needsAuthorEnrichment ?? false,
+    config.needsAuthorEnrichment ?? false
   );
   const item: Item = {
     ...ITEM_DEFAULTS,

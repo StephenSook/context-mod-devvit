@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
-import { OnboardingTour, hasSeenTour, markTourSeen } from '../../src/client/components/OnboardingTour';
+import {
+  OnboardingTour,
+  hasSeenTour,
+  markTourSeen,
+} from '../../src/client/components/OnboardingTour';
 
 beforeEach(() => {
   localStorage.clear();
@@ -86,7 +90,9 @@ describe('OnboardingTour component', () => {
   });
 
   it('back button appears only from step 2 onwards', () => {
-    const { getByText, queryByText } = render(<OnboardingTour onDone={vi.fn()} />);
+    const { getByText, queryByText } = render(
+      <OnboardingTour onDone={vi.fn()} />
+    );
     expect(queryByText('back')).toBeFalsy();
     fireEvent.click(getByText('next'));
     expect(getByText('back')).toBeTruthy();

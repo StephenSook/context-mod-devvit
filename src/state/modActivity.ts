@@ -29,7 +29,10 @@ export interface ModActivity {
 
 const RING_SIZE = 50;
 
-export async function logModActivity(sub: string | undefined, entry: ModActivity): Promise<void> {
+export async function logModActivity(
+  sub: string | undefined,
+  entry: ModActivity
+): Promise<void> {
   if (!sub) return;
   try {
     const key = `cm:mod-activity:${sub}`;
@@ -47,11 +50,16 @@ export async function logModActivity(sub: string | undefined, entry: ModActivity
   }
 }
 
-export async function readModActivity(sub: string | undefined): Promise<ModActivity[]> {
+export async function readModActivity(
+  sub: string | undefined
+): Promise<ModActivity[]> {
   if (!sub) return [];
   try {
     const key = `cm:mod-activity:${sub}`;
-    const entries = await redis.zRange(key, 0, -1, { by: 'score', reverse: true });
+    const entries = await redis.zRange(key, 0, -1, {
+      by: 'score',
+      reverse: true,
+    });
     let parseFails = 0;
     const parsed = entries
       .map((e) => {
@@ -64,7 +72,11 @@ export async function readModActivity(sub: string | undefined): Promise<ModActiv
       })
       .filter((x): x is ModActivity => x !== null);
     if (parseFails > 0) {
-      console.warn('[cm/modActivity] dropped corrupt members:', { sub, parseFails, totalEntries: entries.length });
+      console.warn('[cm/modActivity] dropped corrupt members:', {
+        sub,
+        parseFails,
+        totalEntries: entries.length,
+      });
     }
     return parsed;
   } catch (err) {

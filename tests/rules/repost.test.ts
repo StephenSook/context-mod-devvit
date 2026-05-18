@@ -20,9 +20,20 @@ import { runRepostRule } from '../../src/rules/repost';
 import type { Item, RepostRule } from '../../src/shared/types';
 
 const item = (url: string): Item => ({
-  id: 't3_abc', title: '', body: '', url, author: 'u', age: 0, score: 0,
-  isSelf: false, over18: false, removed: false, approved: false,
-  locked: false, stickied: false, linkFlairText: null,
+  id: 't3_abc',
+  title: '',
+  body: '',
+  url,
+  author: 'u',
+  age: 0,
+  score: 0,
+  isSelf: false,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
 });
 
 const rule: RepostRule = { kind: 'repost' };
@@ -37,7 +48,11 @@ describe('runRepostRule', () => {
     const res = await runRepostRule(rule, item('https://x.example/a'), 'sub1');
     expect(res).toEqual({ triggered: false });
     expect(redisSet).toHaveBeenCalledTimes(1);
-    const [key, value, opts] = redisSet.mock.calls[0] as [string, string, { nx: boolean; expiration: Date }];
+    const [key, value, opts] = redisSet.mock.calls[0] as [
+      string,
+      string,
+      { nx: boolean; expiration: Date },
+    ];
     expect(key).toMatch(/^cm:sub1:repost:url:[0-9a-f]{16}$/);
     expect(value).toBe('t3_abc');
     expect(opts.nx).toBe(true);
@@ -46,17 +61,20 @@ describe('runRepostRule', () => {
   it('triggers when SET NX returns non-OK (key already exists — race-safe)', async () => {
     // Codex HIGH 2026-05-16: prior GET-then-SET pattern raced concurrent
     // submissions. Single atomic SET NX returns non-OK iff key existed.
-    redisSet.mockResolvedValueOnce(null);  // NX failed → existing key
+    redisSet.mockResolvedValueOnce(null); // NX failed → existing key
     const res = await runRepostRule(rule, item('https://x.example/a'), 'sub1');
     expect(res).toEqual({ triggered: true });
-    expect(redisSet).toHaveBeenCalledTimes(2);  // NX attempt + non-NX refresh
+    expect(redisSet).toHaveBeenCalledTimes(2); // NX attempt + non-NX refresh
   });
 
   it('refreshes TTL on a hit so repeat reposts dont expire mid-window', async () => {
-    redisSet.mockResolvedValueOnce(null);  // NX failed
-    redisSet.mockResolvedValueOnce('OK');  // refresh
+    redisSet.mockResolvedValueOnce(null); // NX failed
+    redisSet.mockResolvedValueOnce('OK'); // refresh
     await runRepostRule(rule, item('https://x.example/a'), 'sub1');
-    const refreshOpts = redisSet.mock.calls[1]![2] as { nx?: boolean; expiration: Date };
+    const refreshOpts = redisSet.mock.calls[1]![2] as {
+      nx?: boolean;
+      expiration: Date;
+    };
     expect(refreshOpts.nx).toBeUndefined();
     expect(refreshOpts.expiration).toBeInstanceOf(Date);
     expect(refreshOpts.expiration.getTime()).toBeGreaterThan(Date.now());
@@ -85,7 +103,11 @@ describe('runRepostRule', () => {
   });
 
   it('honors a custom windowDays', async () => {
-    await runRepostRule({ kind: 'repost', windowDays: 7 }, item('https://x.example/a'), 'sub1');
+    await runRepostRule(
+      { kind: 'repost', windowDays: 7 },
+      item('https://x.example/a'),
+      'sub1'
+    );
     const opts = redisSet.mock.calls[0]![2] as { expiration: Date };
     const sevenDaysMs = 7 * 86_400 * 1000;
     const expected = Date.now() + sevenDaysMs;

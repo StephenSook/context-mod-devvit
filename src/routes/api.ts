@@ -23,7 +23,11 @@ import { settings, redis } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
-import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
+import {
+  checkCircuit,
+  recordFailure,
+  recordSuccess,
+} from '../lib/circuitBreaker';
 import { log } from '../lib/log';
 import { readStatsSnapshot } from '../state/statsRollup';
 
@@ -31,7 +35,10 @@ export const api = new Hono();
 
 api.get('/recent', async (c) => {
   if (c.req.query('demo') === '1') {
-    log.info('cm/api/recent', 'demo=1 — serving synthetic fixtures (not real ZSET)');
+    log.info(
+      'cm/api/recent',
+      'demo=1 — serving synthetic fixtures (not real ZSET)'
+    );
     return c.json({ events: demoEvents() });
   }
 
@@ -45,7 +52,10 @@ api.get('/recent', async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error('cm/api/recent', 'could not resolve current sub', { err });
-    return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
+    return c.json(
+      { error: `subreddit context unavailable: ${msg}`, events: [] },
+      503
+    );
   }
 
   const events = await readRecent(subName);
@@ -59,17 +69,34 @@ api.get('/recent', async (c) => {
  * without depending on a live install.
  */
 api.get('/config-history', async (c) => {
-  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '10', 10) || 10, 50);
+  const limit = Math.min(
+    Number.parseInt(c.req.query('limit') ?? '10', 10) || 10,
+    50
+  );
   if (c.req.query('demo') === '1') {
     return c.json({
       revs: [
         {
           rev: 3,
-          config: { runs: [{ name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }, { name: 'low-karma-author' }] }] },
+          config: {
+            runs: [
+              {
+                name: 'spam-removal',
+                checks: [
+                  { name: 'crypto-giveaway' },
+                  { name: 'low-karma-author' },
+                ],
+              },
+            ],
+          },
         },
         {
           rev: 2,
-          config: { runs: [{ name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }] }] },
+          config: {
+            runs: [
+              { name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }] },
+            ],
+          },
         },
         {
           rev: 1,
@@ -97,8 +124,17 @@ api.get('/mod-activity', async (c) => {
     const now = Date.now();
     return c.json({
       activity: [
-        { ts: now - 5 * 60_000, actor: 'CowSufficient3840', kind: 'reload-config', detail: '5 rules @ rev 3' },
-        { ts: now - 30 * 60_000, actor: 'CowSufficient3840', kind: 'simulate-rule' },
+        {
+          ts: now - 5 * 60_000,
+          actor: 'CowSufficient3840',
+          kind: 'reload-config',
+          detail: '5 rules @ rev 3',
+        },
+        {
+          ts: now - 30 * 60_000,
+          actor: 'CowSufficient3840',
+          kind: 'simulate-rule',
+        },
         { ts: now - 2 * 3600_000, actor: 'vinhbin', kind: 'test-rules' },
       ],
     });
@@ -137,7 +173,8 @@ api.get('/muted-rules', async (c) => {
 api.post('/mute-rule', async (c) => {
   const body = await c.req.json<{ runName?: string; checkName?: string }>();
   const { runName, checkName } = body;
-  if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
+  if (!runName || !checkName)
+    return c.json({ ok: false, error: 'runName + checkName required' }, 400);
   // Wave U BLOCKER fix: verify caller is a mod before mutating shared state.
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
@@ -155,7 +192,8 @@ api.post('/mute-rule', async (c) => {
 api.post('/unmute-rule', async (c) => {
   const body = await c.req.json<{ runName?: string; checkName?: string }>();
   const { runName, checkName } = body;
-  if (!runName || !checkName) return c.json({ ok: false, error: 'runName + checkName required' }, 400);
+  if (!runName || !checkName)
+    return c.json({ ok: false, error: 'runName + checkName required' }, 400);
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
   const result = await unmuteRule(auth.sub, runName, checkName);
@@ -176,7 +214,8 @@ api.post('/unmute-rule', async (c) => {
  */
 api.post('/explain-event', async (c) => {
   const body = await c.req.json<{ event?: unknown }>();
-  if (!body?.event) return c.json({ ok: false, error: 'event payload required' }, 400);
+  if (!body?.event)
+    return c.json({ ok: false, error: 'event payload required' }, 400);
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
   // X1: validate BEFORE rate-limit + OpenAI call so a bad payload doesn't
@@ -191,22 +230,29 @@ api.post('/explain-event', async (c) => {
   // OpenAI is down, deny without burning a rate-limit token.
   const cb = await checkCircuit(cbBucket);
   if (cb.state === 'open') {
-    return c.json({
-      ok: false,
-      error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.`,
-    }, 503);
+    return c.json(
+      {
+        ok: false,
+        error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.`,
+      },
+      503
+    );
   }
   // X1: per-sub rate limit — 30 calls per hour.
   const rl = await checkRateLimit('explain', auth.sub, 30, 3600);
   if (!rl.allowed) {
-    return c.json({
-      ok: false,
-      error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
-    }, 429);
+    return c.json(
+      {
+        ok: false,
+        error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
+      },
+      429
+    );
   }
   // X39: resolve apiKey OUTSIDE the try wrapping explainEvent.
   const fromRedis = await getOpenaiKey(auth.sub);
-  const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  const apiKey =
+    fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
     const result = await explainEvent(validated.event, apiKey);
     if (!result.ok) {
@@ -258,7 +304,10 @@ function stripServerFields(e: RecentEvent) {
 
 api.get('/stats', async (c) => {
   if (c.req.query('demo') === '1') {
-    log.info('cm/api/stats', 'demo=1 — serving synthetic fixtures (not real rollup)');
+    log.info(
+      'cm/api/stats',
+      'demo=1 — serving synthetic fixtures (not real rollup)'
+    );
     return c.json({ counters: DEMO_STATS });
   }
   // Y1-X7: real counters. Reads cm:stats:snapshot:{sub} (written hourly by
@@ -269,7 +318,10 @@ api.get('/stats', async (c) => {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
     log.error('cm/api/stats', 'subreddit context unavailable', { err });
-    return c.json({ counters: {}, error: 'subreddit context unavailable' }, 503);
+    return c.json(
+      { counters: {}, error: 'subreddit context unavailable' },
+      503
+    );
   }
   const stats = await readStatsSnapshot(subName);
   return c.json({ counters: stats });
@@ -316,7 +368,12 @@ api.get('/health/deep', async (c) => {
   }
 
   const redditStart = Date.now();
-  let redditCheck: { ok: boolean; latencyMs: number; sub?: string; err?: string };
+  let redditCheck: {
+    ok: boolean;
+    latencyMs: number;
+    sub?: string;
+    err?: string;
+  };
   try {
     const sub = await reddit.getCurrentSubreddit();
     redditCheck = {
@@ -333,11 +390,14 @@ api.get('/health/deep', async (c) => {
   }
 
   const ok = redisCheck.ok && redditCheck.ok;
-  return c.json({
-    ok,
-    name: 'cm-devvit',
-    version: process.env.npm_package_version ?? 'unknown',
-    ts,
-    checks: { redis: redisCheck, reddit: redditCheck },
-  }, ok ? 200 : 503);
+  return c.json(
+    {
+      ok,
+      name: 'cm-devvit',
+      version: process.env.npm_package_version ?? 'unknown',
+      ts,
+      checks: { redis: redisCheck, reddit: redditCheck },
+    },
+    ok ? 200 : 503
+  );
 });

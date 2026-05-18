@@ -25,8 +25,11 @@ describe('POST /test-rules menu handler', () => {
     });
     const res = await menu.request(req);
     expect(res.status).toBe(200);
-    const json = await res.json() as {
-      showForm: { name: string; form: { fields: { name: string; defaultValue: string }[] } };
+    const json = (await res.json()) as {
+      showForm: {
+        name: string;
+        form: { fields: { name: string; defaultValue: string }[] };
+      };
     };
     expect(json.showForm.name).toBe('testRules');
     expect(json.showForm.form.fields[0]).toMatchObject({
@@ -36,7 +39,9 @@ describe('POST /test-rules menu handler', () => {
     // Codex/playtest 2026-05-16: field MUST NOT be disabled — Devvit drops
     // disabled fields from form submission, so the handler would receive
     // thingId=undefined and bail. Regression test pins editable shape.
-    expect((json.showForm.form.fields[0] as { disabled?: boolean }).disabled).toBeUndefined();
+    expect(
+      (json.showForm.form.fields[0] as { disabled?: boolean }).disabled
+    ).toBeUndefined();
   });
 
   it('returns toast when targetId missing (mod invoked from subreddit menu, not post/comment)', async () => {
@@ -46,7 +51,7 @@ describe('POST /test-rules menu handler', () => {
       body: JSON.stringify({}),
     });
     const res = await menu.request(req);
-    const json = await res.json() as { showToast?: string };
+    const json = (await res.json()) as { showToast?: string };
     expect(json.showToast).toMatch(/post or comment/i);
   });
 });

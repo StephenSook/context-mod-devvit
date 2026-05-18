@@ -11,7 +11,10 @@ const releaseAction = vi.fn().mockResolvedValue(undefined);
 const redditRemove = vi.fn();
 
 vi.mock('../../src/lib/idem', async () => {
-  const actual = await vi.importActual<typeof import('../../src/lib/idem')>('../../src/lib/idem');
+  const actual =
+    await vi.importActual<typeof import('../../src/lib/idem')>(
+      '../../src/lib/idem'
+    );
   return {
     ...actual,
     reserveAction: (...a: unknown[]) => reserveAction(...a),
@@ -27,20 +30,50 @@ vi.mock('@devvit/web/server', () => ({
 }));
 
 import { runAction } from '../../src/core/runAction';
-import type { ActionContext, Item, Author, AppConfig, RemoveAction } from '../../src/shared/types';
+import type {
+  ActionContext,
+  Item,
+  Author,
+  AppConfig,
+  RemoveAction,
+} from '../../src/shared/types';
 
 const item: Item = {
-  id: 't3_abc', title: 't', body: 'b', url: 'u', author: 'a', age: 0, score: 0,
-  isSelf: false, over18: false, removed: false, approved: false, locked: false,
-  stickied: false, linkFlairText: null,
+  id: 't3_abc',
+  title: 't',
+  body: 'b',
+  url: 'u',
+  author: 'a',
+  age: 0,
+  score: 0,
+  isSelf: false,
+  over18: false,
+  removed: false,
+  approved: false,
+  locked: false,
+  stickied: false,
+  linkFlairText: null,
 };
 const author: Author = {
-  name: 'a', id: 't2_a', age: 0, linkKarma: 0, commentKarma: 0,
-  flairText: null, isMod: false, isContributor: false, verified: false,
+  name: 'a',
+  id: 't2_a',
+  age: 0,
+  linkKarma: 0,
+  commentKarma: 0,
+  flairText: null,
+  isMod: false,
+  isContributor: false,
+  verified: false,
   shadowBanned: false,
 };
 const config: AppConfig = { runs: [] };
-const ctx: ActionContext = { item, author, subredditName: 'sub', rev: 0, config };
+const ctx: ActionContext = {
+  item,
+  author,
+  subredditName: 'sub',
+  rev: 0,
+  config,
+};
 
 const action: RemoveAction = { kind: 'remove' };
 
@@ -54,9 +87,16 @@ beforeEach(() => {
 describe('runAction — happy path', () => {
   it('reserve → side-effect → commit (in that order)', async () => {
     const order: string[] = [];
-    reserveAction.mockImplementation(async () => { order.push('reserve'); return { token: 'tk' }; });
-    redditRemove.mockImplementation(async () => { order.push('side-effect'); });
-    commitAction.mockImplementation(async () => { order.push('commit'); });
+    reserveAction.mockImplementation(async () => {
+      order.push('reserve');
+      return { token: 'tk' };
+    });
+    redditRemove.mockImplementation(async () => {
+      order.push('side-effect');
+    });
+    commitAction.mockImplementation(async () => {
+      order.push('commit');
+    });
 
     const res = await runAction(action, ctx);
 
@@ -79,11 +119,15 @@ describe('runAction — failure path', () => {
   });
 
   it('retry after release succeeds', async () => {
-    reserveAction.mockResolvedValueOnce({ token: 'tk1' }).mockResolvedValueOnce({ token: 'tk2' });
-    redditRemove.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
+    reserveAction
+      .mockResolvedValueOnce({ token: 'tk1' })
+      .mockResolvedValueOnce({ token: 'tk2' });
+    redditRemove
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(undefined);
 
-    await runAction(action, ctx);  // first attempt fails
-    const second = await runAction(action, ctx);  // retry
+    await runAction(action, ctx); // first attempt fails
+    const second = await runAction(action, ctx); // retry
 
     expect(second).toEqual({ status: 'ok', kind: 'remove' });
     expect(commitAction).toHaveBeenCalledTimes(1);
@@ -105,10 +149,17 @@ describe('runAction — stale-lease path', () => {
 
 describe('runAction — dry-run gate (Phase 2.5)', () => {
   it('returns dry-run when config.dryRun=true and skips reserve + side-effect', async () => {
-    const dryCtx: ActionContext = { ...ctx, config: { runs: [], dryRun: true } };
+    const dryCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [], dryRun: true },
+    };
     const res = await runAction(action, dryCtx);
 
-    expect(res).toEqual({ status: 'dry-run', kind: 'remove', wouldHaveCalled: 'remove' });
+    expect(res).toEqual({
+      status: 'dry-run',
+      kind: 'remove',
+      wouldHaveCalled: 'remove',
+    });
     expect(reserveAction).not.toHaveBeenCalled();
     expect(redditRemove).not.toHaveBeenCalled();
   });
@@ -128,7 +179,10 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     // bypass (mod sets the whole bot to dry-run, one rule still fires live).
     // Per-action can ONLY ELEVATE to dry-run, never demote to live.
     const liveAction: RemoveAction = { kind: 'remove', dryRun: false };
-    const dryCtx: ActionContext = { ...ctx, config: { runs: [], dryRun: true } };
+    const dryCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [], dryRun: true },
+    };
     const res = await runAction(liveAction, dryCtx);
     expect(res.status).toBe('dry-run');
     expect(reserveAction).not.toHaveBeenCalled();

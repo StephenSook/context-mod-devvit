@@ -15,7 +15,12 @@ import { runCheck } from './runCheck';
 
 const MAX_ITERATIONS = 100;
 
-export async function runRun(run: Run, item: Item, author: Author, sub?: string): Promise<RunResult> {
+export async function runRun(
+  run: Run,
+  item: Item,
+  author: Author,
+  sub?: string
+): Promise<RunResult> {
   const indexByName = new Map<string, number>();
   run.checks.forEach((c, i) => indexByName.set(c.name, i));
 
@@ -27,7 +32,12 @@ export async function runRun(run: Run, item: Item, author: Author, sub?: string)
 
   while (i < run.checks.length) {
     if (++iterations > MAX_ITERATIONS) {
-      console.error('[cm/runRun] iteration limit hit — circular goto in run:', run.name, 'lastCheck:', lastCheckName);
+      console.error(
+        '[cm/runRun] iteration limit hit — circular goto in run:',
+        run.name,
+        'lastCheck:',
+        lastCheckName
+      );
       return {
         triggered: collectedActions.length > 0,
         checkName: firstTriggeredCheckName,
@@ -50,7 +60,12 @@ export async function runRun(run: Run, item: Item, author: Author, sub?: string)
           // X47: surface goto-missing so handleActivity can recordEvent.
           // Without this, a mod's typo in postBehavior.goto silently
           // truncates the run with only a console.error visible.
-          console.error('[cm/runRun] postBehavior.goto target not found:', behavior.goto, 'in run', run.name);
+          console.error(
+            '[cm/runRun] postBehavior.goto target not found:',
+            behavior.goto,
+            'in run',
+            run.name
+          );
           return {
             triggered: collectedActions.length > 0,
             checkName: firstTriggeredCheckName,

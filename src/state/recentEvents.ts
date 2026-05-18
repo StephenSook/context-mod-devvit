@@ -36,7 +36,7 @@ export interface RecentEvent {
 
 export async function recordEvent(
   event: Omit<RecentEvent, 'v' | 'nonce'>,
-  sub?: string,
+  sub?: string
 ): Promise<void> {
   const versioned: RecentEvent = {
     v: 1,
@@ -48,7 +48,7 @@ export async function recordEvent(
       score: event.ts,
       member: JSON.stringify(versioned),
     });
-    await redis.zRemRangeByRank(K.eventsRecent(sub), 0, -51);  // keep last 50
+    await redis.zRemRangeByRank(K.eventsRecent(sub), 0, -51); // keep last 50
   } catch (err) {
     // Event-log write is best-effort — losing one row should never abort the
     // already-completed Reddit action. Log and move on.
@@ -71,7 +71,10 @@ export async function recordEvent(
 export async function readRecent(sub?: string): Promise<RecentEvent[]> {
   let raw;
   try {
-    raw = await redis.zRange(K.eventsRecent(sub), 0, 49, { by: 'rank', reverse: true });
+    raw = await redis.zRange(K.eventsRecent(sub), 0, 49, {
+      by: 'rank',
+      reverse: true,
+    });
   } catch (err) {
     console.error('[cm/recentEvents] zRange failed:', err);
     return [];
@@ -83,7 +86,11 @@ export async function readRecent(sub?: string): Promise<RecentEvent[]> {
       const migrated = migrate(parsed);
       if (migrated) out.push(migrated);
     } catch (err) {
-      console.error('[cm/recentEvents] member parse/migrate failed (dropped):', entry.member, err);
+      console.error(
+        '[cm/recentEvents] member parse/migrate failed (dropped):',
+        entry.member,
+        err
+      );
     }
   }
   return out;
@@ -110,6 +117,8 @@ function migrate(raw: unknown): RecentEvent | null {
         nonce: typeof obj.nonce === 'string' ? obj.nonce : crypto.randomUUID(),
       };
     default:
-      throw new Error(`migrate(): unknown RecentEvent version ${String(obj.v)}`);
+      throw new Error(
+        `migrate(): unknown RecentEvent version ${String(obj.v)}`
+      );
   }
 }

@@ -7,7 +7,11 @@ import { ActionBar } from './components/ActionBar';
 import { ErrorBanner } from './components/ErrorBanner';
 import { RuleCountChips } from './components/RuleCountChips';
 import { EmptyState } from './components/EmptyState';
-import { FilterChips, filterMatches, type EventFilter } from './components/FilterChips';
+import {
+  FilterChips,
+  filterMatches,
+  type EventFilter,
+} from './components/FilterChips';
 import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
@@ -43,12 +47,19 @@ export default function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
+    const [recent, statsData] = await Promise.all([
+      fetchRecentSafe(),
+      fetchStatsSafe(),
+    ]);
 
     // If EITHER call errored, surface the error and keep the last-good state
     // so the dashboard doesn't lose its display while the API recovers.
     if (!recent.ok || !statsData.ok) {
-      const errMsg = !recent.ok ? recent.error : !statsData.ok ? statsData.error : 'unknown';
+      const errMsg = !recent.ok
+        ? recent.error
+        : !statsData.ok
+          ? statsData.error
+          : 'unknown';
       setApiError(errMsg);
       setRefreshedAt(Date.now());
       return;
@@ -86,23 +97,47 @@ export default function App() {
 
   const subreddit =
     typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('subreddit') ?? 'cm_devvit_test'
+      ? (new URLSearchParams(window.location.search).get('subreddit') ??
+        'cm_devvit_test')
       : 'cm_devvit_test';
 
   const visibleEvents = useMemo(
     () => events.filter((e) => filterMatches(e, filter)),
-    [events, filter],
+    [events, filter]
   );
 
   const shortcuts = useMemo(
     () => [
-      { key: '?', label: 'Show / hide this overlay', handler: () => setOverlayOpen((v) => !v) },
-      { key: 'r', label: 'Reload data from server', handler: () => void refresh() },
-      { key: 'h', label: 'Open config history / diff viewer', handler: () => setHistoryOpen((v) => !v) },
-      { key: 'Escape', label: 'Close overlay', handler: () => { setOverlayOpen(false); setHistoryOpen(false); } },
-      { key: 'a', label: 'Show all events (clear filter)', handler: () => setFilter({ kind: 'all' }) },
+      {
+        key: '?',
+        label: 'Show / hide this overlay',
+        handler: () => setOverlayOpen((v) => !v),
+      },
+      {
+        key: 'r',
+        label: 'Reload data from server',
+        handler: () => void refresh(),
+      },
+      {
+        key: 'h',
+        label: 'Open config history / diff viewer',
+        handler: () => setHistoryOpen((v) => !v),
+      },
+      {
+        key: 'Escape',
+        label: 'Close overlay',
+        handler: () => {
+          setOverlayOpen(false);
+          setHistoryOpen(false);
+        },
+      },
+      {
+        key: 'a',
+        label: 'Show all events (clear filter)',
+        handler: () => setFilter({ kind: 'all' }),
+      },
     ],
-    [refresh],
+    [refresh]
   );
   useKeyboardShortcuts(shortcuts);
 
@@ -132,7 +167,11 @@ export default function App() {
         >
           <div className="flex items-baseline justify-between mb-1">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
-              hourly <span className="font-serif italic normal-case tracking-normal text-bone-200/80">actions</span> · 24h
+              hourly{' '}
+              <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+                actions
+              </span>{' '}
+              · 24h
             </h2>
             {usingDemo && (
               <span className="telemetry text-[9px] tracking-wider uppercase text-bone-300/80">
@@ -145,7 +184,8 @@ export default function App() {
               <Sparkline data={stats.hourlyActions24h} />
             ) : (
               <div className="telemetry text-[10px] text-bone-300/60 px-5 pb-2">
-                not enough data yet — the sparkline needs at least 2 hours of activity
+                not enough data yet — the sparkline needs at least 2 hours of
+                activity
               </div>
             ))}
         </div>
@@ -155,15 +195,23 @@ export default function App() {
         <div className="flex-1 min-h-0 mt-2 flex flex-col">
           <div className="flex items-baseline justify-between px-5 pb-2">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
-              recent <span className="font-serif italic normal-case tracking-normal text-bone-200/80">actions</span>
+              recent{' '}
+              <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+                actions
+              </span>
             </h2>
             <span className="telemetry text-[10px] text-bone-300/70">
               {visibleEvents.length}
-              {visibleEvents.length !== events.length ? ` of ${events.length}` : ''} events
+              {visibleEvents.length !== events.length
+                ? ` of ${events.length}`
+                : ''}{' '}
+              events
             </span>
           </div>
           <RuleCountChips events={events} />
-          {events.length > 0 && <FilterChips filter={filter} onChange={setFilter} />}
+          {events.length > 0 && (
+            <FilterChips filter={filter} onChange={setFilter} />
+          )}
 
           <div
             className="flex-1 min-h-0 overflow-y-auto border-t border-line"
@@ -188,7 +236,13 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              visibleEvents.map((ev, i) => <EventRow key={`${ev.activityId}-${ev.ts}`} event={ev} idx={i} />)
+              visibleEvents.map((ev, i) => (
+                <EventRow
+                  key={`${ev.activityId}-${ev.ts}`}
+                  event={ev}
+                  idx={i}
+                />
+              ))
             )}
           </div>
         </div>
@@ -198,8 +252,15 @@ export default function App() {
         <ActionBar subreddit={subreddit} onReload={refresh} events={events} />
       </div>
 
-      <KeyboardOverlay open={overlayOpen} onClose={() => setOverlayOpen(false)} shortcuts={shortcuts} />
-      <ConfigDiffViewer open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <KeyboardOverlay
+        open={overlayOpen}
+        onClose={() => setOverlayOpen(false)}
+        shortcuts={shortcuts}
+      />
+      <ConfigDiffViewer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
       {tourOpen && <OnboardingTour onDone={() => setTourOpen(false)} />}
     </div>
   );
