@@ -133,8 +133,7 @@ export interface RepostRule {
 
 export type Rule = RegexRule | AuthorRule | RuleSetRule | NamedRuleRef | RepostRule;
 
-// Actions — shape is shared with src/actions/* in Phase 2. Phase 1 only needs
-// the type so RunResult.actions[] type-checks; runtime dispatch lands in 2.1.
+// Action shapes — runtime dispatch lives in src/actions/*.
 export interface RemoveAction { kind: 'remove'; isSpam?: boolean; dryRun?: boolean; }
 export interface ApproveAction { kind: 'approve'; dryRun?: boolean; }
 export interface CommentAction { kind: 'comment'; template: string; dryRun?: boolean; }
@@ -219,10 +218,9 @@ export interface ActionResult {
   wouldHaveCalled?: string;           // populated when status === 'dry-run'
 }
 
-// ActionContext.config is REQUIRED (Council 2026-05-14 23:00, Software Lead) —
-// Phase 2.5's dry-run gate reads `ctx.config.dryRun`. Without `config` on this
-// contract, the safety net silently evaluates undefined → false → every repost
-// action would go live by default, the OPPOSITE of the claimed contract.
+// ActionContext.config is REQUIRED — the dry-run gate in runAction reads
+// `ctx.config.dryRun`. Without it on this contract, the safety net evaluates
+// undefined → false → every action goes live by default. Don't optionalize.
 export interface ActionContext {
   item: Item;
   author: Author;

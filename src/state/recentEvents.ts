@@ -1,19 +1,15 @@
 /**
- * Recent events ZSET (Step 3.5, brought forward to Phase 2 so Step 2.3
- * `handleActivity` has a working sink).
+ * Recent events ZSET — bounded ring (50 most recent), feeds the dashboard
+ * `/api/recent` endpoint.
  *
- * Council fixes baked in:
- *   1. Software Lead — same-ms collision: sorted-set members are unique strings
- *      so two same-ms events with identical {activityId, runName} would dedup.
- *      Add a `nonce` (crypto.randomUUID()).
- *   2. Long-Term Architect — versioning: stamp `v: 1`. Without it, when the
- *      RecentEvent shape mutates in 3 months every install's old events become
- *      unparseable garbage.
- *   3. Long-Term Architect — naming: key is `events:recent50` (see keys.ts)
- *      so a future "last 500" ZSET can land beside it without renaming.
- *
- * Phase 3.5 will add `readRecent` + `/api/recent` wiring. For Phase 2 we only
- * need the writer side so the orchestrator pipeline is end-to-end live.
+ * Three invariants baked into the storage shape:
+ *   1. `nonce` (crypto.randomUUID()) appended so two same-ms events with
+ *      identical {activityId, runName} don't dedup into one ZSET member.
+ *   2. `v: 1` schema stamp — when RecentEvent shape mutates later, the
+ *      migrate() pass can fork on this version field instead of every
+ *      install's old events becoming unparseable garbage.
+ *   3. Key name `events:recent50` keeps room for a future "last 500" ZSET
+ *      to land beside it without renaming the active one.
  */
 
 import { redis } from '@devvit/web/server';
@@ -27,13 +23,9 @@ export interface RecentEvent {
   runName: string;
   checkName: string;
   triggered: boolean;
-  /**
-   * Codex session-review HIGH 2026-05-16: extended actions[] to carry full
-   * ActionResult shape (`status` + optional `wouldHaveCalled`) so the
-   * dashboard can distinguish dry-run vs error vs skipped-locked vs ok.
-   * Keep `ok: boolean` for back-compat with existing client renderers;
-   * client can opt into status-aware rendering when ready.
-   */
+  // Mirrors ActionResult; status + wouldHaveCalled added so the dashboard
+  // can distinguish dry-run vs error vs skipped-locked vs ok. `ok` is kept
+  // for back-compat with the original boolean-only client renderer.
   actions: {
     kind: string;
     ok: boolean;
@@ -65,17 +57,16 @@ export async function recordEvent(
 }
 
 /**
- * Read the most-recent 50 events, newest first. Step 3.5 reader side; called
- * from /api/recent (src/routes/api.ts).
+ * Read the most-recent 50 events, newest first.
  *
  * Best-effort: a redis hiccup returns `[]` rather than 500. The dashboard
  * separately surfaces a `last-refreshed-at` indicator so an empty list +
  * stale timestamp tells the user the server is having trouble without
  * making the whole page error out.
  *
- * Parse failures (corrupt member) are dropped silently — the migrate()
- * pass is the version gate; anything that throws there is logged + dropped
- * rather than poisoning the whole batch.
+ * Parse failures (corrupt member) are dropped silently — migrate() is the
+ * version gate; anything that throws there is logged + dropped rather than
+ * poisoning the whole batch.
  */
 export async function readRecent(sub?: string): Promise<RecentEvent[]> {
   let raw;

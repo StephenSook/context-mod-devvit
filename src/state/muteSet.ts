@@ -1,14 +1,13 @@
 /**
- * Wave S Phase S10 — Per-sub muted-rule SET.
+ * Per-sub muted-rule SET.
  *
  * Stores rule keys ({runName}/{checkName}) that the mod has muted from the
- * dashboard. v0 ships as a soft-mute (dashboard filters events; backend rules
- * still fire) so Vinh's runCheck doesn't need to change in this wave. Phase 4
- * follow-up will read this set in runCheck for hard-mute behavior.
+ * dashboard. Current behavior is soft-mute: dashboard filters events but
+ * backend rules still fire. TODO: runCheck consults this for hard-mute —
+ * not wired yet.
  *
- * Storage: Redis SET `cm:muted-rules:{sub}` (uses hash since Devvit lacks
- * native SET) — keys are the rule keys, values are the ISO timestamp the mute
- * was applied (for future audit).
+ * Storage: Redis hash at `cm:muted-rules:{sub}` (Devvit lacks native SET).
+ * Field key = rule key, value = ISO timestamp mute was applied (audit trail).
  */
 
 import { redis } from '@devvit/web/server';

@@ -1,13 +1,10 @@
 /**
- * Scheduler (cron) handlers for ContextMod.
+ * Cron handlers for ContextMod. Every handler MUST acquireLock() at the top
+ * to prevent overlapping invocations.
  *
- * STUBS for Phase 0. All cron handlers MUST acquireLock() at the top
- * to prevent overlapping invocations (per ultraplan M1).
- *
- * Real implementations:
- *   - /refresh-config: Phase 3 Task 28 (every 5min)
- *   - /stats-rollup:   Phase 4 Task 41 (hourly)
- *   - /image-hash-worker: Phase 4 Task 36 (run-on-demand)
+ * Shipped: /refresh-config (5-min wiki pull + republish).
+ * Stubs (not wired yet): /stats-rollup (hourly daily aggregation),
+ * /image-hash-worker (on-demand blockhash for repost-image mode).
  */
 
 import { Hono } from 'hono';
