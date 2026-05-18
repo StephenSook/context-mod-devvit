@@ -31,6 +31,7 @@ import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
+import { type Result, ok, err } from '../lib/result';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -253,10 +254,17 @@ forms.post('/simulate-rule-submit', async (c) => {
     };
 
     // reddit.getNewPosts returns a Listing; .all() flattens to an array.
-    // Defensive shape: if the surface differs across Devvit minor versions,
-    // we fall back to an empty samples array + report it cleanly.
-    const recent = await fetchRecentPostsSafe(sub.name);
+    // AD Tier-1 #1: fetchRecentPostsSafe now returns Result — propagate
+    // reddit-api failure to toast w/ failure phase instead of "fired 0/0".
+    const recentResult = await fetchRecentPostsSafe(sub.name);
+    if (!recentResult.ok) {
+      return c.json({
+        showToast: `Simulation failed (reddit-api): ${recentResult.error}`,
+      });
+    }
+    const recent = recentResult.value;
     const samples: SimulationSample[] = [];
+    let skipped = 0;
     for (const post of recent) {
       try {
         const payload: PostSubmitPayload = {
@@ -278,13 +286,21 @@ forms.post('/simulate-rule-submit', async (c) => {
         const normalized = await normalizePost(payload, config);
         samples.push({ item: normalized.item, author: normalized.author });
       } catch (perPostErr) {
-        // skip individual normalization failures, keep going
-        console.warn('[cm/forms/simulate-rule-submit] skipped sample:', perPostErr);
+        // AD Tier-1 #2: count skipped samples so the toast can disclose
+        // partial-coverage instead of silently shrinking the corpus.
+        skipped += 1;
+        console.warn(
+          '[cm/forms/simulate-rule-submit] skipped sample:',
+          perPostErr
+        );
       }
     }
 
     const result = await simulateRule(ruleJson5, samples, sub.name);
-    return c.json({ showToast: formatSimulationToast(result) });
+    const baseToast = formatSimulationToast(result);
+    const suffix =
+      skipped > 0 ? ` (${skipped}/${recent.length} samples skipped — normalize error)` : '';
+    return c.json({ showToast: `${baseToast}${suffix}` });
   } catch (err) {
     // Wave U WARN fix (Codex CR3 #7): prefix toast w/ failure phase so mod
     // knows whether to retry (network/reddit), fix their rule (parse), or
@@ -436,7 +452,16 @@ interface RedditListingLike<T> {
   all?: () => Promise<T[]> | T[];
 }
 
-async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLike[]> {
+/**
+ * AD Tier-1 bug #1 fix — previously returned `[]` on any failure path, which
+ * caused the simulator to report "fired 0/0" indistinguishably from a real
+ * "no rule triggers fired" result. Now returns a discriminated Result so the
+ * caller can surface the actual failure phase in the toast (judges + mods
+ * deserve "Reddit API unavailable — try again" not a silent zero).
+ */
+async function fetchRecentPostsSafe(
+  subredditName: string
+): Promise<Result<RedditPostLike[], string>> {
   try {
     const redditAny = reddit as unknown as {
       getNewPosts?: (opts: {
@@ -445,17 +470,23 @@ async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLi
         pageSize: number;
       }) => Promise<RedditListingLike<RedditPostLike>>;
     };
-    if (typeof redditAny.getNewPosts !== 'function') return [];
+    if (typeof redditAny.getNewPosts !== 'function') {
+      return err('reddit.getNewPosts unavailable in this Devvit runtime');
+    }
     const listing = await redditAny.getNewPosts({
       subredditName,
       limit: SIMULATION_SAMPLE_LIMIT,
       pageSize: SIMULATION_SAMPLE_LIMIT,
     });
-    if (!listing) return [];
+    if (!listing) return err('reddit.getNewPosts returned empty listing');
     const all = typeof listing.all === 'function' ? await listing.all() : [];
-    return all.slice(0, SIMULATION_SAMPLE_LIMIT);
-  } catch (err) {
-    console.warn('[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:', err);
-    return [];
+    return ok(all.slice(0, SIMULATION_SAMPLE_LIMIT));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.warn(
+      '[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:',
+      msg
+    );
+    return err(`reddit-api: ${msg}`);
   }
 }
