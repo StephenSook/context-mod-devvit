@@ -168,13 +168,19 @@ All Banana-generated (Gemini 3.1 Flash Image / Nano Banana 2), re-encoded via PI
 
 Redis-only per Devvit constraints. Strings + hashes + sorted sets — no Lists, no Sets.
 
+Full key inventory + retention policy lives in [`data-retention.md`](./data-retention.md) and [`PRIVACY.md`](./PRIVACY.md). Highlights:
+
 - `cm:proc:{thingId}` 24h NX — trigger-level idempotency
 - `cm:action:pending:{hash}` 5m NX — action reservation
 - `cm:action:done:{hash}` 7d — action completion marker
 - `cm:lock:{task}` 60s NX with ownership token — cron single-flight guard (`acquireLock` in `src/lib/idem.ts`)
-- `cfg:current_rev` string — pointer to active config revision
-- `cfg:rev:{n}` immutable JSON snapshot
-- `events:recent` ZSET — 50-deep ring buffer for dashboard, score=ts member=event-json
+- `cm:{sub}:cfg:current_rev` / `cm:{sub}:cfg:rev:{n}` / `cm:{sub}:cfg:rev-counter` — atomic config publish (INCR-allocated rev + monotonic pointer guard, W4)
+- `cm:{sub}:events:recent50` ZSET — 50-deep ring buffer for dashboard, score=ts member=event-json
+- `cm:mod-activity:{sub}` ZSET — 50-deep ring of mod-menu actions (actor + ts + kind)
+- `cm:muted-rules:{sub}` hash — soft-mute set
+- `cm:openai-key:{sub}` — encrypted-at-rest OpenAI key set via mod menu (Wave V)
+- `cm:rl:{bucket}:{sub}` — fixed-window rate-limit counter (1h TTL, X1)
+- `cm:cb:{bucket}:{failures,opened-at}` — circuit breaker state (X37)
 
 ## How AI agents should use this file
 
