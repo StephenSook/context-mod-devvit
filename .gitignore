@@ -14,3 +14,6 @@ beats/
 playwright-report/
 test-results/
 .playwright-mcp/
+
+# Coverage report (X13 — generated locally + in CI artifact)
+coverage/

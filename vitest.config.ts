@@ -14,6 +14,13 @@ export default defineConfig({
     include: ['tests/**/*.{test,test.tsx}.ts*'],
     exclude: ['tests/e2e/**'],
     globals: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary', 'html'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/client/main.tsx', 'src/lib/demo-fixtures.ts'],
+      reportsDirectory: './coverage',
+    },
   },
   // Allow .tsx test files (Header RTL renders use JSX).
   esbuild: {
