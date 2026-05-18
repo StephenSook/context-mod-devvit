@@ -9,7 +9,7 @@
  * Non-contract design choice (2026-05-16): keeps Vinh's handleActivity void
  * signature stable. Slight pipeline duplication (~30 lines) is the cost.
  *
- * Codex H1 (2026-05-16) fixed: global config.dryRun=true now blocks per-action
+ * Invariant: global config.dryRun=true now blocks per-action
  * dryRun=false. Since this function ALWAYS sets action.dryRun=true, that gate
  * always forces dry-run mode on, regardless of config.dryRun setting. No safety bypass.
  */

@@ -15,7 +15,7 @@ import type { CommentAction, ActionContext } from '../shared/types';
 import { render, type TemplateContext } from '../core/template';
 
 export async function runComment(action: CommentAction, ctx: ActionContext): Promise<void> {
-  // Safe fields are now aliases to raw — render-time escape (Codex H4)
+  // Safe fields are now aliases to raw — render-time escape (render-time defang)
   // produces the single-pass escape they used to need pre-rendering.
   const tplCtx: TemplateContext = {
     item: {

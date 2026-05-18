@@ -29,7 +29,7 @@ const KIND_COLOR: Record<ActionKind, string> = {
 export type ActionStatus = 'ok' | 'dry-run' | 'error' | 'skipped-locked';
 
 /**
- * Pick the chip color for an action based on its status (Codex H2 server-side)
+ * Pick the chip color for an action based on its status
  * + back-compat ok boolean (legacy).
  *
  * - status 'ok'             → action's kind color (KIND_COLOR[kind])

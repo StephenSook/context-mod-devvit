@@ -13,7 +13,7 @@
 import Mustache from 'mustache';
 import type { Item, Author } from '../shared/types';
 
-// Codex H4 2026-05-16: Mustache.escape now defaults to escapeMarkdown
+// Mustache.escape defaults to escapeMarkdown
 // (defined below). Previous identity function let `{{item.title}}` re-enable
 // u/-pings, r/-pings, and link-injection on every raw render, defeating the
 // `*Safe` field pattern any time a mod wrote a template without the Safe

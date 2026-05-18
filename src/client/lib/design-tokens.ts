@@ -19,7 +19,7 @@ export const SIGNAL = {
   err: '#FB7185',
   info: '#60A5FA',
   author: '#A78BFA',
-  muted: '#71717A', // bone.300 — used for skipped-locked idempotency chips (Codex H2 status propagation)
+  muted: '#71717A', // bone.300 — used for skipped-locked idempotency chips
 } as const;
 
 export type SignalKey = keyof typeof SIGNAL;

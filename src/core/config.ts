@@ -37,7 +37,7 @@ export function parseConfig(json5Text: string): ParseResult {
     return { ok: false, errors: validate.errors ?? [] };
   }
   const config = raw as AppConfig;
-  // Codex H6 2026-05-16: expandNamedRules throws on unknown refs (cycles
+  // expandNamedRules throws on unknown refs (cycles
   // are short-circuited but unresolved names raise). AJV can't catch
   // "named ref X doesn't exist" because the schema only enforces shape.
   // Wrap so callers get a structured ParseResult instead of a 500.

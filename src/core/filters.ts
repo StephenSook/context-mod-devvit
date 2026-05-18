@@ -48,7 +48,7 @@ function passesItem(f: ItemFilter, i: Item): boolean {
   if (f.scoreMax != null && i.score > f.scoreMax) return false;
   if (f.linkFlairTextIn && (i.linkFlairText == null || !f.linkFlairTextIn.includes(i.linkFlairText))) return false;
   if (f.linkFlairTextNotIn && i.linkFlairText != null && f.linkFlairTextNotIn.includes(i.linkFlairText)) return false;
-  // Codex H5 2026-05-16: invalid filter regex MUST not throw — mirrors
+  // Invalid filter regex MUST not throw — mirrors
   // src/rules/regex.ts try/catch pattern. Bad pattern → filter-failed = skip.
   // (Parse-time validator + catastrophic-backtracking detection deferred
   // post-hackathon — tracked as MED/LOW Codex findings.)

@@ -16,7 +16,7 @@ const KIND_ICON: Record<ActionKind, LucideIcon> = {
 };
 
 // First-action icon color uses kind color for ok results; chip variant
-// rendering moved to src/client/lib/chip.ts (Codex H2 status propagation).
+// rendering moved to src/client/lib/chip.ts.
 const KIND_COLOR: Record<ActionKind, string> = {
   remove: SIGNAL.err,
   approve: SIGNAL.ok,
