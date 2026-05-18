@@ -13,11 +13,19 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Y2-X76 Node matrix — Devvit runtime is on 22 (per .nvmrc), so 22 is
+        # the canonical lane. 24 added as forward-looking compat check; 20 is
+        # the LTS-just-prior for downstream consumers on older infra.
+        node-version: ['20', '22', '24']
+    name: validate (Node ${{ matrix.node-version }})
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install
         run: npm ci
@@ -28,10 +36,11 @@ jobs:
       - name: Test
         run: npm test
       - name: Test (coverage)
+        if: matrix.node-version == '22'
         run: npx vitest run --coverage --config vitest.config.ts
         continue-on-error: true
       - name: Upload coverage artifact
-        if: always()
+        if: matrix.node-version == '22' && always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
