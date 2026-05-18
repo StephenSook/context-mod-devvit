@@ -121,6 +121,20 @@ test.describe('Observatory dashboard', () => {
     });
   });
 
+  test('Y2-X75 — mobile viewport (390x844) renders dashboard core surfaces', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?demo=1');
+    await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
+    await page.reload();
+    await expect(page.getByText('Actions today').first()).toBeVisible();
+    const firstRow = page.locator('button[aria-expanded]').first();
+    await expect(firstRow).toBeVisible();
+    await firstRow.click();
+    await expect(firstRow).toHaveAttribute('aria-expanded', 'true');
+  });
+
   test('Y1-X9 — AI explain handles 429 rate-limit response', async ({
     page,
   }) => {
