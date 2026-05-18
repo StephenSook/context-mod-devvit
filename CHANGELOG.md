@@ -6,7 +6,54 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.5.1): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.5.2): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.5.2] — 2026-05-18
+
+Waves AB + AC — deep multi-agent review of the v0.5.1 codebase (codex-rescue + gemini + silent-failure-hunter + comment-analyzer + pr-test-analyzer + type-design-analyzer ran in parallel) surfaced 16 actionable findings + 6 documentation-drift items + 6 test gaps + 1 type-design refactor opportunity. All closed.
+
+### Fixed — BLOCKER
+
+- **Light-mode CSS lost in a Prettier reformat** — ThemeToggle set `data-theme="light"` but no `html[data-theme='light']` selectors existed. Feature was non-functional. Restored 15 selectors.
+- **`@media (prefers-reduced-motion)` triplicated** — 3 copies in styles.css. Consolidated to 1.
+- **statsRollup.writeStatsSnapshot swallowed Redis fail** — cron logged "success" forever. Now returns `{stats, persisted, error?}` + cron returns 'ignored' on Redis fail.
+- **rl.degraded handling missing on 3 cost endpoints** — `/api/explain-event`, `/explain-rule-submit`, `/simulate-rule-submit` would let unlimited calls burn quota during Redis-ratelimit outage. Now fail-CLOSED w/ 503.
+- **/api/health/deep unrated-limited** — writes Redis every call; 60/min cap added.
+- **Circuit breaker half-open allowed concurrent probes** — every caller during the half-open window passed through simultaneously. NX probe lease (10s TTL) added.
+
+### Fixed — WARN
+
+- `retry.ts` default `shouldRetry` was retry-everything (incl. 401/4xx/AbortError). Now skips known-non-retryable.
+- `log.ts` captures `err.stack` (top 5 lines) on error-level only.
+- `EventSearchInput` optional-chains `a.kind?.toLowerCase()`.
+- Husky pre-commit no longer excludes `tests/`.
+
+### Fixed — doc drift
+
+- README opening hook v0.3.1 → v0.5.2
+- README test badge 446 → 481+ (now 505)
+- README wiki-path `/wiki/contextmod` → `/wiki/botconfig/contextmod` (3 spots — judges would have 404'd following Quick Start)
+- README "3 working configs" → "11 working configs" w/ Phase 4 list
+- API.md /api/health response example "0.3.0" → "0.5.1"
+- SECURITY.md table 0.3.x → 0.5.x + 0.4.x
+- ARCHITECTURE.md + CONTRIBUTING.md test counts + CI job list updated.
+
+### Added — test gap close
+
+- `tests/routes/forms-simulate-rule.test.ts` (NEW, 6) — `/simulate-rule-submit` had zero route tests. Pins auth + 10KB cap + rl.degraded + 429 + phase classifier.
+- `tests/core/configSource.test.ts` (+3) — X46 wiki breaker branch was dead from test perspective.
+- `tests/client/error-boundary.test.tsx` (NEW, 4) — recovery UI rendered + custom fallback + reload-button.
+- `tests/e2e/a11y.spec.ts` (+1) — light-mode toggle re-scan via axe.
+- `tests/lib/log.test.ts` (+3) — newTraceId UUID v4 + distinct calls + err.stack capture rules.
+- `tests/lib/retry.test.ts` (+4) — default predicate skips 401/AbortError, retries on ECONNRESET, maxAttempts:1 single-shot.
+
+### Added — type design
+
+- `src/lib/result.ts` — shared `Result<T, E=string>` w/ `ok`/`err`/`mapErr`/`mapOk`/`chain`/`unwrapOr`/`unwrap`/`isOk`/`isErr` (8 helpers). Eight existing call sites duplicate the discriminated union shape ad-hoc; new code imports from here. Existing sites structurally compatible — incremental adoption.
+
+### Tests
+
+481 → 505 passing (+24).
 
 ## [0.5.1] — 2026-05-18
 
