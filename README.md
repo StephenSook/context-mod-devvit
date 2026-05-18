@@ -221,6 +221,63 @@ sequenceDiagram
   end
 ```
 
+### AI explain-event security chain (Wave X)
+
+Defense-in-depth on the `/api/explain-event` cost-bearing endpoint. Five gates in sequence before any byte touches OpenAI:
+
+```mermaid
+sequenceDiagram
+  accTitle: explain-event five-gate defense in depth
+  accDescr: A mod-issued AI summary request passes through five sequential gates — authentication, input validation, circuit breaker check, rate limit check, key resolution — before any byte reaches OpenAI. Each gate returns its own HTTP status so the mod gets actionable feedback at the failed layer.
+  autonumber
+  participant D as Dashboard
+  participant H as /api/explain-event
+  participant Auth as requireModerator
+  participant V as validateEventSummary
+  participant CB as circuitBreaker
+  participant RL as rateLimit
+  participant K as apiKeyStore
+  participant AI as OpenAI gpt-4o-mini
+
+  D->>H: POST {event}
+  H->>Auth: getCurrentUser + getModerators
+  alt non-mod
+    Auth-->>H: 403
+    H-->>D: 403 not a moderator
+  else mod
+    H->>V: caps + delimiter check
+    alt invalid payload
+      V-->>H: 400
+      H-->>D: 400 field exceeds cap / reserved delimiter
+    else valid
+      H->>CB: checkCircuit('openai:sub')
+      alt breaker OPEN
+        CB-->>H: 503
+        H-->>D: 503 retry in Ns
+      else CLOSED / HALF_OPEN
+        H->>RL: checkRateLimit('explain', sub, 30, 3600)
+        alt limit hit
+          RL-->>H: 429
+          H-->>D: 429 try again in M min
+        else allowed
+          H->>K: getOpenaiKey(sub) ?? settings.get
+          K-->>H: sk-...
+          H->>AI: chat/completions (30s AbortController)<br/>SYSTEM_PROMPT + delimiter-wrapped USER_DATA
+          alt OpenAI ok
+            AI-->>H: completion
+            H->>CB: recordSuccess
+            H-->>D: 200 + explanation
+          else transient 5xx/timeout
+            AI-->>H: err
+            H->>CB: recordFailure (only on transient)
+            H-->>D: 500 + actionable hint
+          end
+        end
+      end
+    end
+  end
+```
+
 ## Config schema
 
 Mod config is JSON5 stored at `r/<your-sub>/wiki/contextmod`. Minimum viable example:
