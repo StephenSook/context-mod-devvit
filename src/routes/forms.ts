@@ -24,6 +24,8 @@ import { explainRule, formatExplainToast } from '../core/explainRule';
 import { settings } from '@devvit/web/server';
 import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
+import { checkRateLimit } from '../lib/ratelimit';
+import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -195,6 +197,16 @@ forms.post('/simulate-rule-submit', async (c) => {
   if (!ruleJson5.trim()) {
     return c.json({ showToast: 'Paste a rule JSON5 in the form field, then submit.' });
   }
+  // X44: 10KB cap on pasted rule + per-sub rate limit (simulation fans
+  // out 25 Reddit API reads). Without this, a mod could DOS the Reddit
+  // API quota for their sub via rapid retry.
+  if (ruleJson5.length > 10_000) {
+    return c.json({ showToast: 'Rule JSON5 too large (cap 10KB). Trim + retry.' });
+  }
+  const rlSim = await checkRateLimit('simulate', auth.sub, 10, 3600);
+  if (!rlSim.allowed) {
+    return c.json({ showToast: `Rate limit: ${rlSim.count}/${rlSim.max} simulations this hour. Try again in ~${Math.ceil(rlSim.resetInSec / 60)}min.` });
+  }
 
   try {
     const sub = await reddit.getCurrentSubreddit();
@@ -283,16 +295,55 @@ forms.post('/explain-rule-submit', async (c) => {
     (body as { ruleJson5?: string }).ruleJson5 ??
     (body as { values?: { ruleJson5?: string } }).values?.ruleJson5 ??
     '';
+  // X44: parity w/ /api/explain-event — circuit breaker FIRST, then rate
+  // limit. Without these gates, /explain-rule-submit was the cheap path to
+  // burn the OpenAI quota via repeated paste-submit clicks.
+  const cbBucket = `openai:${auth.sub}`;
+  const cb = await checkCircuit(cbBucket);
+  if (cb.state === 'open') {
+    return c.json({ showToast: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec}s.` });
+  }
+  const rl = await checkRateLimit('explain-rule', auth.sub, 30, 3600);
+  if (!rl.allowed) {
+    return c.json({ showToast: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.` });
+  }
+  const apiKey = await resolveOpenaiKey(auth.sub);
   try {
-    const apiKey = await resolveOpenaiKey(auth.sub);
     const result = await explainRule(ruleJson5, apiKey);
+    if (!result.ok) {
+      const isTransient = isTransientOpenaiError(result.error);
+      if (isTransient) await recordFailure(cbBucket);
+    } else {
+      await recordSuccess(cbBucket);
+    }
     return c.json({ showToast: formatExplainToast(result) });
   } catch (err) {
+    await recordFailure(cbBucket);
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/forms/explain-rule-submit] failed:', err);
     return c.json({ showToast: `Explain failed: ${msg}` });
   }
 });
+
+// X43 isTransientOpenaiError mirror — keep src/routes/forms.ts + src/routes/
+// api.ts in sync. Same classifier prevents the breaker from opening on
+// user-config errors (401, missing key, insufficient quota).
+function isTransientOpenaiError(error: string): boolean {
+  const lower = error.toLowerCase();
+  if (lower.includes('missing') || lower.includes('api key')) return false;
+  if (lower.includes('401') || lower.includes('invalid_api_key')) return false;
+  if (lower.includes('insufficient_quota')) return false;
+  return (
+    lower.includes('5') ||
+    lower.includes('timeout') ||
+    lower.includes('network') ||
+    lower.includes('fetch') ||
+    lower.includes('aborted') ||
+    lower.includes('econnreset') ||
+    lower.includes('429') ||
+    lower.includes('rate-limited')
+  );
+}
 
 forms.post('/set-openai-key-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
@@ -309,6 +360,11 @@ forms.post('/set-openai-key-submit', async (c) => {
   }
   if (!apiKey.startsWith('sk-')) {
     return c.json({ showToast: 'Key should start with sk-... — double-check + try again.' });
+  }
+  // X44: cap key length at 200 chars. OpenAI keys are ~50 chars; this
+  // guards against accidental 5MB clipboard pastes from filling Redis.
+  if (apiKey.length > 200) {
+    return c.json({ showToast: 'Key suspiciously long (>200 chars). Re-copy + try again.' });
   }
   try {
     await setOpenaiKey(auth.sub, apiKey);
