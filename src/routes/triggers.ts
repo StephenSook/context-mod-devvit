@@ -30,6 +30,7 @@ import { parseConfig } from '../core/config';
 import { DEFAULT_CONFIG_JSON5 } from '../config/default-config';
 import { runMigrations, SCHEMA_VERSION } from '../state/migrations';
 import { K } from '../state/keys';
+import { recordEvent } from '../state/recentEvents';
 import type { AppConfig } from '../shared/types';
 
 export const triggers = new Hono();
@@ -157,11 +158,29 @@ triggers.post('/post-submit', async (c) => {
     return c.json({ status: 'skipped-already-seen' });
   }
 
-  // Codex H3 2026-05-16: read the config ONCE here and PASS it to
-  // handleActivity. Previous code read here for normalize then handleActivity
-  // re-read — a publish between the two reads could split the event across
-  // two revs. Now both stages see the same snapshot.
-  const current = await configStore.getCurrentRev(subName);
+  // Read the config ONCE here and pass it to handleActivity — the read-once
+  // invariant. Previous code read here for normalize then handleActivity
+  // re-read; a publish between the two reads could split the event across
+  // two revs.
+  let current: Awaited<ReturnType<typeof configStore.getCurrentRev>>;
+  try {
+    current = await configStore.getCurrentRev(subName);
+  } catch (err) {
+    // X3: corrupt config or Redis blip. Don't bubble to Devvit (it retries
+    // triggers which could spam). Record an error event so the dashboard
+    // turns red + the mod sees their bot has stopped working.
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/post-submit] config read failed — moderation stopped:', err);
+    await recordEvent({
+      ts: Date.now(),
+      activityId: post.id,
+      runName: 'config-read-fail',
+      checkName: '(infrastructure)',
+      triggered: false,
+      actions: [{ kind: 'config-read', ok: false, status: 'error', wouldHaveCalled: msg.slice(0, 200) }],
+    }, subName);
+    return c.json({ status: 'config-read-fail' });
+  }
   const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
   const { item, author } = await normalizePost(input, config);
   await handleActivity(item, author, subName, current ?? undefined);
@@ -194,8 +213,23 @@ triggers.post('/comment-submit', async (c) => {
     return c.json({ status: 'skipped-already-seen' });
   }
 
-  // Codex H3 2026-05-16 — same read-once invariant as /post-submit.
-  const current = await configStore.getCurrentRev(subName);
+  // Same read-once invariant as /post-submit.
+  let current: Awaited<ReturnType<typeof configStore.getCurrentRev>>;
+  try {
+    current = await configStore.getCurrentRev(subName);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[cm/comment-submit] config read failed — moderation stopped:', err);
+    await recordEvent({
+      ts: Date.now(),
+      activityId: comment.id,
+      runName: 'config-read-fail',
+      checkName: '(infrastructure)',
+      triggered: false,
+      actions: [{ kind: 'config-read', ok: false, status: 'error', wouldHaveCalled: msg.slice(0, 200) }],
+    }, subName);
+    return c.json({ status: 'config-read-fail' });
+  }
   const config: AppConfig = current?.config ?? { runs: [], needsAuthorEnrichment: false };
   const { item, author } = await normalizeComment(input, config);
   await handleActivity(item, author, subName, current ?? undefined);

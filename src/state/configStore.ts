@@ -54,22 +54,32 @@ export async function publish(config: AppConfig, sub?: string): Promise<number> 
 }
 
 /**
- * Read the current published config. Returns null when nothing has been
- * published yet (fresh install pre-Step-3.1).
+ * Read the current published config. Returns null only when nothing has
+ * been published yet (fresh install — pointer doesn't exist).
+ *
+ * X3: distinguishes "no config" (null pointer = legitimate fresh install)
+ * from "corrupt config" (THROWS) so the caller can surface infrastructure
+ * failures to the dashboard instead of silently treating both as no-op.
+ * Previously, a corrupt rev payload returned null + handleActivity treated
+ * it as "no config yet" → all moderation silently stopped.
  */
 export async function getCurrentRev(sub?: string): Promise<ConfigSnapshot | null> {
   const ptr = await redis.get(K.cfgCurrentRev(sub));
   if (ptr == null) return null;
   const rev = Number.parseInt(ptr, 10);
-  if (!Number.isFinite(rev)) return null;
+  if (!Number.isFinite(rev)) {
+    throw new Error(`corrupt cfg pointer at ${K.cfgCurrentRev(sub)}: "${ptr}"`);
+  }
   const payload = await redis.get(K.cfgRev(rev, sub));
-  if (payload == null) return null;
+  if (payload == null) {
+    throw new Error(`cfg pointer rev=${rev} but payload missing at ${K.cfgRev(rev, sub)}`);
+  }
   try {
     const config = JSON.parse(payload) as AppConfig;
     return { rev, config };
   } catch (err) {
-    console.error('[cm/configStore] failed to parse cfg payload at rev', rev, err);
-    return null;
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`cfg payload parse failed at rev ${rev}: ${msg}`);
   }
 }
 
