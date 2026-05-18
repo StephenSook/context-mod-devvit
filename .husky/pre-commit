@@ -1,1 +1,16 @@
-npm test
+# AA-X17 pre-commit gate. Skip via HUSKY=0 env or git commit --no-verify.
+#
+# Runs eslint on staged TS/TSX files only — fast path for small diffs.
+# Heavy checks (full test suite, tsc --build) run in CI to keep the
+# commit cycle snappy.
+
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' | grep -v '^tests/' || true)
+
+if [ -n "$STAGED_TS" ]; then
+  echo "==> [husky] eslint on staged files..."
+  npx --no-install eslint $STAGED_TS || {
+    echo "==> [husky] eslint failed — commit aborted."
+    echo "==> [husky] override: HUSKY=0 git commit ...  OR  git commit --no-verify"
+    exit 1
+  }
+fi
