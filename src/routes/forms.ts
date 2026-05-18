@@ -33,6 +33,7 @@ import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { type Result, ok, err } from '../lib/result';
 import { log } from '../lib/log';
+import { isTransientOpenaiError } from '../lib/openaiErrors';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -389,25 +390,11 @@ forms.post('/explain-rule-submit', async (c) => {
   }
 });
 
-// X43 isTransientOpenaiError mirror — keep src/routes/forms.ts + src/routes/
-// api.ts in sync. Same classifier prevents the breaker from opening on
-// user-config errors (401, missing key, insufficient quota).
-function isTransientOpenaiError(error: string): boolean {
-  const lower = error.toLowerCase();
-  if (lower.includes('missing') || lower.includes('api key')) return false;
-  if (lower.includes('401') || lower.includes('invalid_api_key')) return false;
-  if (lower.includes('insufficient_quota')) return false;
-  return (
-    lower.includes('5') ||
-    lower.includes('timeout') ||
-    lower.includes('network') ||
-    lower.includes('fetch') ||
-    lower.includes('aborted') ||
-    lower.includes('econnreset') ||
-    lower.includes('429') ||
-    lower.includes('rate-limited')
-  );
-}
+// X43 + AD CRITICAL #2 + #9: classifier moved to src/lib/openaiErrors.ts.
+// The previous "keep in sync" mirror pattern drifted (one copy gained a
+// `// 5xx HTTP` inline comment) AND both copies had the same substring
+// bug where `lower.includes('5')` matched any error string containing
+// the digit 5. One source of truth now.
 
 forms.post('/set-openai-key-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();

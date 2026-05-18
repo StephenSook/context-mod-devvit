@@ -25,6 +25,7 @@ import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { log } from '../lib/log';
+import { isTransientOpenaiError } from '../lib/openaiErrors';
 import { readStatsSnapshot } from '../state/statsRollup';
 
 export const api = new Hono();
@@ -273,27 +274,8 @@ api.post('/explain-event', async (c) => {
   }
 });
 
-/**
- * X43: classify OpenAI failure messages so the circuit breaker only opens
- * on transient outages (5xx, network, timeout) — NOT on auth/missing-key
- * errors that are user-config issues unrelated to OpenAI being down.
- */
-function isTransientOpenaiError(error: string): boolean {
-  const lower = error.toLowerCase();
-  if (lower.includes('missing') || lower.includes('api key')) return false;
-  if (lower.includes('401') || lower.includes('invalid_api_key')) return false;
-  if (lower.includes('insufficient_quota')) return false;
-  return (
-    lower.includes('5') || // 5xx HTTP
-    lower.includes('timeout') ||
-    lower.includes('network') ||
-    lower.includes('fetch') ||
-    lower.includes('aborted') ||
-    lower.includes('econnreset') ||
-    lower.includes('429') ||
-    lower.includes('rate-limited')
-  );
-}
+// X43 + AD CRITICAL #2 + #9: classifier moved to src/lib/openaiErrors.ts so
+// the forms.ts + api.ts call sites can't drift on every fix.
 
 function stripServerFields(e: RecentEvent) {
   // v + nonce are storage-internal — drop before sending to the client.
