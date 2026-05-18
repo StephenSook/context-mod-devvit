@@ -6,7 +6,76 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.5.2): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.5.3): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.5.3] — 2026-05-18
+
+Wave AD — brutally-honest punch-list zero-out. After v0.5.2 Stephen asked
+for a deep mock-data audit + execution of every Tier 1-6 item still open.
+Phase 4 (Vinh) landed live-verified on `r/contextmod_vinh_dev` in parallel.
+
+### Fixed — Tier 1 bugs
+
+- **forms.ts `fetchRecentPostsSafe`** silently returned `[]` on every
+  failure path, making "fired 0/0" indistinguishable from a real
+  zero-match result. Now returns a discriminated `Result<RedditPostLike[], string>`
+  so the simulate-rule-submit toast surfaces the failure phase
+  (`reddit-api: ...`) instead of misleading mods.
+- **forms.ts per-post normalize skip counter** — `/simulate-rule-submit`
+  now appends `(N/M samples skipped — normalize error)` when partial
+  coverage occurs, instead of silently shrinking the corpus.
+- **api.ts `/explain-event` catch transient classifier** — exception
+  path mirrors the result.error path: only transient OpenAI errors
+  (5xx/network/timeout/429) open the breaker; auth/config thrown errors
+  no longer punish the install w/ a cooldown.
+- **forms.ts `/explain-rule-submit` catch transient classifier** —
+  same Tier-1 #3 fix mirrored to the X43-paired forms route (the X43
+  comment explicitly called for parity).
+- **api.ts `/health/deep` auth gate** — endpoint writes Redis + calls
+  reddit.getCurrentSubreddit on every probe; previously unauth + only
+  rate-limited. Now wraps `requireModerator()`.
+
+### Fixed — demo / mock-data audit
+
+- **`/api/mod-activity` demo fixture** — replaced hardcoded
+  `CowSufficient3840` + `vinhbin` (real Reddit/GitHub handles) with
+  obvious-fake `demo_mod_alice` / `demo_mod_bob`. Production gating
+  unchanged (Codex M6 verified — fixtures only fire on `?demo=1`).
+
+### Changed — observability
+
+- **log.ts adoption across 5 files** — `idem.ts`, `scheduler.ts`,
+  `menu.ts`, `triggers.ts`, `forms.ts` migrated from ad-hoc
+  `console.log('[cm/...] ...')` to structured `log.info|warn|error(tag, msg, ctx)`.
+  49 sites converted; downstream aggregators can now filter on
+  `{tag, level, sub, postId, actionId, ...}` instead of regex-grepping
+  template-literal prefixes.
+
+### Changed — type design
+
+- **`ExplainResult` + `ValidationResult` adopt shared `Result<T,E>`** —
+  the ad-hoc discriminated unions in `explainRule.ts` + `explainEvent.ts`
+  now alias `Result<string>` + `Result<EventSummary>` from
+  `src/lib/result.ts`. Success field renamed `explanation` / `event` →
+  `value` for consistency w/ the other 6 Result-shaped types. api.ts
+  wire envelope preserved (`{ok, explanation}`) for client back-compat.
+
+### Fixed — tooling
+
+- **`.husky/pre-commit`** scoped to `^src/.*\.(ts|tsx)$` — mirrors what
+  CI's `npm run lint` actually checks. Previously globbed all `.ts/.tsx`
+  including `tests/`, which the typed `no-floating-promises` rule can't
+  parse w/o `parserOptions.project` coverage tests/ doesn't have.
+
+### Fixed — doc drift
+
+- **CHANGELOG dup [0.3.2] header** removed — the first entry was a
+  forward-looking stub belonging in ROADMAP, not a release note.
+
+### Tests
+
+505 passing (no test count change; existing tests updated for renamed
+Result field).
 
 ## [0.5.2] — 2026-05-18
 
