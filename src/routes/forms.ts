@@ -267,6 +267,7 @@ forms.post('/simulate-rule-submit', async (c) => {
     const recent = recentResult.value;
     const samples: SimulationSample[] = [];
     let skipped = 0;
+    let firstSkipError: string | null = null;
     for (const post of recent) {
       try {
         const payload: PostSubmitPayload = {
@@ -288,17 +289,36 @@ forms.post('/simulate-rule-submit', async (c) => {
         const normalized = await normalizePost(payload, config);
         samples.push({ item: normalized.item, author: normalized.author });
       } catch (perPostErr) {
-        // AD Tier-1 #2: count skipped samples so the toast can disclose
-        // partial-coverage instead of silently shrinking the corpus.
+        // AD Tier-1 #2 + HIGH #4: count skipped samples + capture the FIRST
+        // failure message so the toast shows a real cause instead of a
+        // bare "normalize error" the mod can't act on.
         skipped += 1;
+        if (firstSkipError === null) {
+          firstSkipError =
+            perPostErr instanceof Error ? perPostErr.message : String(perPostErr);
+        }
         log.warn('cm/forms/simulate-rule-submit', 'skipped sample', { err: perPostErr });
       }
+    }
+
+    // AD HIGH #3: when every sample failed, simulateRule returns
+    // totalSamples=0 and formatSimulationToast says "No recent posts to
+    // simulate against." That's misleading — there WERE recent posts,
+    // they all failed normalize. Surface the dedicated "aborted" toast
+    // with the first error instead of a contradictory base + suffix.
+    if (recent.length > 0 && skipped === recent.length) {
+      const detail = firstSkipError ? firstSkipError.slice(0, 100) : 'unknown';
+      return c.json({
+        showToast: `Simulation aborted: every sample failed to normalize (first: ${detail})`,
+      });
     }
 
     const result = await simulateRule(ruleJson5, samples, sub.name);
     const baseToast = formatSimulationToast(result);
     const suffix =
-      skipped > 0 ? ` (${skipped}/${recent.length} samples skipped — normalize error)` : '';
+      skipped > 0
+        ? ` (${skipped}/${recent.length} skipped — first: ${(firstSkipError ?? '').slice(0, 60)})`
+        : '';
     return c.json({ showToast: `${baseToast}${suffix}` });
   } catch (e) {
     // Wave U WARN fix (Codex CR3 #7): prefix toast w/ failure phase so mod
