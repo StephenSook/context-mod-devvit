@@ -24,12 +24,13 @@ import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
+import { log } from '../lib/log';
 
 export const api = new Hono();
 
 api.get('/recent', async (c) => {
   if (c.req.query('demo') === '1') {
-    console.log('[cm/api/recent] demo=1 — serving synthetic fixtures (not real ZSET)');
+    log.info('cm/api/recent', 'demo=1 — serving synthetic fixtures (not real ZSET)');
     return c.json({ events: demoEvents() });
   }
 
@@ -42,7 +43,7 @@ api.get('/recent', async (c) => {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/api/recent] could not resolve current sub:', err);
+    log.error('cm/api/recent', 'could not resolve current sub', { err });
     return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
   }
 
@@ -221,7 +222,7 @@ api.post('/explain-event', async (c) => {
   } catch (err) {
     await recordFailure(cbBucket);
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/api/explain-event] failed:', err);
+    log.error('cm/api/explain-event', 'OpenAI call failed', { err });
     return c.json({ ok: false, error: `Explain failed: ${msg}` }, 500);
   }
 });
@@ -256,7 +257,7 @@ function stripServerFields(e: RecentEvent) {
 
 api.get('/stats', async (c) => {
   if (c.req.query('demo') === '1') {
-    console.log('[cm/api/stats] demo=1 — serving synthetic fixtures (not real rollup)');
+    log.info('cm/api/stats', 'demo=1 — serving synthetic fixtures (not real rollup)');
     return c.json({ counters: DEMO_STATS });
   }
   // TODO Phase 4 Task 41: return aggregated stats:rollup:7d hash
