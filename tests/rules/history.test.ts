@@ -28,7 +28,7 @@ const author = (over: Partial<Author> = {}): Author => ({
   ...over,
 });
 
-const hist = (posts: number, comments: number) => ({
+const hist = (posts: number, comments: number, degraded = false) => ({
   username: 'alice',
   fetchedAtMs: 0,
   posts: Array.from({ length: posts }, (_, i) => ({
@@ -44,6 +44,7 @@ const hist = (posts: number, comments: number) => ({
     body: '',
     createdAtMs: 0,
   })),
+  degraded,
 });
 
 beforeEach(() => {
@@ -91,5 +92,24 @@ describe('runHistoryRule', () => {
     getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0));
     await runHistoryRule({ kind: 'history', commentKarmaLt: 1 }, author(), 'cm_test_sub');
     expect(getAuthorHistoryMock).toHaveBeenCalledWith('alice', 'cm_test_sub');
+  });
+
+  it('AE CRITICAL #5: degraded:true → never triggers, even when fake-zero would match a Lt threshold', async () => {
+    // The bug: a Reddit 429 made fetchFromReddit return posts:[]/comments:[]
+    // and history.ts had no way to tell that from a legit-empty user.
+    // `commentCountLt: 5` then fired TRUE on every user during the outage =
+    // mass false-positive moderation. Now degraded:true forces skip
+    // BEFORE the Lt check sees the fake-zero count.
+    getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0, true));
+    const rule: HistoryRule = { kind: 'history', commentCountLt: 5 };
+    expect((await runHistoryRule(rule, author())).triggered).toBe(false);
+  });
+
+  it('AE CRITICAL #5: degraded:false + truly-empty counts → Lt threshold still triggers (legit empty)', async () => {
+    // Verify the fix doesn't break the legitimate "user actually has 0
+    // comments" case — only degraded reads short-circuit.
+    getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0, false));
+    const rule: HistoryRule = { kind: 'history', commentCountLt: 5 };
+    expect((await runHistoryRule(rule, author())).triggered).toBe(true);
   });
 });

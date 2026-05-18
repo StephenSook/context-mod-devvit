@@ -28,6 +28,11 @@ export async function runAttributionRule(
   if (!authorName || !rule.domains?.length) return { triggered: false };
 
   const hist = await getAuthorHistory(authorName, sub);
+  // AE CRITICAL #5: skip on Reddit-degraded. AttributionRule is naturally
+  // safe via `minPosts` (default 5) — a fake-zero total is < 5 so this
+  // never false-positives. But the explicit skip keeps semantics
+  // consistent across the three Phase 4 rules.
+  if (hist.degraded) return { triggered: false };
   const total = hist.posts.length;
   const minPosts = rule.minPosts ?? DEFAULT_MIN_POSTS;
   if (total < minPosts) return { triggered: false };

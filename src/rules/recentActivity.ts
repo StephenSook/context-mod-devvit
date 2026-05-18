@@ -25,6 +25,11 @@ export async function runRecentActivityRule(
 
   const targets = new Set(rule.subreddits.map((s) => s.toLowerCase()));
   const hist = await getAuthorHistory(authorName, sub);
+  // AE CRITICAL #5: skip on Reddit-degraded. RecentActivityRule only uses
+  // Gt predicates so a fake-zero count couldn't false-positive here (0 is
+  // never > N for N > 0), but skipping is the consistent + transparent
+  // behavior. Also future-proofs against adding Lt predicates later.
+  if (hist.degraded) return { triggered: false };
 
   const postCount = hist.posts.filter((p) => targets.has(p.subredditName.toLowerCase())).length;
   const commentCount = hist.comments.filter((c) =>

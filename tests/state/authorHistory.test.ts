@@ -142,19 +142,48 @@ describe('getAuthorHistory', () => {
     expect(h.posts).toHaveLength(1);
   });
 
-  it('fails OPEN on Reddit fetch error — returns empty posts/comments', async () => {
+  it('AE CRITICAL #5: Reddit fetch error → degraded:true + empty arrays + NOT cached', async () => {
     redisGet.mockResolvedValueOnce(null);
     getPostsByUser.mockImplementationOnce(() => {
-      throw new Error('reddit down');
+      throw new Error('reddit 429 rate-limited');
     });
     getCommentsByUser.mockImplementationOnce(() => {
-      throw new Error('reddit down');
+      throw new Error('reddit 429 rate-limited');
     });
 
     const h = await getAuthorHistory('alice', 'sub1');
     expect(h.posts).toEqual([]);
     expect(h.comments).toEqual([]);
-    // Still writes (empty) cache so we don't hammer Reddit on every event during outage.
+    expect(h.degraded).toBe(true);
+    // Degraded responses MUST NOT be cached. Caching would extend the
+    // false-positive window to the 1h TTL — exactly the bug AE CRITICAL #5
+    // exists to prevent. The next event should retry against Reddit.
+    expect(redisSet).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #5: only posts fetch throws → degraded:true (one half failing taints whole)', async () => {
+    redisGet.mockResolvedValueOnce(null);
+    getPostsByUser.mockImplementationOnce(() => {
+      throw new Error('reddit 503');
+    });
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    const h = await getAuthorHistory('alice', 'sub1');
+    expect(h.degraded).toBe(true);
+    expect(redisSet).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #5: legit empty (both fetches succeed with [])  → degraded:false + cached', async () => {
+    redisGet.mockResolvedValueOnce(null);
+    getPostsByUser.mockReturnValueOnce(stubListing([]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    const h = await getAuthorHistory('alice', 'sub1');
+    expect(h.posts).toEqual([]);
+    expect(h.comments).toEqual([]);
+    expect(h.degraded).toBe(false);
+    // Legit-empty IS cached — no point hammering Reddit for a user with
+    // truly 0 posts/comments.
     expect(redisSet).toHaveBeenCalledTimes(1);
   });
 

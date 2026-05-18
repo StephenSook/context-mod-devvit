@@ -14,6 +14,17 @@
  * Fail-OPEN on Redis errors AND on Reddit-API errors. Same rationale as
  * repost rule: history-based rules are soft signals, not safety gates;
  * better to skip the rule than mass-flag during an outage.
+ *
+ * AE CRITICAL #5: distinguish 404-deleted-user (legit empty) from
+ * 429/5xx-Reddit-degraded (empty arrays are LIES). The previous fail-open
+ * swallowed both into `posts: []` + `comments: []`, which meant
+ * `commentCountLt: 5` rules would fire false-positive on EVERY user during
+ * a Reddit rate-limit outage — mass mis-moderation. Now sets a `degraded:
+ * true` flag on the AuthorHistory shape that the three Phase 4 rules
+ * consult; degraded reads SKIP rule evaluation (return triggered:false)
+ * instead of trusting fake-zero counts. Degraded responses are NOT
+ * cached so the next event will retry; legit-empty responses ARE cached
+ * (no point hammering Reddit for a user with truly 0 posts).
  */
 
 import { redis, reddit } from '@devvit/web/server';
@@ -43,6 +54,15 @@ export interface AuthorHistory {
   fetchedAtMs: number;
   posts: AuthorHistoryPost[];
   comments: AuthorHistoryComment[];
+  /**
+   * AE CRITICAL #5: true when EITHER Reddit fetch threw (rate-limit,
+   * 5xx, network blip) — the empty arrays do NOT reflect ground truth,
+   * they reflect a Reddit-side failure. Phase 4 rules MUST consult this
+   * flag and skip evaluation rather than trust the fake-zero counts.
+   * False when both fetches succeeded (genuine empty arrays = the user
+   * really has 0 posts/comments).
+   */
+  degraded: boolean;
 }
 
 const EMPTY_HISTORY = (username: string): AuthorHistory => ({
@@ -50,6 +70,7 @@ const EMPTY_HISTORY = (username: string): AuthorHistory => ({
   fetchedAtMs: Date.now(),
   posts: [],
   comments: [],
+  degraded: false,
 });
 
 /**
@@ -95,12 +116,17 @@ export async function getAuthorHistory(
 
   const fresh = await fetchFromReddit(name);
 
-  try {
-    await redis.set(key, JSON.stringify(fresh), {
-      expiration: new Date(Date.now() + TTL_SECONDS * 1000),
-    });
-  } catch (err) {
-    console.warn('[cm/authorHistory] redis set failed — returning uncached:', name, err);
+  // AE CRITICAL #5: NEVER cache a degraded response. The next event must
+  // retry against a (hopefully recovered) Reddit; caching empty-because-
+  // degraded would extend the false-positive window to the full 1h TTL.
+  if (!fresh.degraded) {
+    try {
+      await redis.set(key, JSON.stringify(fresh), {
+        expiration: new Date(Date.now() + TTL_SECONDS * 1000),
+      });
+    } catch (err) {
+      console.warn('[cm/authorHistory] redis set failed — returning uncached:', name, err);
+    }
   }
 
   return fresh;
@@ -123,7 +149,10 @@ async function fetchFromReddit(name: string): Promise<AuthorHistory> {
       createdAtMs: p.createdAt instanceof Date ? p.createdAt.getTime() : Number(p.createdAt) || 0,
     }));
   } catch (err) {
-    console.warn('[cm/authorHistory] getPostsByUser failed — empty posts:', name, err);
+    // AE CRITICAL #5: a throw means Reddit didn't tell us "0 posts" — it
+    // told us nothing. Mark degraded so consumer rules skip evaluation.
+    out.degraded = true;
+    console.warn('[cm/authorHistory] getPostsByUser failed — empty posts (degraded):', name, err);
   }
   try {
     const commentsListing = reddit.getCommentsByUser({
@@ -139,7 +168,12 @@ async function fetchFromReddit(name: string): Promise<AuthorHistory> {
       createdAtMs: c.createdAt instanceof Date ? c.createdAt.getTime() : Number(c.createdAt) || 0,
     }));
   } catch (err) {
-    console.warn('[cm/authorHistory] getCommentsByUser failed — empty comments:', name, err);
+    out.degraded = true;
+    console.warn(
+      '[cm/authorHistory] getCommentsByUser failed — empty comments (degraded):',
+      name,
+      err
+    );
   }
   return out;
 }

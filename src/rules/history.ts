@@ -23,6 +23,11 @@ export async function runHistoryRule(
   sub: string = SUB_DEFAULT
 ): Promise<RuleResult> {
   const hist = await getAuthorHistory(author.name, sub);
+  // AE CRITICAL #5: skip if Reddit-degraded. The empty arrays in a
+  // degraded history are NOT ground truth — they're a Reddit-API throw
+  // we silently caught. Evaluating `commentCountLt: 5` against a fake-
+  // zero would mass-flag every user during a 429/5xx outage.
+  if (hist.degraded) return { triggered: false };
   const postCount = hist.posts.length;
   const commentCount = hist.comments.length;
 

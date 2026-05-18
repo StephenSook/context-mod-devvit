@@ -13,7 +13,7 @@ vi.mock('../../src/state/authorHistory', () => ({
 import { runRecentActivityRule } from '../../src/rules/recentActivity';
 import type { RecentActivityRule } from '../../src/shared/types';
 
-const histInSubs = (postSubs: string[], commentSubs: string[]) => ({
+const histInSubs = (postSubs: string[], commentSubs: string[], degraded = false) => ({
   username: 'alice',
   fetchedAtMs: 0,
   posts: postSubs.map((s, i) => ({
@@ -29,6 +29,7 @@ const histInSubs = (postSubs: string[], commentSubs: string[]) => ({
     body: '',
     createdAtMs: 0,
   })),
+  degraded,
 });
 
 beforeEach(() => {

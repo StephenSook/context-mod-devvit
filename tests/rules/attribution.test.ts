@@ -13,7 +13,7 @@ vi.mock('../../src/state/authorHistory', () => ({
 import { runAttributionRule } from '../../src/rules/attribution';
 import type { AttributionRule } from '../../src/shared/types';
 
-const histWithDomains = (domains: string[]) => ({
+const histWithDomains = (domains: string[], degraded = false) => ({
   username: 'alice',
   fetchedAtMs: 0,
   posts: domains.map((d, i) => ({
@@ -24,6 +24,7 @@ const histWithDomains = (domains: string[]) => ({
     createdAtMs: 0,
   })),
   comments: [],
+  degraded,
 });
 
 beforeEach(() => {
