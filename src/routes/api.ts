@@ -339,6 +339,13 @@ api.get('/health', (c) => {
  * can alert on degraded-but-not-down state.
  */
 api.get('/health/deep', async (c) => {
+  // AD Tier-1 #4: gate behind moderator auth. Endpoint writes to Redis
+  // + calls reddit.getCurrentSubreddit on every probe, so an unauth
+  // attacker could amplify load + leak per-sub timing telemetry. Real
+  // external monitors that need this should run inside a mod context
+  // or hit /health (the cheap, unauth liveness probe) instead.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
   // Rate-limit per-install (single shared bucket). Endpoint writes Redis
   // on every call, so a 10000-rpm attack would otherwise exhaust the
   // per-install 500MB cap or rack up cost. 60/min cap is generous for
