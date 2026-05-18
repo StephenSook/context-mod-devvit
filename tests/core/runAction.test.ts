@@ -135,7 +135,12 @@ describe('runAction — stale-lease path', () => {
 });
 
 describe('runAction — dry-run gate (Phase 2.5)', () => {
-  it('returns dry-run when config.dryRun=true and skips reserve + side-effect', async () => {
+  it('AE CRITICAL #7: dry-run reserves + commits done marker but skips side-effect', async () => {
+    // AE CRITICAL #7 fix — previously dry-run short-circuited BEFORE
+    // reserveAction so the done marker was never written. A retry after
+    // dryRun→false toggle would re-fire the action. Now we reserve +
+    // commit just like live mode but skip the Reddit call.
+    reserveAction.mockResolvedValueOnce({ token: 'tk-dry' });
     const dryCtx: ActionContext = {
       ...ctx,
       config: { runs: [], dryRun: true },
@@ -147,16 +152,21 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
       kind: 'remove',
       wouldHaveCalled: 'remove',
     });
-    expect(reserveAction).not.toHaveBeenCalled();
+    expect(reserveAction).toHaveBeenCalledTimes(1);
+    expect(commitAction).toHaveBeenCalledWith(expect.any(String), 'tk-dry', ctx.subredditName);
+    // Side-effect NEVER fires — the whole point of dry-run.
     expect(redditRemove).not.toHaveBeenCalled();
   });
 
-  it('per-action dryRun overrides live config', async () => {
+  it('AE CRITICAL #7: per-action dryRun=true also reserves + commits but skips side-effect', async () => {
+    reserveAction.mockResolvedValueOnce({ token: 'tk-dry2' });
     const dryAction: RemoveAction = { kind: 'remove', dryRun: true };
     const res = await runAction(dryAction, ctx);
 
     expect(res.status).toBe('dry-run');
-    expect(reserveAction).not.toHaveBeenCalled();
+    expect(reserveAction).toHaveBeenCalledTimes(1);
+    expect(commitAction).toHaveBeenCalled();
+    expect(redditRemove).not.toHaveBeenCalled();
   });
 
   it('per-action dryRun=false does NOT override config.dryRun=true (global is authoritative — safety gate)', async () => {
@@ -165,6 +175,7 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     // a per-action dryRun: false trying to override it would be a catastrophic
     // bypass (mod sets the whole bot to dry-run, one rule still fires live).
     // Per-action can ONLY ELEVATE to dry-run, never demote to live.
+    reserveAction.mockResolvedValueOnce({ token: 'tk-dry3' });
     const liveAction: RemoveAction = { kind: 'remove', dryRun: false };
     const dryCtx: ActionContext = {
       ...ctx,
@@ -172,7 +183,67 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     };
     const res = await runAction(liveAction, dryCtx);
     expect(res.status).toBe('dry-run');
+    // Reserve still happens (AE #7) but side-effect MUST NOT fire (safety gate).
+    expect(redditRemove).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #7: dry-run respects skipped-locked when prior attempt already reserved', async () => {
+    // If a live attempt already reserved this actionId (e.g., a prior
+    // crash left a 5-min lease), a subsequent dry-run should NOT fight
+    // for the lease — it surfaces skipped-locked just like a live retry.
+    reserveAction.mockResolvedValueOnce(null);
+    const dryCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [], dryRun: true },
+    };
+    const res = await runAction(action, dryCtx);
+    expect(res).toEqual({ status: 'skipped-locked', kind: 'remove' });
+    expect(commitAction).not.toHaveBeenCalled();
+    expect(redditRemove).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #7: dry-run commitAction failure is harmless (does NOT throw)', async () => {
+    // Since the Reddit side-effect didn't fire, a failed done-marker
+    // write just means a retry will re-dry-run — idempotent in observable
+    // Reddit state. Should log warn + return dry-run, not propagate.
+    reserveAction.mockResolvedValueOnce({ token: 'tk-dry-fail' });
+    commitAction.mockRejectedValueOnce(new Error('redis down'));
+    const dryCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [], dryRun: true },
+    };
+    const res = await runAction(action, dryCtx);
+    expect(res.status).toBe('dry-run');
+    expect(redditRemove).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #7: bypassIdempotency=true → skips reserve+commit (mod-menu repeatability)', async () => {
+    // Mod-menu dryRunActivity sets this so multiple "Test rules" invocations
+    // on the same post don't trip skipped-locked from the first run's marker.
+    const dryCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [], dryRun: true },
+      bypassIdempotency: true,
+    };
+    const res = await runAction(action, dryCtx);
+    expect(res.status).toBe('dry-run');
     expect(reserveAction).not.toHaveBeenCalled();
+    expect(commitAction).not.toHaveBeenCalled();
+    expect(redditRemove).not.toHaveBeenCalled();
+  });
+
+  it('AE CRITICAL #7: bypassIdempotency=true + live action → forced dry-run (safety violation refused)', async () => {
+    // Defense-in-depth — bypassIdempotency must ONLY be used with dry-run.
+    // A live action with this flag would have NO double-action protection.
+    // runAction refuses the side-effect + returns dry-run regardless.
+    const liveCtx: ActionContext = {
+      ...ctx,
+      config: { runs: [] }, // no dryRun
+      bypassIdempotency: true,
+    };
+    const liveAction: RemoveAction = { kind: 'remove' };
+    const res = await runAction(liveAction, liveCtx);
+    expect(res.status).toBe('dry-run');
     expect(redditRemove).not.toHaveBeenCalled();
   });
 });

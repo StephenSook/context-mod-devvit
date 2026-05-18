@@ -64,6 +64,11 @@ export async function dryRunActivity(
         subredditName,
         rev: current.rev,
         config: current.config,
+        // AE CRITICAL #7: mod-menu dry-run is repeatable + has no retry
+        // concern — skip the idempotency primitives so a mod hitting
+        // "Test rules on this item" multiple times sees the full eval
+        // trace each time instead of skipped-locked after the first.
+        bypassIdempotency: true,
       });
       // Spread guard avoids exactOptionalPropertyTypes incompatibility — only
       // include wouldHaveCalled when it's a defined string.

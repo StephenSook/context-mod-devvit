@@ -302,4 +302,13 @@ export interface ActionContext {
   subredditName: string;
   rev: number;
   config: AppConfig;
+  /**
+   * AE CRITICAL #7: bypass the reserveAction/commitAction idempotency
+   * primitives. Set TRUE only by the mod-menu dryRunActivity sibling so
+   * a mod hitting "Test rules on this item" multiple times sees the full
+   * eval trace each time (the production path needs idempotency to
+   * survive Devvit retries; the mod-menu sibling has no retry concern +
+   * needs repeatability). FALSE / undefined = default production path.
+   */
+  bypassIdempotency?: boolean;
 }

@@ -17,6 +17,15 @@
  * Dry-run gate (Phase 2.5): a per-action `dryRun` overrides the config-level
  * `ctx.config.dryRun`. When either is true, no Reddit side-effect is called;
  * we still write the `done` marker so retries don't refire.
+ *
+ * AE CRITICAL #7 fix: previously the dryRun gate short-circuited BEFORE
+ * reserveAction — meaning dry-run calls NEVER wrote the done marker even
+ * though the docstring promised they did. Result: if a Devvit retry of the
+ * same trigger landed (or firstSeen fail-open let a duplicate through), the
+ * action would re-fire in live mode after the dryRun→false toggle. Now
+ * dry-run STILL goes through reserveAction + commitAction (writing the done
+ * marker so retries skip) but the Reddit side-effect itself is skipped.
+ * Matches the long-standing docstring intent at lines 36-38.
  */
 
 import type { Action, ActionContext, ActionResult } from '../shared/types';
@@ -61,7 +70,23 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
   // OR (not ??) so a per-action dryRun:false cannot override a global dryRun:true.
   // override config.dryRun: true (catastrophic safety-gate bypass).
   const dry = ctx.config.dryRun === true || action.dryRun === true;
-  if (dry) {
+
+  // AE CRITICAL #7: bypass-idempotency path (mod-menu dryRunActivity).
+  // Skip both reserveAction AND commitAction — the mod-menu sibling has
+  // no retry concern and needs to be repeatable (mod hitting "Test rules
+  // on this item" 10 times should see the same trace each time).
+  if (ctx.bypassIdempotency) {
+    if (!dry) {
+      // Defense-in-depth: bypassIdempotency should only ever be set
+      // alongside dry-run by the mod-menu path. A live action with
+      // bypassIdempotency=true would be a catastrophic safety violation
+      // (no double-action protection). Force dry-run downgrade.
+      console.error(
+        '[cm/runAction] bypassIdempotency=true with live action — refusing to fire side-effect',
+        action.kind,
+        ctx.item.id
+      );
+    }
     return {
       status: 'dry-run',
       kind: action.kind,
@@ -69,12 +94,41 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
     };
   }
 
+  // AE CRITICAL #7: production path — reserve BEFORE branching on dry-run
+  // so the done marker is written either way. Without this, a retry that
+  // lands after a dryRun→false toggle would re-fire the action (no marker
+  // = "never done" from idem.ts's perspective). reservation==null means a
+  // prior attempt (dry-run or live) already locked or completed this
+  // actionId — surface as skipped-locked just like the live path.
   const aid = actionId(ctx.item.id, action.kind, payloadDigest(action));
   const reservation = await reserveAction(aid, ctx.subredditName);
   if (!reservation) {
     return { status: 'skipped-locked', kind: action.kind };
   }
   const { token } = reservation;
+
+  // Dry-run path (production): skip the Reddit side-effect but STILL commit
+  // the done marker so retries (Devvit re-delivery, firstSeen fail-open)
+  // don't re-fire. commitAction failure here is non-fatal (the action
+  // didn't actually happen — at worst the marker won't be written and a
+  // retry re-dry-runs, which is idempotent in observable Reddit state).
+  if (dry) {
+    try {
+      await commitAction(aid, token, ctx.subredditName);
+    } catch (err) {
+      console.warn(
+        '[cm/runAction] dry-run commitAction failed (harmless, retry will re-dry-run):',
+        action.kind,
+        ctx.item.id,
+        err
+      );
+    }
+    return {
+      status: 'dry-run',
+      kind: action.kind,
+      wouldHaveCalled: action.kind,
+    };
+  }
 
   let sideEffectDone = false;
   try {
