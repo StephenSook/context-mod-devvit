@@ -59,7 +59,9 @@ export function markTourSeen() {
   }
 }
 
-export function OnboardingTour({ onDone }: { onDone: () => void }) {
+// Z3-X51: default export so React.lazy() can lazy-load this component
+// + its STEPS array (~1KB of content) out of the initial bundle.
+function OnboardingTour({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0);
 
   function handleNext() {
@@ -170,3 +172,6 @@ export function OnboardingTour({ onDone }: { onDone: () => void }) {
     </div>
   );
 }
+
+export default OnboardingTour;
+export { OnboardingTour };

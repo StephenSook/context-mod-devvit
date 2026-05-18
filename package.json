@@ -12,6 +12,8 @@
     "dev:web": "vite build && node scripts/dev/mock-server.cjs",
     "launch": "npm run deploy && devvit publish",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
+    "deps:check": "depcruise src --config .dependency-cruiser.cjs --output-type err",
+    "deps:graph": "depcruise src --config .dependency-cruiser.cjs --output-type dot | dot -T svg > docs/deps-graph.svg",
     "login": "devvit login",
     "prettier": "prettier --write .",
     "test": "vitest run --config vitest.config.ts",
@@ -33,6 +35,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@devvit/start": "0.12.23",
     "@devvit/web": "0.12.23",
     "@eslint/js": "9.39.2",
@@ -45,6 +48,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.5.0",
+    "dependency-cruiser": "^17.4.0",
     "devvit": "0.12.23",
     "eslint": "9.39.2",
     "fast-check": "^4.8.0",

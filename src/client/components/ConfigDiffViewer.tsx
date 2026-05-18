@@ -93,7 +93,10 @@ export function simpleDiff(
   return out;
 }
 
-export function ConfigDiffViewer({
+// Z3-X51: function declaration kept named so the existing 7-test suite
+// imports work; a default export below enables React.lazy. ~3KB of diff
+// algorithm + UI out of the initial bundle.
+function ConfigDiffViewer({
   open,
   onClose,
 }: {
@@ -209,3 +212,6 @@ export function ConfigDiffViewer({
     </div>
   );
 }
+
+export default ConfigDiffViewer;
+export { ConfigDiffViewer };
