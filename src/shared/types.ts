@@ -39,6 +39,12 @@ export interface Author {
   isContributor: boolean;
   verified: boolean;
   shadowBanned: boolean;
+  // X2: set true when getUserByUsername threw — every enrichment field above
+  // is a default (age=0, karma=0, isMod=false, etc) and any rule that reads
+  // them is operating on bogus data. Dashboard surfaces this in drill-down
+  // so mods can spot false-negative scenarios (a karma-min rule that should
+  // have caught a spammer but defaulted them to 0 karma + passed through).
+  enrichmentFailed?: boolean;
 }
 
 // Filters — predicates over Item / Author.

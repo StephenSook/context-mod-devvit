@@ -70,6 +70,34 @@ describe('normalizePost', () => {
     expect(author.linkKarma).toBe(0);
     expect(author.name).toBe('u');
   });
+
+  it('X2 — tags enrichmentFailed=true when getUserByUsername throws (karma rules can spot bogus author)', async () => {
+    getUserByUsername.mockRejectedValue(new Error('reddit 503'));
+    const { author } = await normalizePost(
+      { post: { id: 't3_a' }, author: { name: 'u' } },
+      { runs: [], needsAuthorEnrichment: true },
+    );
+    expect(author.enrichmentFailed).toBe(true);
+  });
+
+  it('X2 — enrichmentFailed undefined on successful enrichment', async () => {
+    getUserByUsername.mockResolvedValue({
+      id: 't2_z', createdAt: Date.now() - 86400_000 * 30, linkKarma: 100, commentKarma: 200,
+    });
+    const { author } = await normalizePost(
+      { post: { id: 't3_a' }, author: { name: 'u' } },
+      { runs: [], needsAuthorEnrichment: true },
+    );
+    expect(author.enrichmentFailed).toBeUndefined();
+  });
+
+  it('X2 — enrichmentFailed undefined when needsAuthorEnrichment is false (defaulted, not failed)', async () => {
+    const { author } = await normalizePost(
+      { post: { id: 't3_a' }, author: { name: 'u' } },
+      { runs: [], needsAuthorEnrichment: false },
+    );
+    expect(author.enrichmentFailed).toBeUndefined();
+  });
 });
 
 describe('normalizeComment', () => {

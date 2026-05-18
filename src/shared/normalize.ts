@@ -115,8 +115,8 @@ async function enrichAuthor(
       shadowBanned: false,
     };
   } catch (err) {
-    console.warn('[cm/normalize] getUserByUsername failed — defaulting author:', name, err);
-    return { ...AUTHOR_DEFAULTS, name, id };
+    console.warn('[cm/normalize] getUserByUsername failed — defaulting author + tagging enrichmentFailed:', name, err);
+    return { ...AUTHOR_DEFAULTS, name, id, enrichmentFailed: true };
   }
 }
 
