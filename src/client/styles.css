@@ -137,6 +137,24 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Z1-X61: print stylesheet. Mods occasionally print activity logs as
+     audit-trail evidence (modmail disputes, abuse reports). Force light
+     ink, full-width layout, hide interactive chrome (filter chips,
+     search input, buttons), expand all collapsed sections. */
+  @media print {
+    @page { margin: 1cm; }
+    body, .cm-body { background: white !important; color: black !important; }
+    .grain, button[aria-expanded] svg, .cm-fade-up { animation: none !important; }
+    [role='button'], .filter-chips, .cm-event-search,
+    button[aria-label*='Show'], button[aria-label*='Hide'] {
+      display: none !important;
+    }
+    * { background: transparent !important; color: black !important; box-shadow: none !important; }
+    a { color: black !important; text-decoration: underline; }
+    .cm-event-arrive { break-inside: avoid; border-bottom: 1px solid #ccc !important; }
+    table, tr, td, th { color: black !important; }
+  }
   @keyframes cmDrawLine {
     from { stroke-dashoffset: var(--line-len, 1000); }
     to { stroke-dashoffset: 0; }

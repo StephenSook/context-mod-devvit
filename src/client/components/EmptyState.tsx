@@ -52,18 +52,25 @@ export function EmptyState({ subreddit }: { subreddit: string }) {
         </button>
       </div>
 
-      <p className="text-bone-300/60 text-[10px] tracking-wide max-w-sm">
-        Full schema + 3 example configs in{' '}
-        <a
-          href="https://github.com/StephenSook/context-mod-devvit/tree/main/examples"
-          target="_top"
-          rel="noreferrer"
-          className="underline decoration-line hover:text-bone-50"
-        >
-          /examples
-        </a>{' '}
-        · events refresh every 10s
-      </p>
+      <div className="flex flex-col items-center gap-1 max-w-sm">
+        <p className="text-bone-300/60 text-[10px] tracking-wide">
+          Full schema + 11 example configs in{' '}
+          <a
+            href="https://github.com/StephenSook/context-mod-devvit/tree/main/examples"
+            target="_top"
+            rel="noreferrer"
+            className="underline decoration-line hover:text-bone-50"
+          >
+            /examples
+          </a>{' '}
+          · events refresh every 10s
+        </p>
+        <p className="text-bone-300/50 text-[9.5px] tracking-wide">
+          Stuck? Mod-menu →{' '}
+          <span className="text-bone-200/80">ContextMod: Test rules on this item</span>{' '}
+          runs a dry-run on any post or comment.
+        </p>
+      </div>
     </div>
   );
 }

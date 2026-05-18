@@ -16,6 +16,7 @@
     "prettier": "prettier --write .",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
+    "test:shard": "vitest run --config vitest.config.ts --shard=$SHARD",
     "type-check": "tsc --build"
   },
   "engines": {
