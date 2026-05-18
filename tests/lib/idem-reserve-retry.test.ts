@@ -38,7 +38,7 @@ describe('reserveAction LOCK_FAIL retry (W3)', () => {
     redisGet.mockResolvedValueOnce(null);
     const result = await reserveAction('aid_xyz', 'r_test');
     expect(result).not.toBeNull();
-    expect(result?.token).toMatch(/^\d+-[a-z0-9]+$/);
+    expect(result?.token).toMatch(/^\d+-[a-f0-9-]+$/);
     expect(redisSet).toHaveBeenCalledTimes(3);
   });
 

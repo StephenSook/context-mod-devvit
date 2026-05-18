@@ -67,7 +67,12 @@ export async function firstSeen(thingId: string, sub?: string): Promise<boolean>
 export async function reserveAction(actionId: string, sub?: string): Promise<{ token: string } | null> {
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
-  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  // X31: crypto.randomUUID() is cryptographically random (Web Crypto API,
+  // Devvit V8 runtime). Math.random was predictable enough that an attacker
+  // with Redis read could craft a matching token + delete a successor's
+  // lease. randomUUID closes that vector. Date.now() prefix kept so logs
+  // are time-orderable for debugging.
+  const token = `${Date.now()}-${crypto.randomUUID()}`;
   // W3: NX-set retries for LOCK_FAIL only. firstSeen has already gated this
   // trigger at the proc-key level (24h TTL); without a retry on transient
   // Redis blip the action is permanently dropped — next trigger sees
@@ -210,7 +215,12 @@ export function actionId(thingId: string, actionType: string, payload: string): 
  */
 export async function acquireLock(taskName: string, sub?: string): Promise<(() => Promise<void>) | null> {
   const key = K.lock(taskName, sub);
-  const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  // X31: crypto.randomUUID() is cryptographically random (Web Crypto API,
+  // Devvit V8 runtime). Math.random was predictable enough that an attacker
+  // with Redis read could craft a matching token + delete a successor's
+  // lease. randomUUID closes that vector. Date.now() prefix kept so logs
+  // are time-orderable for debugging.
+  const token = `${Date.now()}-${crypto.randomUUID()}`;
   try {
     const result = await redis.set(key, token, {
       nx: true,
