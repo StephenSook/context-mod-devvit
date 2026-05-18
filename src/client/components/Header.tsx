@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ThemeToggle } from './ThemeToggle';
 
 /**
  * Pure relative-time formatter (1s / 30s / 1m / 5m / 1h).
@@ -76,6 +77,7 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-3">
+        <ThemeToggle />
         <span className="hidden sm:flex items-center gap-1.5">
           <span className="live-dot" aria-hidden />
           <span className="telemetry text-[11px] text-bone-200">live</span>

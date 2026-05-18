@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A0A0B"/>
+      <stop offset="1" stop-color="#18181B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0" r="0.6">
+      <stop offset="0" stop-color="#4ADE80" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#4ADE80" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain" x="0" y="0">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.04 0"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#glow)"/>
+  <rect width="1280" height="640" filter="url(#grain)" opacity="0.5"/>
+
+  <!-- ContextMod logo: concentric rings + green center dot -->
+  <g transform="translate(120,200)">
+    <circle cx="60" cy="60" r="56" stroke="rgba(245,245,244,0.4)" stroke-width="2" fill="none"/>
+    <circle cx="60" cy="60" r="34" stroke="rgba(245,245,244,0.7)" stroke-width="2" fill="none"/>
+    <circle cx="60" cy="60" r="12" fill="#4ADE80"/>
+  </g>
+
+  <!-- Title -->
+  <text x="280" y="240" font-family="ui-sans-serif, system-ui" font-weight="600" font-size="64" fill="#F5F5F4">
+    ContextMod
+  </text>
+  <text x="280" y="240" font-family="ui-serif, Georgia" font-style="italic" font-size="64" fill="#A1A1AA" dx="320">
+    observatory
+  </text>
+
+  <!-- Subtitle -->
+  <text x="280" y="290" font-family="ui-sans-serif, system-ui" font-size="22" fill="#D4D4D8" opacity="0.85">
+    Devvit Web port of FoxxMD&apos;s ContextMod
+  </text>
+  <text x="280" y="324" font-family="ui-sans-serif, system-ui" font-size="22" fill="#A1A1AA">
+    Per-subreddit install · JSON5 rules · live mod-action telemetry
+  </text>
+
+  <!-- Stats row -->
+  <g transform="translate(120,420)">
+    <rect width="280" height="80" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)"/>
+    <text x="20" y="32" font-family="ui-sans-serif" font-size="11" fill="#A1A1AA" letter-spacing="2">TESTS</text>
+    <text x="20" y="64" font-family="ui-sans-serif" font-size="32" font-weight="600" fill="#4ADE80">477 passing</text>
+  </g>
+  <g transform="translate(420,420)">
+    <rect width="280" height="80" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)"/>
+    <text x="20" y="32" font-family="ui-sans-serif" font-size="11" fill="#A1A1AA" letter-spacing="2">VULNS</text>
+    <text x="20" y="64" font-family="ui-sans-serif" font-size="32" font-weight="600" fill="#4ADE80">0</text>
+  </g>
+  <g transform="translate(720,420)">
+    <rect width="280" height="80" rx="8" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)"/>
+    <text x="20" y="32" font-family="ui-sans-serif" font-size="11" fill="#A1A1AA" letter-spacing="2">DOCS</text>
+    <text x="20" y="64" font-family="ui-sans-serif" font-size="32" font-weight="600" fill="#60A5FA">ARCH · THREAT · API</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="120" y="580" font-family="ui-sans-serif" font-size="14" fill="#71717A">
+    Reddit Mod Tools and Migrated Apps Hackathon 2026 · v0.4.0 · MIT
+  </text>
+</svg>
