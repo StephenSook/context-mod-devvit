@@ -6,11 +6,68 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.3.0):
+Forward-looking (post-v0.3.1):
 - Phase 4 stretch rules — Vinh's queue: `history`, `attribution`, `recentActivity` w/ author-cache substrate (authorized 2026-05-17 Wave S16, target ship 2026-05-25)
 - Phase 4.7 image-mode `repost` (gated on Day-0 perceptual-hash spike re-run; deferred from hackathon)
 - Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
 - Post-hackathon operator outreach to 15+ FoxxMD operator pool
+
+## [0.3.1] — 2026-05-18
+
+Wave X — second deep-review pass after Stephen requested "leave nothing on the table." 30+ atomic commits across security hardening, observability, reliability, docs, and developer experience.
+
+### Added — security
+
+- **X1 explain-event hardening** — `AbortController` 30s timeout, `validateEventSummary` (field caps + prompt-injection delimiter rejection), `<<<USER_DATA>>>` delimiter wrap on the OpenAI prompt with explicit system-prompt instructions to treat delimited content as data only, and per-sub rate limit (30 calls/hour) via new `src/lib/ratelimit.ts` Redis token bucket.
+- **X31 crypto.randomUUID for idem lease tokens** — replaces `Math.random()` in `reserveAction` + `acquireLock`. Defense-in-depth against token-spoofing if an attacker had Redis read access.
+- **THREAT-MODEL.md** — STRIDE inventory of 15 threats + mitigations + 4 residual risks, every threat cross-referenced to the test that pins its mitigation.
+- **PRIVACY.md + data-retention.md** — every Redis key documented with retention policy; explicit list of what's sent to OpenAI vs what isn't.
+- **CodeQL workflow** (`.github/workflows/codeql.yml`) — GitHub-native SAST on every PR + weekly schedule.
+
+### Added — reliability + observability
+
+- **X3 handleActivity distinguishes config parse-fail from no-config** — `configStore.getCurrentRev` now throws on corrupt state; handlers + triggers wrap in try/catch + emit a `config-read-fail` event so the dashboard turns red instead of silently halting moderation.
+- **X4 configSource split wiki not-found vs unreachable** — three differentiated `reason` values + 3-way menu UX so mods know whether to create the page, retry, or fix JSON5.
+- **X33 structured JSON logger** (`src/lib/log.ts`) — `{ts, level, tag, msg, ...ctx}` shape for downstream aggregators. Error special-case flattens `.message` + `.name` for `jq`-friendly filtering.
+- **X34 /api/health/deep** — Redis ping + Reddit context check with per-check `{ok, latencyMs, err?}`. Returns 200 when both OK, 503 otherwise. External monitors can alert on degraded-but-not-down state.
+- **X37 OpenAI circuit breaker** (`src/lib/circuitBreaker.ts`) — 3-state machine, opens after 5 consecutive failures, 60s open window, half-open probe. Wired into `/api/explain-event` so sustained OpenAI outages stop burning quota.
+- **X2 normalize enrichmentFailed tag** — `getUserByUsername` failure now tags `Author.enrichmentFailed=true` so the dashboard drill-down can surface false-negative scenarios where a karma rule defaulted a spammer to 0 karma.
+
+### Added — docs + DX + repo hygiene
+
+- **API.md** — every `/api/*` endpoint documented: auth tier, request body, response shapes for 200/400/403/429/500/503, side effects, cross-references to implementation + threat model.
+- **.devcontainer/devcontainer.json** + **.vscode/{settings,extensions}.json** + **.nvmrc** — 1-click clone-and-go via GitHub Codespaces. Consistent format-on-save + recommended extensions for anyone who opens the repo locally.
+- **.github/CODEOWNERS** — `@StephenSook` default; `@vinhbin` co-owns `/src/rules/` + the Phase 4 hot files; security-sensitive surfaces require `@StephenSook` review.
+- **.github/FUNDING.yml** — sponsor button (Stephen + FoxxMD upstream).
+- **GitHub Discussions enabled** — Q&A space for the FoxxMD operator pool that doesn't pollute issues.
+- **18 repo topics** — discoverability via GitHub topic search.
+- **Auto-release workflow** (`.github/workflows/release.yml`) — on `v*` tag push, extracts matching CHANGELOG section + creates GitHub release with notes-file.
+- **Coverage reports in CI artifact** (`@vitest/coverage-v8` + vitest config) — uploaded on every CI run, 7-day retention.
+- **README badges** — Tests: 414 passing + TypeScript: strict added alongside existing CI / License / Devvit / Hackathon badges.
+
+### Added — UX polish
+
+- **X60 React ErrorBoundary at app root** (`src/client/components/ErrorBoundary.tsx`) — recovery panel with reload button + reassurance that the moderation engine is unaffected when the view layer crashes.
+
+### Changed
+
+- **W12 + X4** — `/api/recent` returns 503 (not silent 200 + empty array) on Reddit-context loss; matches `/api/config-history` + `/api/mod-activity` siblings.
+- **X1** — `/api/explain-event` now sequences validation → rate-limit → circuit-breaker → OpenAI call. Each layer returns its own actionable status code (400 / 429 / 503 / 500).
+
+### Tests
+
+330 (v0.3.0) → 414 passing (+84 across Wave W + X). New test files: `tests/lib/{requireModerator,ratelimit,circuitBreaker,log,idem-reserve-retry}.test.ts`, `tests/routes/{api-auth,forms-openai-key}.test.ts`, `tests/state/apiKeyStore.test.ts`. Existing files expanded: `tests/core/{simulate-rule,explain-event,configSource}.test.ts`, `tests/state/configStore.test.ts`, `tests/shared/normalize.test.ts`, `tests/routes/forms-test-rules.test.ts`.
+
+### Skipped on purpose
+
+- **i18n hooks** — no judging signal for an EN-locale-only ContextMod port.
+- **Mutation testing** — CI burn vs marginal regression-catching value.
+- **Visual regression (Percy / Chromatic)** — requires paid SaaS.
+- **Real Sentry account** — structured logger ships the JSON shape; signup deferred.
+- **Storybook** — small UI surface; ConfigDiffViewer + RuleStatsTable + EventDetails don't warrant the setup cost.
+- **Image-hash worker for repost rule** — genuinely Phase 4.7, gated on perceptual-hash spike re-run.
+
+## [0.3.0] — 2026-05-17
 
 ### Wave W — deep review hardening (2026-05-18)
 
@@ -25,7 +82,7 @@ Forward-looking (post-v0.3.0):
 - **W12 (silent-fail WARN)**: `/api/recent` now returns 503 on Reddit-context loss matching sibling /config-history + /mod-activity (was silent 200 + events:[]).
 - **W13–W15 (comment hygiene)**: stripped ~15 "Wave U BLOCKER fix (Codex CR3 #N)" provenance prefixes (kept WHY rationale); rewrote 7 stale Phase X claims that contradicted the shipped state (recentEvents.ts header, scheduler.ts "STUBS for Phase 0", types.ts Phase 1 vs 2 split); deleted decorative ASCII banner separators (`// ---`) sandwiching ALL-CAPS headers in types.ts + normalize.ts.
 
-## [0.3.0] — 2026-05-17
+### v0.3.0 base release notes
 
 WOW push wave. Wave S + T shipped 15 user-facing features (filter chips, mobile responsive, keyboard shortcuts, per-event drill-down, onboarding tour, rule simulation, AI rule explainer, per-rule stats, config rev diff viewer, mod activity attribution, mute/unmute MVP, E2E Playwright CI, operator blog + migration docs, Vinh Phase 4 authorize). Wave U code-review hardening closed 5 BLOCKERs + 1 CRITICAL + 11 WARNs from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). Wave V Category-A pre-submit holdback flush + AI summary per event feature.
 
