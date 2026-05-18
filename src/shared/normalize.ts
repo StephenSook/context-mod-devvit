@@ -51,10 +51,7 @@ export interface CommentSubmitPayload {
   subreddit?: { name?: string };
 }
 
-// ---------------------------------------------------------------------------
-// Item-side defaults
-// ---------------------------------------------------------------------------
-
+// Item-side defaults.
 const ITEM_DEFAULTS: Omit<Item, 'id'> = {
   title: '',
   body: '',
@@ -78,9 +75,7 @@ function ageSeconds(createdAt: number | string | undefined): number {
   return Math.max(0, Math.floor((Date.now() - ms) / 1000));
 }
 
-// ---------------------------------------------------------------------------
-// Author enrichment
-// ---------------------------------------------------------------------------
+// Author enrichment.
 
 const AUTHOR_DEFAULTS: Omit<Author, 'name' | 'id'> = {
   age: 0,
@@ -125,10 +120,7 @@ async function enrichAuthor(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
+// Public API.
 export interface NormalizedActivity {
   item: Item;
   author: Author;

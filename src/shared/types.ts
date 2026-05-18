@@ -8,10 +8,7 @@
  * handleActivity + Step 3.5 recordEvent all type-check end-to-end.
  */
 
-// ---------------------------------------------------------------------------
-// Inputs — Item & Author (post-normalization, no `undefined` fields)
-// ---------------------------------------------------------------------------
-
+// Inputs — Item & Author (post-normalization, no `undefined` fields).
 export interface Item {
   id: string;            // t3_xxx (post) or t1_xxx (comment)
   title: string;         // empty for comments
@@ -44,10 +41,7 @@ export interface Author {
   shadowBanned: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Filters (Step 1.5) — predicates over Item / Author
-// ---------------------------------------------------------------------------
-
+// Filters — predicates over Item / Author.
 export interface AuthorFilter {
   nameIn?: string[];                  // exact-match usernames
   nameNotIn?: string[];
@@ -86,10 +80,7 @@ export interface FilterSpec {
   itemIs?: ItemFilter;
 }
 
-// ---------------------------------------------------------------------------
-// Config — rules, checks, runs, actions
-// ---------------------------------------------------------------------------
-
+// Config — rules, checks, runs, actions.
 export type RegexTarget = 'title' | 'body' | 'url';
 
 export interface RegexRule {
@@ -190,10 +181,7 @@ export interface AppConfig {
                                       // (Step 1.3 short-circuit, Council Software Lead).
 }
 
-// ---------------------------------------------------------------------------
-// Engine output contracts (Council fix 2026-05-14 21:30, Software Lead)
-// ---------------------------------------------------------------------------
-
+// Engine output contracts.
 export interface RuleResult {
   triggered: boolean;
 }
