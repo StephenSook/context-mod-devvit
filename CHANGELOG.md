@@ -12,6 +12,19 @@ Forward-looking (post-v0.3.0):
 - Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
 - Post-hackathon operator outreach to 15+ FoxxMD operator pool
 
+### Wave W — deep review hardening (2026-05-18)
+
+5-agent parallel adversarial review (Codex + silent-failure-hunter + comment-analyzer + pr-test-analyzer + Explore) surfaced 2 BLOCKERs, 4 CRITICALs, ~10 WARNs, and ~15 rotted comments. 13 atomic commits shipped. Test count 330 → 376 (+46). Zero behavior change for the comment cleanup work.
+
+- **W1 (security BLOCKER)**: extracted `requireModerator` to `src/lib/`; gated all 4 form-submit handlers in `src/routes/forms.ts` (`/set-openai-key-submit`, `/explain-rule-submit`, `/simulate-rule-submit`, `/test-rules-submit`). Devvit menus gate `forUserType:moderator` at menu-open, but form POST endpoints are HTTP-reachable by any authenticated user. Defense-in-depth.
+- **W2 (security BLOCKER)**: gated `/api/mod-activity` + `/api/config-history` w/ `requireModerator`. Both leaked mod-attribution data to non-mod viewers of the dashboard custom post.
+- **W3 (idempotency BLOCKER)**: `reserveAction` retries NX-set on transient Redis blip (3 attempts, 100ms+300ms backoff). Without it, LOCK_FAIL silently dropped the action — firstSeen (24h NX) blocked retries on next trigger.
+- **W4 (correctness CRITICAL)**: `configStore.publish` monotonic pointer guard. After INCR allocates next=N, only set `cfg:current_rev` if N > current. Closes the slow-writer-rolls-back race (full CAS impossible without Devvit Lua).
+- **W5 (test integrity CRITICAL)**: replaced lying U1 happy-path test in `tests/core/simulate-rule.test.ts` with vi.spyOn forcing runRule to throw. Pins the actual regression Codex CR3 BLOCKER #1 reported (every-sample-throws shows "0/25 fired" lie).
+- **W6/W7/W8/W9 (test coverage)**: +30 tests pinning requireModerator (6), apiKeyStore Redis-fallback contracts (9), /api/* auth gates incl. log-spoofing prevention (12), forms OpenAI key intake + envelope variants + mask + fallback chain (9).
+- **W12 (silent-fail WARN)**: `/api/recent` now returns 503 on Reddit-context loss matching sibling /config-history + /mod-activity (was silent 200 + events:[]).
+- **W13–W15 (comment hygiene)**: stripped ~15 "Wave U BLOCKER fix (Codex CR3 #N)" provenance prefixes (kept WHY rationale); rewrote 7 stale Phase X claims that contradicted the shipped state (recentEvents.ts header, scheduler.ts "STUBS for Phase 0", types.ts Phase 1 vs 2 split); deleted decorative ASCII banner separators (`// ---`) sandwiching ALL-CAPS headers in types.ts + normalize.ts.
+
 ## [0.3.0] — 2026-05-17
 
 WOW push wave. Wave S + T shipped 15 user-facing features (filter chips, mobile responsive, keyboard shortcuts, per-event drill-down, onboarding tour, rule simulation, AI rule explainer, per-rule stats, config rev diff viewer, mod activity attribution, mute/unmute MVP, E2E Playwright CI, operator blog + migration docs, Vinh Phase 4 authorize). Wave U code-review hardening closed 5 BLOCKERs + 1 CRITICAL + 11 WARNs from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). Wave V Category-A pre-submit holdback flush + AI summary per event feature.
