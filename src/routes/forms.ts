@@ -32,6 +32,7 @@ import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { type Result, ok, err } from '../lib/result';
+import { log } from '../lib/log';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -102,7 +103,7 @@ forms.post('/test-rules-submit', async (c) => {
     (body as { values?: { thingId?: string } }).values?.thingId ??
     (body as { payload?: { values?: { thingId?: string } } }).payload?.values?.thingId ??
     (body as { form?: { values?: { thingId?: string } } }).form?.values?.thingId;
-  console.log(`[cm/forms/test-rules-submit] thingId=${thingId}`);
+  log.info('cm/forms/test-rules-submit', 'opened', { thingId });
 
   if (!thingId) {
     return c.json({
@@ -190,9 +191,9 @@ forms.post('/test-rules-submit', async (c) => {
     return c.json({
       showToast: `Dry-run (rev ${result.configRev}):\n${lines.join('\n')}`,
     });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/forms/test-rules-submit] failed:', err);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error('cm/forms/test-rules-submit', 'failed', { err: e });
     return c.json({ showToast: `Dry-run failed: ${msg}` });
   }
 });
@@ -289,10 +290,7 @@ forms.post('/simulate-rule-submit', async (c) => {
         // AD Tier-1 #2: count skipped samples so the toast can disclose
         // partial-coverage instead of silently shrinking the corpus.
         skipped += 1;
-        console.warn(
-          '[cm/forms/simulate-rule-submit] skipped sample:',
-          perPostErr
-        );
+        log.warn('cm/forms/simulate-rule-submit', 'skipped sample', { err: perPostErr });
       }
     }
 
@@ -301,13 +299,12 @@ forms.post('/simulate-rule-submit', async (c) => {
     const suffix =
       skipped > 0 ? ` (${skipped}/${recent.length} samples skipped — normalize error)` : '';
     return c.json({ showToast: `${baseToast}${suffix}` });
-  } catch (err) {
+  } catch (e) {
     // Wave U WARN fix (Codex CR3 #7): prefix toast w/ failure phase so mod
     // knows whether to retry (network/reddit), fix their rule (parse), or
     // contact support (unexpected).
-    const msg = err instanceof Error ? err.message : String(err);
-    const name = err instanceof Error ? err.name : 'Error';
-    console.error('[cm/forms/simulate-rule-submit] failed:', name, msg);
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error('cm/forms/simulate-rule-submit', 'failed', { err: e });
     const phase =
       msg.includes('getCurrentSubreddit') || msg.includes('getNewPosts')
         ? 'reddit-api'
@@ -380,10 +377,14 @@ forms.post('/explain-rule-submit', async (c) => {
       await recordSuccess(cbBucket);
     }
     return c.json({ showToast: formatExplainToast(result) });
-  } catch (err) {
-    await recordFailure(cbBucket);
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/forms/explain-rule-submit] failed:', err);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // AD Phase 3 mirror of Tier-1 #3: only open the breaker on transient
+    // OpenAI errors. Auth/config exceptions (no key, parse) must not
+    // punish the install w/ a cooldown for a user-fixable problem.
+    const isTransient = isTransientOpenaiError(msg);
+    if (isTransient) await recordFailure(cbBucket);
+    log.error('cm/forms/explain-rule-submit', 'failed', { err: e, transient: isTransient });
     return c.json({ showToast: `Explain failed: ${msg}` });
   }
 });
@@ -441,9 +442,9 @@ forms.post('/set-openai-key-submit', async (c) => {
     return c.json({
       showToast: `OpenAI key saved for r/${auth.sub} (${masked}).`,
     });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/forms/set-openai-key-submit] failed:', err);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    log.error('cm/forms/set-openai-key-submit', 'failed', { err: e });
     return c.json({ showToast: `Save failed: ${msg}` });
   }
 });
@@ -483,10 +484,7 @@ async function fetchRecentPostsSafe(
     return ok(all.slice(0, SIMULATION_SAMPLE_LIMIT));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.warn(
-      '[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:',
-      msg
-    );
+    log.warn('cm/forms/simulate-rule-submit', 'fetchRecentPostsSafe failed', { err: e });
     return err(`reddit-api: ${msg}`);
   }
 }
