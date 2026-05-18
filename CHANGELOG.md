@@ -6,7 +6,86 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.3.1):
+Forward-looking (post-v0.4.0): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.4.0] — 2026-05-18
+
+Wave Y — "leave nothing on the table" finalize pass. After the v0.3.2 mid-review tag Stephen pushed for completion of every item in the brain-dump menu (true completion, not silent skips). 20+ commits cover the previously-false-completion gaps, the high-judge-signal items, and the medium-signal polish + CI/UX work.
+
+### Added — false-completion close-outs
+
+- **Y1-X9 Playwright E2E AI explain button** — happy path + 429 rate-limit click-through. Mocks `/api/explain-event` via `page.route().fulfill` so no real OpenAI call fires. Exercises the wire from DOM click → POST → React state → drill-down render.
+- **Y1-X7 stats-rollup cron + /api/stats real counters** — `src/state/statsRollup.ts` aggregates events:recent50 (total, lastHour, today, failedActions, topRules cap-5). Hourly cron writes a per-sub snapshot to `cm:stats:snapshot:{sub}`. `/api/stats` reads the snapshot (falls through to compute-on-fly when absent or stale).
+- **Y1-X10 README Mermaid refresh** — added the AI explain-event security-chain sequence diagram (5 gates: validate → auth → breaker → rate-limit → key → OpenAI → recordSuccess/Failure).
+- **Y1-X11 3 Phase 4 example configs** — history-fresh-low-karma, attribution-drive-by-self-promo, recent-activity-cross-sub. examples/README.md table now 11 rows w/ Phase 4 markers.
+- **Y1-X25 Prettier pass** — `prettier --write` across 112 files. Isolated commit so the formatting churn doesn't mask behavior changes in future PRs.
+- **Y1-X39 ARCHITECTURE.md** — 10 ADR-style sections, designed by Plan-agent + written at full fidelity. Cross-references THREAT-MODEL.md, API.md, PRIVACY.md, DESIGN.md, ROADMAP.md.
+
+### Added — security + reliability
+
+- **Y2-X44 forms.ts cost-gate parity** — `/explain-rule-submit` + `/simulate-rule-submit` + `/set-openai-key-submit` now match `/api/explain-event` hardening: per-sub circuit breaker, rate limit, smart failure classification, length caps. Closes the gap Gemini flagged where X1 only landed on `/api/explain-event`.
+- **Y1-X45 log.ts wired into routes/api.ts** — first migration site for the X33 structured logger. Future modules adopt incrementally.
+- **Y1-X46 wiki circuit breaker** — `loadFromWiki` now per-sub-breakered (`wiki:${sub}`). Not-found doesn't count as failure (legit pre-install state). New LoadResult `reason: 'breaker-open'` propagates to mod-menu w/ actionable retry-in-Ns toast.
+- **Y1-X46 delimiter validation extended to action.kind + action.status** — Codex WARN: those fields are also interpolated into the OpenAI prompt; reject reserved delimiters there too.
+- **Y1-X47 runRun surfaces goto-missing to dashboard** — `RunResult.terminated` union extended w/ `'goto-missing'` + `missingGotoTarget` field. `handleActivity` catches terminated state + emits `recordEvent` w/ `config-error` action so mod sees red row instead of stale-silent.
+- **Y1-X48 surface 3 silent catches** — modActivity parse-drop counter + warn, muteSet isRuleMuted soft-fail log, menu logMenuAction empty-catch w/ warn.
+- **Y1-X8 batch 2 provenance label cleanup** — mechanical sweep over remaining "Codex H1/H4/H5/H6/HIGH" + "Council fix" prefixes across 8 files.
+
+### Added — observability
+
+- **Y2-X35 `log.newTraceId()`** — `crypto.randomUUID()` helper for per-request trace IDs. Aggregators can pivot on the field.
+- **Y1-X34 `/api/health/deep`** — Redis ping + Reddit context check. Returns per-check `{ok, latencyMs, err?}`.
+
+### Added — UX + accessibility
+
+- **Y2-X56 loading skeletons** — `SkeletonRow` shimmer placeholders during initial-load so first paint doesn't hit the EmptyState CTA (which would mislead the mod into thinking the bot is idle).
+- **Y2-X62 event-search input** — text-search field above the events stream. Case-insensitive substring match across activityId/runName/checkName/action.kind. Combines w/ FilterChips kind filter.
+- **Y2-X55 prefers-reduced-motion** — single CSS media query disables all CM entrance/exit animations for users w/ vestibular sensitivity. WCAG SC 2.3.3.
+- **Y2-X63 sortable RuleStatsTable** — click any column header to sort by it; click again to flip direction. ARIA aria-sort attribute + role=button for screen-reader nav.
+
+### Added — DX + repo hygiene
+
+- **Y2-X44 .devcontainer/devcontainer.json** + **Y2-X45 .vscode workspace** + **Y2-X48 .nvmrc** — 1-click Codespaces clone-and-go.
+- **Y2-X44 CONTRIBUTING.md expansion** — "Before you start" linking the 5 load-bearing docs + sub-agent review chain section + locked pre-commit triplet.
+- **Y2-X47 scripts/preflight.sh** — bash dev-env sanity check (node v22+, npm, Devvit CLI, gh auth, port 5173, git tree).
+- **Y2-X46 Makefile** — 17 muscle-memory targets wrapping the npm scripts (`make full-check`, `make ship`, `make bench`, etc).
+- **Y2-X40 ROADMAP.md** — 4-horizon plan (Now / Next / Later / Wishlist) + v0.4 / v0.5 / v1.0 versioning.
+- **Y2-X41 docs/adr/README.md** — ADR template + directory scaffolding for narrower decisions.
+- **Y2-X84 SECURITY.md refresh** — 0.1.x → 0.3.x supported, W+X scope expansion.
+
+### Added — CI
+
+- **Y2-X80 release-drafter** — auto-drafts a release on every push to main + every PR. 6 categories (Security / Features / Bug Fixes / Documentation / Performance / Internal). Semver bump derived from PR labels.
+- **Y2-X29 Semgrep OWASP** — p/owasp-top-ten + p/typescript + p/javascript on every PR + push + weekly cron. SARIF → GitHub Security tab alongside CodeQL.
+- **Y2-X73 Playwright multi-browser matrix** — firefox + webkit run on push to main (PR CI stays chromium-only for fast feedback).
+- **Y2-X76 CI Node matrix** — Node 20 + 22 + 24 (fail-fast: false). Coverage upload pinned to Node 22.
+- **Y2-X75 mobile-viewport E2E** — Playwright spec at 390x844 verifying dashboard layout + tap-target hittability + drill-down expand.
+
+### Added — testing depth
+
+- **Y2-X23 vitest snapshot tests** — FilterChips DOM-shape snapshots (3 states) to catch silent CSS/aria refactors.
+- **Y2-X74 vitest benchmarks** — `tests/bench/hot-paths.bench.ts` micro-benchmarks for fnv1a64, actionId, eventMatchesQuery, computeStats. Run via `make bench`.
+- **Y2-X38 retry-with-jitter helper** — `src/lib/retry.ts` exponential backoff (base 100ms, doubles) + 25% jitter band for thundering-herd protection.
+
+### Changed
+
+- **Y2-X40 README** — opening blurb v0.3.x, Wave X status row, test count 446, Phase 4 ✅. Schema example updated to current pattern/target/filter/template renames.
+- **Y2-X40 DESIGN.md** — storage key list now references data-retention.md + PRIVACY.md as the authoritative inventory. Added the 6 keys Wave V/W/X introduced.
+
+### Tests
+
+446 (v0.3.2) → 469 passing (+23 in Wave Y from the new lib + UX + bench files).
+
+### Skipped on purpose (genuinely defer)
+
+- **X51 lazy-load** — components use named exports; default-export migration across all import sites is non-trivial regression risk for marginal bundle-size savings on ~100-line components.
+- **X58 light mode toggle** — design system is dark-mode-first (DESIGN.md); proper light variant would require rewriting design tokens.
+- **X53 axe-core scan** — needs `@axe-core/playwright` install; documented but not wired pre-submit.
+- **X79 dependabot auto-merge** — security_reminder hook blocked the env-pattern Dependabot prescribes; Stephen reviews manually.
+- **X65 GitHub social preview** + **X66 banner image** — binary assets; Stephen-manual upload.
+- **X17 husky pre-commit hooks** — Stephen's local workflow choice.
+
+## [0.3.2] — 2026-05-18
 - Phase 4 stretch rules — Vinh's queue: `history`, `attribution`, `recentActivity` w/ author-cache substrate (authorized 2026-05-17 Wave S16, target ship 2026-05-25)
 - Phase 4.7 image-mode `repost` (gated on Day-0 perceptual-hash spike re-run; deferred from hackathon)
 - Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
