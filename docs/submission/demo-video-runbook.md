@@ -53,7 +53,7 @@ Pre-position the cursor before each scene begins recording so you don't waste se
 | Cold open | 0.0 – 8.0s | montage (record as separate clips, stitch later) | r/AskReddit modqueue, 2023 blackout headline, Reddit Q1 earnings number |
 | History + permission | 8.0 – 22.0s | (still images / browser tabs) | github.com/FoxxMD/context-mod, FoxxMD's Discord permission screenshot, GitHub issue #152 |
 | Live demo: install | 22.0 – 29.0s | App Directory scene | click "Add to community", pick r/cm_devvit_test |
-| Live demo: wiki | 29.0 – 36.0s | Subreddit + Wiki scene | open `r/cm_devvit_test/wiki/contextmod`, paste JSON5 config, click save |
+| Live demo: wiki | 29.0 – 36.0s | Subreddit + Wiki scene | open `r/cm_devvit_test/wiki/botconfig/contextmod`, paste JSON5 config, click save |
 | Live demo: trigger | 36.0 – 43.0s | Subreddit + Wiki scene | submit a test post titled "free crypto giveaway scam" |
 | Live demo: dashboard | 43.0 – 50.0s | Observatory + Mod Menu scene | cut to dashboard; event row appears at top; pan over stat cards; mention dry-run mod menu |
 | Wedge | 50.0 – 58.0s | title card (static, generate via ffmpeg `drawtext`) | "Migration ready — eligible for Reddit's $1,000 Migration Bounty + Developer Funds (realistic 12-mo direct-cash envelope $19.5K–$25K per `pillar-5-numbers.md` §8)" |
@@ -196,7 +196,7 @@ YouTube upload:
 
 - [ ] **Vinh's Phase 1 backend is live** — confirm `handleActivity` is wired, `runRule` evaluates against a real wiki config, and at least one action handler (e.g. `comment`) actually posts to Reddit on a test trigger. **Do not record if this isn't true** — fall back to synthetic-data path below.
 - [ ] r/cm_devvit_test has the latest ContextMod install
-- [ ] Wiki page `r/cm_devvit_test/wiki/contextmod` has a clean starter config that fires on the "free crypto giveaway scam" test post
+- [ ] Wiki page `r/cm_devvit_test/wiki/botconfig/contextmod` has a clean starter config that fires on the "free crypto giveaway scam" test post
 - [ ] Observatory dashboard pinned and renders a real action chip when a test post triggers a rule
 - [ ] FoxxMD's Discord permission screenshot saved as PNG (no shoulder-surfable info)
 - [ ] OBS scene transitions tested without recording
@@ -211,7 +211,7 @@ If Phase 1 isn't live by **May 17, 2026** (T-3 days per `submission-day-runbook.
 ### Pre-flight (1 hour before recording)
 
 - [ ] Load `https://developers.reddit.com/apps/cm-devvit?demo=1` (or playtest equivalent) — confirm dashboard renders with seeded data: 47 actions today / 2h 14m saved / 3 active rules / spam-filter top rule
-- [ ] Open the wiki at `r/cm_devvit_test/wiki/contextmod` — confirm starter JSON5 config visible
+- [ ] Open the wiki at `r/cm_devvit_test/wiki/botconfig/contextmod` — confirm starter JSON5 config visible
 - [ ] Open the App Directory page at `developers.reddit.com/apps/cm-devvit`
 - [ ] Open the mod overflow menu showing the 3 ContextMod items
 - [ ] Pre-position cursor in OBS for each scene transition

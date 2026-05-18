@@ -25,7 +25,7 @@ That's the entire editable surface. At [developers.reddit.com/apps/cm-devvit/dev
 ```
 ContextMod is FoxxMD's rule-engine moderation bot, ported to Devvit with explicit written permission.
 
-Mods write rule configs in JSON5 inside r/<sub>/wiki/contextmod. ContextMod evaluates every new post and comment against those rules and takes the configured action — remove, comment, lock, flair, ban, report, approve. The Observatory dashboard surfaces live action telemetry as a custom post.
+Mods write rule configs in JSON5 inside r/<sub>/wiki/botconfig/contextmod. ContextMod evaluates every new post and comment against those rules and takes the configured action — remove, comment, lock, flair, ban, report, approve. The Observatory dashboard surfaces live action telemetry as a custom post.
 
 Why a port? The original ContextMod requires a self-hosted server + Reddit API tokens + shared rate limits. Devvit's per-subreddit install model removes all three. Every mod team gets its own isolated instance with one click.
 

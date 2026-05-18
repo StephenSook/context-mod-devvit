@@ -50,7 +50,7 @@ export function ActionBar({
     setTimeout(() => setFlash(null), 1500);
   };
 
-  const wikiUrl = `https://www.reddit.com/r/${subreddit}/wiki/contextmod`;
+  const wikiUrl = `https://www.reddit.com/r/${subreddit}/wiki/botconfig/contextmod`;
   const exportDisabled = events.length === 0;
 
   return (

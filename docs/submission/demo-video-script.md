@@ -48,7 +48,7 @@
 **VO:** "One click to install on any subreddit. No hosting. No tokens."
 
 **Beat 2 (29-36s) — Write a rule:**
-- Open `r/cm_devvit_test/wiki/contextmod`
+- Open `r/cm_devvit_test/wiki/botconfig/contextmod`
 - Paste a tiny JSON5 config: regex on title `/spam|scam/i` → remove + comment
 - Click save
 
