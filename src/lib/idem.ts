@@ -68,31 +68,46 @@ export async function reserveAction(actionId: string, sub?: string): Promise<{ t
   const doneKey = K.actionDone(actionId, sub);
   const pendingKey = K.actionPending(actionId, sub);
   const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  let reservedHere = false;
+  // W3: NX-set retries for LOCK_FAIL only. firstSeen has already gated this
+  // trigger at the proc-key level (24h TTL); without a retry on transient
+  // Redis blip the action is permanently dropped — next trigger sees
+  // firstSeen=false and skips. Retry of NX is idempotent: either we got the
+  // pending slot first (succeeds), or someone else did (returns non-OK).
+  const lockBackoffsMs = [100, 300];
+  let lockErr: unknown = null;
+  for (let attempt = 0; attempt <= lockBackoffsMs.length; attempt++) {
+    try {
+      const reserved = await redis.set(pendingKey, token, {
+        nx: true,
+        expiration: new Date(Date.now() + PENDING_TTL_SEC * 1000),
+      });
+      if (reserved !== 'OK') return null;
+      lockErr = null;
+      break;
+    } catch (err) {
+      lockErr = err;
+      if (attempt < lockBackoffsMs.length) {
+        await new Promise((r) => setTimeout(r, lockBackoffsMs[attempt]!));
+      }
+    }
+  }
+  if (lockErr) {
+    console.error('[cm/idem/reserveAction/LOCK_FAIL]', 'fail-closed after retries (action dropped):', actionId, lockErr);
+    return null;
+  }
   try {
-    const reserved = await redis.set(pendingKey, token, {
-      nx: true,
-      expiration: new Date(Date.now() + PENDING_TTL_SEC * 1000),
-    });
-    if (reserved !== 'OK') return null;
-    reservedHere = true;
     const done = await redis.get(doneKey);
     if (done) {
       // Token check is owner-safe — only delete pending if it's still ours.
       const current = await redis.get(pendingKey);
       if (current === token) await redis.del(pendingKey);
-      reservedHere = false;
       return null;
     }
     return { token };
   } catch (err) {
-    // Distinct error tag depending on which half of the lock-then-check failed.
-    // ORPHANED_LEASE means we hold a pending-NX that we couldn't verify against
-    // done — the lease will TTL-expire in PENDING_TTL_SEC (5min); caller skips.
-    const tag = reservedHere
-      ? '[cm/idem/reserveAction/ORPHANED_LEASE]'
-      : '[cm/idem/reserveAction/LOCK_FAIL]';
-    console.error(tag, 'fail-closed (skip):', actionId, err);
+    // ORPHANED_LEASE: pending-NX written but done-check threw. Lease will
+    // TTL-expire in PENDING_TTL_SEC (5min); caller skips this attempt.
+    console.error('[cm/idem/reserveAction/ORPHANED_LEASE]', 'fail-closed (skip, TTL reaps in 5min):', actionId, err);
     return null;
   }
 }
