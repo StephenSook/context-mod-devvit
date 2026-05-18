@@ -18,6 +18,8 @@ const readModActivity = vi.fn();
 const getRecentRevs = vi.fn();
 const readRecent = vi.fn();
 const explainEvent = vi.fn();
+const validateEventSummary = vi.fn();
+const checkRateLimit = vi.fn();
 const getOpenaiKey = vi.fn();
 const settingsGet = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
@@ -46,9 +48,13 @@ vi.mock('../../src/state/recentEvents', () => ({
 }));
 vi.mock('../../src/core/explainEvent', () => ({
   explainEvent: (...a: unknown[]) => explainEvent(...a),
+  validateEventSummary: (...a: unknown[]) => validateEventSummary(...a),
 }));
 vi.mock('../../src/state/apiKeyStore', () => ({
   getOpenaiKey: (...a: unknown[]) => getOpenaiKey(...a),
+}));
+vi.mock('../../src/lib/ratelimit', () => ({
+  checkRateLimit: (...a: unknown[]) => checkRateLimit(...a),
 }));
 
 import { api } from '../../src/routes/api';
@@ -58,6 +64,8 @@ const AS_MOD = { ok: true as const, sub: 'r_test', username: 'mod_alice' };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  validateEventSummary.mockImplementation((event: unknown) => ({ ok: true, event }));
+  checkRateLimit.mockResolvedValue({ allowed: true, count: 1, max: 30, resetInSec: 3600 });
 });
 
 async function postJson(path: string, body: unknown): Promise<Response> {
@@ -120,6 +128,23 @@ describe('POST /api/explain-event (W8)', () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     const res = await postJson('/explain-event', {});
     expect(res.status).toBe(400);
+    expect(explainEvent).not.toHaveBeenCalled();
+  });
+
+  it('X1 returns 400 when validation rejects payload', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    validateEventSummary.mockReturnValueOnce({ ok: false, error: 'matchedSubstring exceeds 200 chars' });
+    const res = await postJson('/explain-event', { event: { matchedSubstring: 'x' } });
+    expect(res.status).toBe(400);
+    expect(explainEvent).not.toHaveBeenCalled();
+    expect(checkRateLimit).not.toHaveBeenCalled();
+  });
+
+  it('X1 returns 429 when rate-limit denies', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    checkRateLimit.mockResolvedValueOnce({ allowed: false, count: 31, max: 30, resetInSec: 1800 });
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(res.status).toBe(429);
     expect(explainEvent).not.toHaveBeenCalled();
   });
 

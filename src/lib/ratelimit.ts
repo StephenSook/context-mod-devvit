@@ -1,0 +1,56 @@
+/**
+ * Fixed-window Redis token bucket. Simple counter w/ TTL — accurate enough
+ * for cost-control (OpenAI quota burn) and trivially Devvit-Redis-compatible
+ * (INCR + EXPIRE only — no Lua, no transactions).
+ *
+ * Per-window semantics: first call in a fresh window sets the TTL; subsequent
+ * calls increment without resetting the window. Resets when TTL expires.
+ */
+
+import { redis } from '@devvit/web/server';
+
+export interface RateLimitResult {
+  allowed: boolean;
+  count: number;
+  max: number;
+  resetInSec: number;
+}
+
+/**
+ * Check + increment a rate-limit bucket.
+ *
+ * @param bucket — short identifier (e.g. "explain") combined with `sub` for the key
+ * @param sub — subreddit name for tenant isolation
+ * @param max — max calls allowed in the window
+ * @param windowSec — window size (e.g. 3600 = 1 hour)
+ *
+ * Returns allowed=false when the increment would exceed `max`. Note: count
+ * is incremented even on deny so that aggressive callers see a fast denial
+ * + don't flood Redis with retries.
+ */
+export async function checkRateLimit(
+  bucket: string,
+  sub: string,
+  max: number,
+  windowSec: number,
+): Promise<RateLimitResult> {
+  const key = `cm:rl:${bucket}:${sub}`;
+  try {
+    const count = await redis.incrBy(key, 1);
+    if (count === 1) {
+      await redis.expire(key, windowSec);
+    }
+    const resetInSec = count >= max ? windowSec : windowSec;
+    return {
+      allowed: count <= max,
+      count,
+      max,
+      resetInSec,
+    };
+  } catch (err) {
+    // Fail-OPEN on Redis blip — better to let a mod's legit click through
+    // than block them. The OpenAI quota itself is the ultimate cap.
+    console.warn('[cm/ratelimit] check failed (fail-open):', bucket, sub, err);
+    return { allowed: true, count: 0, max, resetInSec: windowSec };
+  }
+}

@@ -18,10 +18,11 @@ import { getRecentRevs } from '../state/configStore';
 import { readModActivity } from '../state/modActivity';
 import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
-import { explainEvent, type EventSummary } from '../core/explainEvent';
+import { explainEvent, validateEventSummary } from '../core/explainEvent';
 import { settings } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
+import { checkRateLimit } from '../lib/ratelimit';
 
 export const api = new Hono();
 
@@ -175,14 +176,27 @@ api.post('/unmute-rule', async (c) => {
  * Returns { ok, explanation } or { ok:false, error }.
  */
 api.post('/explain-event', async (c) => {
-  const body = await c.req.json<{ event?: EventSummary }>();
+  const body = await c.req.json<{ event?: unknown }>();
   if (!body?.event) return c.json({ ok: false, error: 'event payload required' }, 400);
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  // X1: validate BEFORE rate-limit + OpenAI call so a bad payload doesn't
+  // burn quota or rate-window tokens.
+  const validated = validateEventSummary(body.event);
+  if (!validated.ok) return c.json({ ok: false, error: validated.error }, 400);
+  // X1: per-sub rate limit — 30 calls per hour. Stops a single mod from
+  // accidentally burning the OpenAI key on every event in a busy sub.
+  const rl = await checkRateLimit('explain', auth.sub, 30, 3600);
+  if (!rl.allowed) {
+    return c.json({
+      ok: false,
+      error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
+    }, 429);
+  }
   try {
     const fromRedis = await getOpenaiKey(auth.sub);
     const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
-    const result = await explainEvent(body.event, apiKey);
+    const result = await explainEvent(validated.event, apiKey);
     if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
     return c.json({ ok: true, explanation: result.explanation });
   } catch (err) {
