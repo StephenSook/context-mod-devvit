@@ -48,6 +48,10 @@ jobs:
           retention-days: 7
       - name: Build
         run: npm run build
+      - name: Dependency layer-rule check
+        if: matrix.node-version == '22'
+        run: npx depcruise src --config .dependency-cruiser.cjs --output-type err
+        continue-on-error: true
 
   ai-tone:
     runs-on: ubuntu-latest
