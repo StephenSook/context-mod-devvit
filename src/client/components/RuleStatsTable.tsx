@@ -103,7 +103,8 @@ function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
               <th
                 className="text-right px-2 py-1.5 font-medium w-[60px] cursor-pointer hover:text-bone-100 transition-colors"
                 onClick={() => clickHeader('count')}
-                role="button"
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && clickHeader('count')}
+                tabIndex={0}
                 aria-sort={sortKey === 'count' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
               >
                 fired{arrow('count')}
@@ -111,7 +112,8 @@ function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
               <th
                 className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell cursor-pointer hover:text-bone-100 transition-colors"
                 onClick={() => clickHeader('successCount')}
-                role="button"
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && clickHeader('successCount')}
+                tabIndex={0}
                 aria-sort={sortKey === 'successCount' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
               >
                 ok{arrow('successCount')}
@@ -119,7 +121,8 @@ function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
               <th
                 className="text-right px-2 py-1.5 font-medium w-[50px] hidden sm:table-cell cursor-pointer hover:text-bone-100 transition-colors"
                 onClick={() => clickHeader('failedCount')}
-                role="button"
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && clickHeader('failedCount')}
+                tabIndex={0}
                 aria-sort={sortKey === 'failedCount' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
               >
                 err{arrow('failedCount')}
@@ -127,7 +130,8 @@ function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
               <th
                 className="text-right px-2 py-1.5 font-medium w-[60px] hidden sm:table-cell cursor-pointer hover:text-bone-100 transition-colors"
                 onClick={() => clickHeader('dryRunCount')}
-                role="button"
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && clickHeader('dryRunCount')}
+                tabIndex={0}
                 aria-sort={sortKey === 'dryRunCount' ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
               >
                 dry-run{arrow('dryRunCount')}
