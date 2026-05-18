@@ -6,7 +6,84 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.5.3): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.5.4): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.5.4] — 2026-05-18
+
+Wave AD-review — Stephen requested a deep-dive review of the v0.5.3
+ship. Dispatched `pr-review-toolkit:code-reviewer` +
+`pr-review-toolkit:silent-failure-hunter` agents in parallel; both
+surfaced real regressions in the AD Tier-1 #3 + Phase 4 work that the
+local triple-gate didn't catch.
+
+### Fixed — CRITICAL (security / correctness)
+
+- **isTransientOpenaiError `'5'` substring bug** — `lower.includes('5')`
+  matched any error string containing the digit 5. Real exposure:
+  `'Paste a rule JSON5 in the form field, then submit.'` (the
+  /explain-rule-submit empty-input error) was being classified as a
+  transient OpenAI outage → recordFailure → breaker opened on a typo,
+  punishing the entire install. Tightened to a word-boundary 5xx regex
+  `(?:^|\D)5\d{2}(?:\D|$)`.
+- **isTransientOpenaiError `'timed out'` vs `'timeout'`** —
+  classifier checked `lower.includes('timeout')` (one word) but
+  `explainEvent.ts:151` emits `'OpenAI request timed out after 30s. Retry.'`
+  (two words). Real OpenAI 30s timeouts were NOT tripping the breaker,
+  defeating the entire X37/X43 + AD Tier-1 #3 fix. Added `'timed out'`
+  alongside `'timeout'`.
+- **apiKey resolve outside try in /explain-event + /explain-rule-submit** —
+  `getOpenaiKey` + `settings.get` were called BEFORE the try wrapping
+  the OpenAI call. A Redis blip or settings throw 500'd the route
+  with NO `log.error`, NO breaker classification, NO json response.
+  Wrapped in their own try → 503 + structured log on failure. Does
+  NOT trip the breaker (Redis/settings being down isn't an OpenAI
+  outage).
+
+### Fixed — HIGH
+
+- **simulate-rule-submit toast contradiction** — when every sample
+  failed to normalize, `formatSimulationToast` returned
+  "No recent posts to simulate against." while the AD Tier-1 #2
+  suffix said "(N/N skipped — normalize error)". Now returns a
+  dedicated "Simulation aborted: every sample failed to normalize
+  (first: ...)" toast with the first error excerpt.
+- **simulate-rule-submit skip-counter loses error message** — the
+  per-post catch only logged + counted, the toast just said
+  "normalize error" with no actionable info. Now captures
+  `firstSkipError` and appends "(N/M skipped — first: <60 chars>)"
+  so the mod sees a real cause.
+
+### Fixed — LOW
+
+- **isTransientOpenaiError extracted to `src/lib/openaiErrors.ts`** —
+  was duplicated byte-for-byte in `api.ts` + `forms.ts` w/ a
+  "keep in sync" mirror comment. Both copies had the same two
+  CRITICAL bugs above; the mirror approach already drifted (one
+  copy had an inline `// 5xx HTTP` comment, the other didn't).
+  Eliminates the drift class entirely.
+- **triggers.ts `recordEvent` unwrapped in config-read-fail recovery** —
+  the catch blocks exist to prevent a Redis blip from 500-ing the
+  trigger handler (Devvit retry storm). But the recovery path called
+  `recordEvent` (which writes Redis). If the same blip was ongoing,
+  the recovery 500'd anyway. Wrapped each recordEvent in its own try.
+
+### Added — test gap close
+
+- **`tests/lib/openaiErrors.test.ts`** (NEW, 11 tests) — pins both
+  CRITICAL behaviours + user-config exclusions so a future "small
+  tweak" can't re-introduce the substring or word-mismatch bugs.
+- **`tests/routes/api-auth.test.ts`** — added explicit wire-shape
+  assertion `body === {ok:true, explanation: 'why'}` so the
+  internal-Result-to-wire-envelope mapping at api.ts:259 is now
+  test-pinned (previously only spy call counts were asserted).
+- **`tests/core/explain-event.test.ts`** — `validateEventSummary`
+  "accepts a well-formed event" now asserts `r.value === baseEvent`
+  so a regression returning `{ok:true}` w/o the success field can't
+  pass.
+
+### Tests
+
+505 → 516 passing (+11 classifier tests).
 
 ## [0.5.3] — 2026-05-18
 
