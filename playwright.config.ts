@@ -25,6 +25,16 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Y2-X73: multi-browser matrix. Firefox + WebKit run only in CI
+    // (`PW_FULL_MATRIX=1`) to keep local dev fast — chromium covers most
+    // breakage; firefox + webkit are pre-submit confidence + cross-engine
+    // regression guard.
+    ...(process.env.PW_FULL_MATRIX
+      ? [
+          { name: 'firefox' as const, use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit' as const, use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
   webServer: {
     command: 'npm run dev:web',
