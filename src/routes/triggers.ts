@@ -37,6 +37,7 @@ import { runMigrations, SCHEMA_VERSION } from '../state/migrations';
 import { K } from '../state/keys';
 import { recordEvent } from '../state/recentEvents';
 import type { AppConfig } from '../shared/types';
+import { log } from '../lib/log';
 
 export const triggers = new Hono();
 
@@ -76,32 +77,33 @@ async function stashInstallPointer(subName: string): Promise<void> {
 triggers.post('/app-install', async (c) => {
   const input = await c.req.json<AppInstallPayload>();
   const subName = input.subreddit?.name;
-  console.log(`[cm/app-install] sub=${subName}`);
+  log.info('cm/app-install', 'fired', { sub: subName });
 
   if (subName) {
     await stashInstallPointer(subName);
   }
 
   if (!subName) {
-    console.warn('[cm/app-install] subreddit.name missing — skipping default-config seed');
+    log.warn('cm/app-install', 'subreddit.name missing — skipping default-config seed');
     return c.json({ status: 'ok' });
   }
 
   const existing = await redis.get(K.cfgCurrentRev(subName));
   if (existing) {
-    console.log(
-      `[cm/app-install] sub=${subName} already has cfg:current_rev=${existing} — skip seed`
-    );
+    log.info('cm/app-install', 'already has cfg:current_rev — skip seed', {
+      sub: subName,
+      rev: existing,
+    });
     return c.json({ status: 'ok' });
   }
 
   const parsed = parseConfig(DEFAULT_CONFIG_JSON5);
   if (!parsed.ok) {
-    console.error('[cm/app-install] default config failed to parse:', parsed.errors);
+    log.error('cm/app-install', 'default config failed to parse', { errors: parsed.errors });
     return c.json({ status: 'ok' });
   }
   const rev = await configStore.publish(parsed.config, subName);
-  console.log(`[cm/app-install] seeded default config rev=${rev} for sub=${subName}`);
+  log.info('cm/app-install', 'seeded default config', { rev, sub: subName });
   return c.json({ status: 'ok' });
 });
 
@@ -120,15 +122,15 @@ triggers.post('/app-upgrade', async (c) => {
   const subName = input.subreddit?.name;
   if (subName) {
     await stashInstallPointer(subName);
-    console.log(`[cm/app-upgrade] backfilled install pointer for sub=${subName}`);
+    log.info('cm/app-upgrade', 'backfilled install pointer', { sub: subName });
   }
 
   const stored = (await redis.get(K.schemaVersion())) ?? '0';
   if (stored === SCHEMA_VERSION) {
-    console.log(`[cm/app-upgrade] schema version up-to-date (${stored})`);
+    log.info('cm/app-upgrade', 'schema version up-to-date', { stored });
     return c.json({ status: 'ok' });
   }
-  console.log(`[cm/app-upgrade] migrating ${stored} → ${SCHEMA_VERSION}`);
+  log.info('cm/app-upgrade', 'migrating', { from: stored, to: SCHEMA_VERSION });
   await runMigrations(stored, SCHEMA_VERSION);
   await redis.set(K.schemaVersion(), SCHEMA_VERSION);
   return c.json({ status: 'ok' });
@@ -138,12 +140,12 @@ triggers.post('/post-submit', async (c) => {
   const input = await c.req.json<PostSubmitPayload>();
   const post = input.post;
   if (!post?.id) {
-    console.log('[cm/post-submit] null-safety bail (no post.id)');
+    log.info('cm/post-submit', 'null-safety bail (no post.id)');
     return c.json({ status: 'ok' });
   }
   const authorName = input.author?.name;
   if (!authorName) {
-    console.warn('[cm/post-submit] author.name missing — recursion guard skipped');
+    log.warn('cm/post-submit', 'author.name missing — recursion guard skipped');
   }
 
   // Recursion guard. getAppUser() returns User | undefined per
@@ -162,7 +164,7 @@ triggers.post('/post-submit', async (c) => {
   try {
     subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
-    console.error('[cm/post-submit] subreddit context unavailable:', err);
+    log.error('cm/post-submit', 'subreddit context unavailable', { err });
     return c.json({ status: 'subreddit-unavailable' });
   }
 
@@ -170,7 +172,9 @@ triggers.post('/post-submit', async (c) => {
   // (potentially expensive) getUserByUsername call when the config needs it.
   const seen = await firstSeen(post.id, subName);
   if (!seen) {
-    console.warn('[cm/post-submit] firstSeen=false (already-seen OR Redis fail-closed):', post.id);
+    log.warn('cm/post-submit', 'firstSeen=false (already-seen OR Redis fail-closed)', {
+      postId: post.id,
+    });
     return c.json({ status: 'skipped-already-seen' });
   }
 
@@ -186,7 +190,7 @@ triggers.post('/post-submit', async (c) => {
     // triggers which could spam). Record an error event so the dashboard
     // turns red + the mod sees their bot has stopped working.
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/post-submit] config read failed — moderation stopped:', err);
+    log.error('cm/post-submit', 'config read failed — moderation stopped', { err });
     await recordEvent(
       {
         ts: Date.now(),
@@ -221,12 +225,12 @@ triggers.post('/comment-submit', async (c) => {
   const input = await c.req.json<CommentSubmitPayload>();
   const comment = input.comment;
   if (!comment?.id) {
-    console.log('[cm/comment-submit] null-safety bail (no comment.id)');
+    log.info('cm/comment-submit', 'null-safety bail (no comment.id)');
     return c.json({ status: 'ok' });
   }
   const authorName = input.author?.name;
   if (!authorName) {
-    console.warn('[cm/comment-submit] author.name missing — recursion guard skipped');
+    log.warn('cm/comment-submit', 'author.name missing — recursion guard skipped');
   }
 
   if (authorName) {
@@ -241,16 +245,15 @@ triggers.post('/comment-submit', async (c) => {
   try {
     subName = input.subreddit?.name ?? (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
-    console.error('[cm/comment-submit] subreddit context unavailable:', err);
+    log.error('cm/comment-submit', 'subreddit context unavailable', { err });
     return c.json({ status: 'subreddit-unavailable' });
   }
 
   const seen = await firstSeen(comment.id, subName);
   if (!seen) {
-    console.warn(
-      '[cm/comment-submit] firstSeen=false (already-seen OR Redis fail-closed):',
-      comment.id
-    );
+    log.warn('cm/comment-submit', 'firstSeen=false (already-seen OR Redis fail-closed)', {
+      commentId: comment.id,
+    });
     return c.json({ status: 'skipped-already-seen' });
   }
 
@@ -260,7 +263,7 @@ triggers.post('/comment-submit', async (c) => {
     current = await configStore.getCurrentRev(subName);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/comment-submit] config read failed — moderation stopped:', err);
+    log.error('cm/comment-submit', 'config read failed — moderation stopped', { err });
     await recordEvent(
       {
         ts: Date.now(),
