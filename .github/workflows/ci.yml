@@ -7,8 +7,15 @@ on:
     branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Per-SHA grouping so rapid main-branch pushes (atomic-commit sessions)
+  # each get their own CI run to completion → every commit shows ✅
+  # instead of intermediate commits showing ❌ "cancelled" when a faster
+  # push superseded them. Public repos get unlimited free Actions
+  # minutes so the extra compute is zero-cost. PRs still get implicit
+  # serialization via the actions/checkout SHA — force-push churn is
+  # accepted as the cost of clean per-commit history on main.
+  group: ci-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   validate:
