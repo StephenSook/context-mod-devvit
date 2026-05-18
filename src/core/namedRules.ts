@@ -27,11 +27,7 @@ export function expandNamedRules(config: AppConfig): AppConfig {
   return out;
 }
 
-function expandRule(
-  rule: Rule,
-  named: Record<string, Rule>,
-  visited: Set<string>
-): Rule {
+function expandRule(rule: Rule, named: Record<string, Rule>, visited: Set<string>): Rule {
   if (rule.kind === 'named') {
     if (visited.has(rule.name)) {
       // Cycle — replace with a "never triggers" empty AND-ruleset.

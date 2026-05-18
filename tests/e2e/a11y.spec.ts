@@ -11,9 +11,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('Observatory dashboard a11y (Z3-X53)', () => {
-  test('dashboard has no critical or serious axe violations', async ({
-    page,
-  }) => {
+  test('dashboard has no critical or serious axe violations', async ({ page }) => {
     await page.goto('/?demo=1');
     await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
     await page.reload();
@@ -35,9 +33,7 @@ test.describe('Observatory dashboard a11y (Z3-X53)', () => {
     await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
     await page.reload();
     await page.locator('button[aria-expanded]').first().click();
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa'])
-      .analyze();
+    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const blocking = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );

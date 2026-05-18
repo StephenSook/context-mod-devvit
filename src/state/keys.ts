@@ -20,10 +20,8 @@ const SUB_DEFAULT = '_';
 export const K = {
   // Idempotency — paired with src/lib/idem.ts (migrated to thread `sub`).
   proc: (id: string, sub: string = SUB_DEFAULT) => `cm:${sub}:proc:${id}`,
-  actionDone: (id: string, sub: string = SUB_DEFAULT) =>
-    `cm:${sub}:action:done:${id}`,
-  actionPending: (id: string, sub: string = SUB_DEFAULT) =>
-    `cm:${sub}:action:pending:${id}`,
+  actionDone: (id: string, sub: string = SUB_DEFAULT) => `cm:${sub}:action:done:${id}`,
+  actionPending: (id: string, sub: string = SUB_DEFAULT) => `cm:${sub}:action:pending:${id}`,
   lock: (task: string, sub: string = SUB_DEFAULT) => `cm:${sub}:lock:${task}`,
 
   // Config — D5 atomic publish via immutable rev + pointer flip.
@@ -43,8 +41,7 @@ export const K = {
   installSubname: (installId: string) => `cm:install:${installId}:subname`,
 
   // Author cache (Phase 4).
-  authorHist: (name: string, sub: string = SUB_DEFAULT) =>
-    `cm:${sub}:author:hist:${name}`,
+  authorHist: (name: string, sub: string = SUB_DEFAULT) => `cm:${sub}:author:hist:${name}`,
 
   // Stats rollup (Phase 4).
   statsRollup: (sub: string = SUB_DEFAULT) => `cm:${sub}:stats:rollup:7d`,

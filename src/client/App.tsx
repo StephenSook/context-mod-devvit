@@ -7,29 +7,16 @@ import { ActionBar } from './components/ActionBar';
 import { ErrorBanner } from './components/ErrorBanner';
 import { RuleCountChips } from './components/RuleCountChips';
 import { EmptyState } from './components/EmptyState';
-import {
-  FilterChips,
-  filterMatches,
-  type EventFilter,
-} from './components/FilterChips';
+import { FilterChips, filterMatches, type EventFilter } from './components/FilterChips';
 import { SkeletonRows } from './components/SkeletonRow';
-import {
-  EventSearchInput,
-  eventMatchesQuery,
-} from './components/EventSearchInput';
+import { EventSearchInput, eventMatchesQuery } from './components/EventSearchInput';
 import { KeyboardOverlay } from './components/KeyboardOverlay';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { OnboardingTour, hasSeenTour } from './components/OnboardingTour';
 import { RuleStatsTable } from './components/RuleStatsTable';
 import { ConfigDiffViewer } from './components/ConfigDiffViewer';
 import { ModActivityFeed } from './components/ModActivityFeed';
-import {
-  fetchRecentSafe,
-  fetchStatsSafe,
-  DEMO_EVENTS,
-  DEMO_STATS,
-  ZERO_STATS,
-} from './lib/api';
+import { fetchRecentSafe, fetchStatsSafe, DEMO_EVENTS, DEMO_STATS, ZERO_STATS } from './lib/api';
 import type { EventRecord, StatsRollup } from './lib/types';
 
 const POLL_MS = 10_000;
@@ -37,8 +24,7 @@ const POLL_MS = 10_000;
 // Demo data is OPT-IN only via ?demo=1 — production never shows fabricated mod
 // actions (per Codex review M6: invented data risks Devvit app review rejection).
 const DEMO_ENABLED =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('demo') === '1';
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
 
 export default function App() {
   const [events, setEvents] = useState<EventRecord[]>([]);
@@ -57,19 +43,12 @@ export default function App() {
   const [initialLoad, setInitialLoad] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [recent, statsData] = await Promise.all([
-      fetchRecentSafe(),
-      fetchStatsSafe(),
-    ]);
+    const [recent, statsData] = await Promise.all([fetchRecentSafe(), fetchStatsSafe()]);
 
     // If EITHER call errored, surface the error and keep the last-good state
     // so the dashboard doesn't lose its display while the API recovers.
     if (!recent.ok || !statsData.ok) {
-      const errMsg = !recent.ok
-        ? recent.error
-        : !statsData.ok
-          ? statsData.error
-          : 'unknown';
+      const errMsg = !recent.ok ? recent.error : !statsData.ok ? statsData.error : 'unknown';
       setApiError(errMsg);
       setRefreshedAt(Date.now());
       return;
@@ -108,15 +87,11 @@ export default function App() {
 
   const subreddit =
     typeof window !== 'undefined'
-      ? (new URLSearchParams(window.location.search).get('subreddit') ??
-        'cm_devvit_test')
+      ? (new URLSearchParams(window.location.search).get('subreddit') ?? 'cm_devvit_test')
       : 'cm_devvit_test';
 
   const visibleEvents = useMemo(
-    () =>
-      events.filter(
-        (e) => filterMatches(e, filter) && eventMatchesQuery(e, searchQuery)
-      ),
+    () => events.filter((e) => filterMatches(e, filter) && eventMatchesQuery(e, searchQuery)),
     [events, filter, searchQuery]
   );
 
@@ -169,16 +144,11 @@ export default function App() {
       <div className="relative z-10 flex flex-col h-full">
         <Header subreddit={subreddit} refreshedAt={refreshedAt} />
 
-        {apiError && (
-          <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
-        )}
+        {apiError && <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />}
 
         {stats && <StatsRow stats={stats} />}
 
-        <div
-          className="cm-fade-up px-5 pt-3.5 pb-1"
-          style={{ animationDelay: '0.35s' }}
-        >
+        <div className="cm-fade-up px-5 pt-3.5 pb-1" style={{ animationDelay: '0.35s' }}>
           <div className="flex items-baseline justify-between mb-1">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
               hourly{' '}
@@ -198,8 +168,7 @@ export default function App() {
               <Sparkline data={stats.hourlyActions24h} />
             ) : (
               <div className="telemetry text-[10px] text-bone-300/60 px-5 pb-2">
-                not enough data yet — the sparkline needs at least 2 hours of
-                activity
+                not enough data yet — the sparkline needs at least 2 hours of activity
               </div>
             ))}
         </div>
@@ -216,19 +185,12 @@ export default function App() {
             </h2>
             <span className="telemetry text-[10px] text-bone-300/70">
               {visibleEvents.length}
-              {visibleEvents.length !== events.length
-                ? ` of ${events.length}`
-                : ''}{' '}
-              events
+              {visibleEvents.length !== events.length ? ` of ${events.length}` : ''} events
             </span>
           </div>
           <RuleCountChips events={events} />
-          {events.length > 0 && (
-            <FilterChips filter={filter} onChange={setFilter} />
-          )}
-          {events.length > 0 && (
-            <EventSearchInput query={searchQuery} onChange={setSearchQuery} />
-          )}
+          {events.length > 0 && <FilterChips filter={filter} onChange={setFilter} />}
+          {events.length > 0 && <EventSearchInput query={searchQuery} onChange={setSearchQuery} />}
 
           <div
             className="flex-1 min-h-0 overflow-y-auto border-t border-line"
@@ -260,11 +222,7 @@ export default function App() {
               </div>
             ) : (
               visibleEvents.map((ev, i) => (
-                <EventRow
-                  key={`${ev.activityId}-${ev.ts}`}
-                  event={ev}
-                  idx={i}
-                />
+                <EventRow key={`${ev.activityId}-${ev.ts}`} event={ev} idx={i} />
               ))
             )}
           </div>
@@ -280,10 +238,7 @@ export default function App() {
         onClose={() => setOverlayOpen(false)}
         shortcuts={shortcuts}
       />
-      <ConfigDiffViewer
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-      />
+      <ConfigDiffViewer open={historyOpen} onClose={() => setHistoryOpen(false)} />
       {tourOpen && <OnboardingTour onDone={() => setTourOpen(false)} />}
     </div>
   );

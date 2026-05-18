@@ -86,11 +86,7 @@ export async function readRecent(sub?: string): Promise<RecentEvent[]> {
       const migrated = migrate(parsed);
       if (migrated) out.push(migrated);
     } catch (err) {
-      console.error(
-        '[cm/recentEvents] member parse/migrate failed (dropped):',
-        entry.member,
-        err
-      );
+      console.error('[cm/recentEvents] member parse/migrate failed (dropped):', entry.member, err);
     }
   }
   return out;
@@ -117,8 +113,6 @@ function migrate(raw: unknown): RecentEvent | null {
         nonce: typeof obj.nonce === 'string' ? obj.nonce : crypto.randomUUID(),
       };
     default:
-      throw new Error(
-        `migrate(): unknown RecentEvent version ${String(obj.v)}`
-      );
+      throw new Error(`migrate(): unknown RecentEvent version ${String(obj.v)}`);
   }
 }

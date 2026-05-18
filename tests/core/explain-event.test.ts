@@ -6,11 +6,7 @@ import {
   type EventSummary,
 } from '../../src/core/explainEvent';
 
-function mockFetcher(response: {
-  ok: boolean;
-  status?: number;
-  body: unknown;
-}) {
+function mockFetcher(response: { ok: boolean; status?: number; body: unknown }) {
   return vi.fn(
     async () =>
       new Response(JSON.stringify(response.body), {
@@ -102,18 +98,13 @@ describe('explainEvent', () => {
   it('sets correct request headers + body shape', async () => {
     const fetcher = vi.fn(
       async () =>
-        new Response(
-          JSON.stringify({ choices: [{ message: { content: 'ok' } }] }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 })
     );
     await explainEvent(baseEvent, 'sk-test', fetcher);
     const call = fetcher.mock.calls[0];
     expect(call?.[0]).toBe('https://api.openai.com/v1/chat/completions');
     const init = call?.[1] as RequestInit;
-    expect((init.headers as Record<string, string>)['Authorization']).toBe(
-      'Bearer sk-test'
-    );
+    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer sk-test');
     const body = JSON.parse(init.body as string);
     expect(body.model).toBe('gpt-4o-mini');
     expect(body.max_tokens).toBe(160);
@@ -156,12 +147,8 @@ describe('buildUserPrompt', () => {
     const prompt = buildUserPrompt(baseEvent);
     expect(prompt).toContain('<<<USER_DATA>>>');
     expect(prompt).toContain('<<</USER_DATA>>>');
-    expect(prompt.indexOf('<<<USER_DATA>>>')).toBeLessThan(
-      prompt.indexOf('spam-removal')
-    );
-    expect(prompt.indexOf('<<</USER_DATA>>>')).toBeGreaterThan(
-      prompt.indexOf('spam-removal')
-    );
+    expect(prompt.indexOf('<<<USER_DATA>>>')).toBeLessThan(prompt.indexOf('spam-removal'));
+    expect(prompt.indexOf('<<</USER_DATA>>>')).toBeGreaterThan(prompt.indexOf('spam-removal'));
   });
 });
 

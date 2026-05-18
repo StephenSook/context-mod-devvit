@@ -82,9 +82,7 @@ function EventRowImpl({ event, idx }: { event: EventRecord; idx: number }) {
             style={{ background: allOk ? SIGNAL.ok : SIGNAL.err }}
             aria-label={allOk ? 'action succeeded' : 'action failed'}
           />
-          {event.actions[0] && (
-            <FirstIcon size={13} strokeWidth={1.6} color={firstColor} />
-          )}
+          {event.actions[0] && <FirstIcon size={13} strokeWidth={1.6} color={firstColor} />}
         </div>
 
         <span className="telemetry text-[11px] text-bone-300 tabular-nums">
@@ -113,9 +111,7 @@ function EventRowImpl({ event, idx }: { event: EventRecord; idx: number }) {
                   background: `${color}14`,
                   border: `1px solid ${color}33`,
                 }}
-                title={
-                  a.status ? `status: ${a.status}` : a.ok ? 'ok' : 'failed'
-                }
+                title={a.status ? `status: ${a.status}` : a.ok ? 'ok' : 'failed'}
               >
                 {a.kind}
                 {marker}

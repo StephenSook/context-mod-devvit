@@ -11,10 +11,7 @@ const releaseAction = vi.fn().mockResolvedValue(undefined);
 const redditRemove = vi.fn();
 
 vi.mock('../../src/lib/idem', async () => {
-  const actual =
-    await vi.importActual<typeof import('../../src/lib/idem')>(
-      '../../src/lib/idem'
-    );
+  const actual = await vi.importActual<typeof import('../../src/lib/idem')>('../../src/lib/idem');
   return {
     ...actual,
     reserveAction: (...a: unknown[]) => reserveAction(...a),
@@ -30,13 +27,7 @@ vi.mock('@devvit/web/server', () => ({
 }));
 
 import { runAction } from '../../src/core/runAction';
-import type {
-  ActionContext,
-  Item,
-  Author,
-  AppConfig,
-  RemoveAction,
-} from '../../src/shared/types';
+import type { ActionContext, Item, Author, AppConfig, RemoveAction } from '../../src/shared/types';
 
 const item: Item = {
   id: 't3_abc',
@@ -119,12 +110,8 @@ describe('runAction — failure path', () => {
   });
 
   it('retry after release succeeds', async () => {
-    reserveAction
-      .mockResolvedValueOnce({ token: 'tk1' })
-      .mockResolvedValueOnce({ token: 'tk2' });
-    redditRemove
-      .mockRejectedValueOnce(new Error('boom'))
-      .mockResolvedValueOnce(undefined);
+    reserveAction.mockResolvedValueOnce({ token: 'tk1' }).mockResolvedValueOnce({ token: 'tk2' });
+    redditRemove.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined);
 
     await runAction(action, ctx); // first attempt fails
     const second = await runAction(action, ctx); // retry

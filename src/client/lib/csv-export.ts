@@ -1,13 +1,6 @@
 import type { EventRecord } from './types';
 
-const CSV_HEADER = [
-  'ts',
-  'activityId',
-  'runName',
-  'checkName',
-  'actions',
-  'allOk',
-] as const;
+const CSV_HEADER = ['ts', 'activityId', 'runName', 'checkName', 'actions', 'allOk'] as const;
 
 // RFC 4180: rows separated by CRLF; UTF-8 BOM helps Excel locale detection.
 const CRLF = '\r\n';

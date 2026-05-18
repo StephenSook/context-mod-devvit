@@ -56,12 +56,7 @@ export async function checkRateLimit(
     // Fail-OPEN on Redis blip — better to let a mod's legit click through
     // than block them. The OpenAI quota itself is the ultimate cap.
     // degraded:true lets the caller decide to apply a soft cap.
-    console.error(
-      '[cm/ratelimit] check failed (fail-open, degraded):',
-      bucket,
-      sub,
-      err
-    );
+    console.error('[cm/ratelimit] check failed (fail-open, degraded):', bucket, sub, err);
     return {
       allowed: true,
       count: 0,

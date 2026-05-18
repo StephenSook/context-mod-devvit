@@ -52,11 +52,7 @@ describe('runAuthorRule', () => {
   });
 
   it('triggers on name match', () => {
-    const res = runAuthorRule(
-      { kind: 'author', filter: { nameIn: ['u'] } },
-      baseItem,
-      baseAuthor
-    );
+    const res = runAuthorRule({ kind: 'author', filter: { nameIn: ['u'] } }, baseItem, baseAuthor);
     expect(res.triggered).toBe(true);
   });
 });

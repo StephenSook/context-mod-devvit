@@ -26,8 +26,7 @@ const STEPS = [
 
 export function hasSeenTour(): boolean {
   // SSR / no-DOM: suppress tour (correct — DOM isn't ready yet).
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined')
-    return true;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return true;
   // In-memory flag honored first so within-session dismiss persists even when
   // localStorage write failed.
   if (inMemorySeen) return true;
@@ -37,9 +36,7 @@ export function hasSeenTour(): boolean {
     // Fail-OPEN on localStorage exception so first-time mods in restricted
     // iframes (Safari/Firefox enhanced tracking) still see the tour. Closing
     // here would silently strip the feature for those browsers.
-    console.warn(
-      '[cm/onboarding] localStorage read blocked, falling back to in-memory flag'
-    );
+    console.warn('[cm/onboarding] localStorage read blocked, falling back to in-memory flag');
     return false;
   }
 }
@@ -48,8 +45,7 @@ export function markTourSeen() {
   // Always set in-memory flag so within-session dismiss persists even when
   // localStorage write fails.
   inMemorySeen = true;
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined')
-    return;
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, '1');
   } catch {
@@ -122,15 +118,10 @@ function OnboardingTour({ onDone }: { onDone: () => void }) {
           </button>
         </div>
 
-        <h2
-          id="cm-tour-title"
-          className="text-[15px] tracking-tight text-bone-50 font-medium mb-2"
-        >
+        <h2 id="cm-tour-title" className="text-[15px] tracking-tight text-bone-50 font-medium mb-2">
           {current.title}
         </h2>
-        <p className="text-[12.5px] text-bone-200 leading-relaxed mb-5">
-          {current.body}
-        </p>
+        <p className="text-[12.5px] text-bone-200 leading-relaxed mb-5">{current.body}</p>
 
         <div className="flex items-center justify-between gap-3">
           <div className="flex gap-1.5" aria-hidden>
@@ -138,11 +129,7 @@ function OnboardingTour({ onDone }: { onDone: () => void }) {
               <span
                 key={i}
                 className={`h-1 w-6 rounded-full transition-colors ${
-                  i === step
-                    ? 'bg-signal-ok'
-                    : i < step
-                      ? 'bg-signal-ok/50'
-                      : 'bg-bone-300/20'
+                  i === step ? 'bg-signal-ok' : i < step ? 'bg-signal-ok/50' : 'bg-bone-300/20'
                 }`}
               />
             ))}

@@ -20,12 +20,7 @@
  */
 
 import type { Action, ActionContext, ActionResult } from '../shared/types';
-import {
-  actionId,
-  reserveAction,
-  commitAction,
-  releaseAction,
-} from '../lib/idem';
+import { actionId, reserveAction, commitAction, releaseAction } from '../lib/idem';
 import { runRemove } from '../actions/remove';
 import { runApprove } from '../actions/approve';
 import { runComment } from '../actions/comment';
@@ -60,10 +55,7 @@ function payloadDigest(a: Action): string {
   }
 }
 
-export async function runAction(
-  action: Action,
-  ctx: ActionContext
-): Promise<ActionResult> {
+export async function runAction(action: Action, ctx: ActionContext): Promise<ActionResult> {
   // Dry-run gate (Phase 2.5). Global config.dryRun is AUTHORITATIVE — per-action
   // can only ELEVATE to dry-run, never demote a globally-safe config to live.
   // OR (not ??) so a per-action dryRun:false cannot override a global dryRun:true.

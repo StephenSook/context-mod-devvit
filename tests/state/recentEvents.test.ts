@@ -41,10 +41,7 @@ describe('recordEvent', () => {
     );
 
     expect(zAdd).toHaveBeenCalledTimes(1);
-    const [key, entry] = zAdd.mock.calls[0] as [
-      string,
-      { score: number; member: string },
-    ];
+    const [key, entry] = zAdd.mock.calls[0] as [string, { score: number; member: string }];
     expect(key).toBe('cm:cm_devvit_test:events:recent50');
     expect(entry.score).toBe(1_000_000);
 
@@ -117,12 +114,10 @@ describe('readRecent', () => {
       },
     ]);
     const out = await readRecent('cm_devvit_test');
-    expect(zRange).toHaveBeenCalledWith(
-      'cm:cm_devvit_test:events:recent50',
-      0,
-      49,
-      { by: 'rank', reverse: true }
-    );
+    expect(zRange).toHaveBeenCalledWith('cm:cm_devvit_test:events:recent50', 0, 49, {
+      by: 'rank',
+      reverse: true,
+    });
     expect(out).toHaveLength(1);
     expect(out[0]?.activityId).toBe('t3_a');
   });

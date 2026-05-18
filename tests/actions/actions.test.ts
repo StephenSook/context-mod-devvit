@@ -36,12 +36,7 @@ import { runLock } from '../../src/actions/lock';
 import { runReport } from '../../src/actions/report';
 import { runBan } from '../../src/actions/ban';
 import { runUserFlair } from '../../src/actions/userFlair';
-import type {
-  ActionContext,
-  Item,
-  Author,
-  AppConfig,
-} from '../../src/shared/types';
+import type { ActionContext, Item, Author, AppConfig } from '../../src/shared/types';
 
 const post: Item = {
   id: 't3_abc',
@@ -118,8 +113,7 @@ describe('runApprove', () => {
 
 describe('runComment', () => {
   it('renders Safe variants in the template', async () => {
-    const tpl =
-      'Hi {{author.nameSafe}}, your post "{{item.titleSafe}}" was flagged.';
+    const tpl = 'Hi {{author.nameSafe}}, your post "{{item.titleSafe}}" was flagged.';
     await runComment({ kind: 'comment', template: tpl }, baseCtx(post));
     expect(submitComment).toHaveBeenCalledTimes(1);
     const arg = submitComment.mock.calls[0]![0] as { id: string; text: string };
@@ -207,10 +201,7 @@ describe('runBan', () => {
 
 describe('runUserFlair', () => {
   it('passes username + subredditName + optional flair fields', async () => {
-    await runUserFlair(
-      { kind: 'userFlair', text: 'verified', cssClass: 'green' },
-      baseCtx(post)
-    );
+    await runUserFlair({ kind: 'userFlair', text: 'verified', cssClass: 'green' }, baseCtx(post));
     expect(setUserFlair).toHaveBeenCalledWith({
       subredditName: 'cm_devvit_test',
       username: 'alice',

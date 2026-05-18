@@ -40,10 +40,7 @@ export interface ConfigSnapshot {
  * publishers in the same millisecond, which only happens if a manual reload
  * lands on the cron tick.
  */
-export async function publish(
-  config: AppConfig,
-  sub?: string
-): Promise<number> {
+export async function publish(config: AppConfig, sub?: string): Promise<number> {
   const counterKey = K.cfgRevCounter(sub);
   const allocated = await redis.incrBy(counterKey, 1);
   const next = allocated - 1;
@@ -66,9 +63,7 @@ export async function publish(
  * Previously, a corrupt rev payload returned null + handleActivity treated
  * it as "no config yet" → all moderation silently stopped.
  */
-export async function getCurrentRev(
-  sub?: string
-): Promise<ConfigSnapshot | null> {
+export async function getCurrentRev(sub?: string): Promise<ConfigSnapshot | null> {
   const ptr = await redis.get(K.cfgCurrentRev(sub));
   if (ptr == null) return null;
   const rev = Number.parseInt(ptr, 10);
@@ -77,9 +72,7 @@ export async function getCurrentRev(
   }
   const payload = await redis.get(K.cfgRev(rev, sub));
   if (payload == null) {
-    throw new Error(
-      `cfg pointer rev=${rev} but payload missing at ${K.cfgRev(rev, sub)}`
-    );
+    throw new Error(`cfg pointer rev=${rev} but payload missing at ${K.cfgRev(rev, sub)}`);
   }
   try {
     const config = JSON.parse(payload) as AppConfig;

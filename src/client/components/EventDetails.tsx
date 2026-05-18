@@ -41,9 +41,7 @@ export function EventDetails({ event }: { event: EventRecord }) {
               <dt className="telemetry text-bone-300/70 uppercase tracking-wider text-[9.5px]">
                 path
               </dt>
-              <dd className="telemetry text-bone-100 text-[10px]">
-                {event.runPath}
-              </dd>
+              <dd className="telemetry text-bone-100 text-[10px]">{event.runPath}</dd>
             </>
           )}
           {event.matchedSubstring && (
@@ -64,18 +62,13 @@ export function EventDetails({ event }: { event: EventRecord }) {
           {event.actions.map((a, i) => {
             const marker = actionMarker(a.status, a.ok);
             return (
-              <li
-                key={`${a.kind}-${i}`}
-                className="flex items-baseline gap-2 text-[11px]"
-              >
+              <li key={`${a.kind}-${i}`} className="flex items-baseline gap-2 text-[11px]">
                 <span className="telemetry text-bone-200 min-w-[64px]">
                   {a.kind}
                   {marker}
                 </span>
                 {a.status && (
-                  <span className="telemetry text-[10px] text-bone-300/80">
-                    {a.status}
-                  </span>
+                  <span className="telemetry text-[10px] text-bone-300/80">{a.status}</span>
                 )}
                 {a.wouldHaveCalled && (
                   <span className="telemetry text-[10px] text-signal-info/80 break-all">
@@ -179,13 +172,7 @@ function AiExplainButton({ event }: { event: EventRecord }) {
   );
 }
 
-function DetailSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function DetailSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <h3 className="telemetry text-[9.5px] uppercase tracking-wider text-bone-300/70 mb-1.5">

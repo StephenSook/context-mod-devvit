@@ -27,12 +27,15 @@ export function EventSearchInput({
   );
 }
 
-export function eventMatchesQuery(event: {
-  activityId: string;
-  runName?: string;
-  checkName?: string;
-  actions: { kind: string }[];
-}, query: string): boolean {
+export function eventMatchesQuery(
+  event: {
+    activityId: string;
+    runName?: string;
+    checkName?: string;
+    actions: { kind: string }[];
+  },
+  query: string
+): boolean {
   if (!query.trim()) return true;
   const q = query.toLowerCase();
   if (event.activityId.toLowerCase().includes(q)) return true;

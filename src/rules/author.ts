@@ -6,10 +6,6 @@ import { passesFilters } from '../core/filters';
  * rule (not just a filter) so the trigger state machine sees author-based
  * decisions in the rule sequence — same predicates, different framing.
  */
-export function runAuthorRule(
-  rule: AuthorRule,
-  item: Item,
-  author: Author
-): RuleResult {
+export function runAuthorRule(rule: AuthorRule, item: Item, author: Author): RuleResult {
   return { triggered: passesFilters({ authorIs: rule.filter }, item, author) };
 }

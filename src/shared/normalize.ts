@@ -88,11 +88,7 @@ const AUTHOR_DEFAULTS: Omit<Author, 'name' | 'id'> = {
   shadowBanned: false,
 };
 
-async function enrichAuthor(
-  name: string,
-  id: string,
-  needsEnrichment: boolean
-): Promise<Author> {
+async function enrichAuthor(name: string, id: string, needsEnrichment: boolean): Promise<Author> {
   if (!needsEnrichment || !name) {
     return { ...AUTHOR_DEFAULTS, name, id };
   }
@@ -106,10 +102,7 @@ async function enrichAuthor(
       name,
       id: id || (user as { id?: string }).id || '',
       age: ageSeconds(
-        (user as { createdAt?: Date | number | string }).createdAt as
-          | number
-          | string
-          | undefined
+        (user as { createdAt?: Date | number | string }).createdAt as number | string | undefined
       ),
       linkKarma: (user as { linkKarma?: number }).linkKarma ?? 0,
       commentKarma: (user as { commentKarma?: number }).commentKarma ?? 0,
@@ -195,9 +188,9 @@ function ruleNeedsAuthorEnrichment(rule: {
     );
   }
   if (rule.kind === 'ruleset' && Array.isArray(rule.rules)) {
-    return (
-      rule.rules as { kind: string; filter?: unknown; rules?: unknown }[]
-    ).some(ruleNeedsAuthorEnrichment);
+    return (rule.rules as { kind: string; filter?: unknown; rules?: unknown }[]).some(
+      ruleNeedsAuthorEnrichment
+    );
   }
   // Phase 4 — HistoryRule reads karma directly off the enriched Author. The
   // other history-based rules (attribution, recentActivity) only need the
@@ -259,11 +252,7 @@ export async function normalizeComment(
   const c = payload.comment ?? {};
   const a = payload.author ?? {};
   const authorName = a.name ?? '';
-  const author = await enrichAuthor(
-    authorName,
-    a.id ?? '',
-    config.needsAuthorEnrichment ?? false
-  );
+  const author = await enrichAuthor(authorName, a.id ?? '', config.needsAuthorEnrichment ?? false);
   const item: Item = {
     ...ITEM_DEFAULTS,
     id: c.id ?? '',

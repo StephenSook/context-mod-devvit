@@ -21,54 +21,39 @@ const baseItem: Item = {
 
 describe('runRegexRule', () => {
   it('matches title by default', () => {
-    expect(
-      runRegexRule({ kind: 'regex', pattern: 'scam', flags: 'i' }, baseItem)
-        .triggered
-    ).toBe(true);
+    expect(runRegexRule({ kind: 'regex', pattern: 'scam', flags: 'i' }, baseItem).triggered).toBe(
+      true
+    );
   });
 
   it('does not match when pattern is absent', () => {
-    expect(
-      runRegexRule({ kind: 'regex', pattern: '^nope$' }, baseItem).triggered
-    ).toBe(false);
+    expect(runRegexRule({ kind: 'regex', pattern: '^nope$' }, baseItem).triggered).toBe(false);
   });
 
   it('targets body when specified', () => {
     expect(
-      runRegexRule({ kind: 'regex', pattern: 'body', target: 'body' }, baseItem)
-        .triggered
+      runRegexRule({ kind: 'regex', pattern: 'body', target: 'body' }, baseItem).triggered
     ).toBe(true);
     expect(
-      runRegexRule(
-        { kind: 'regex', pattern: 'body', target: 'title' },
-        baseItem
-      ).triggered
+      runRegexRule({ kind: 'regex', pattern: 'body', target: 'title' }, baseItem).triggered
     ).toBe(false);
   });
 
   it('targets url when specified', () => {
     expect(
-      runRegexRule(
-        { kind: 'regex', pattern: 'example\\.com', target: 'url' },
-        baseItem
-      ).triggered
+      runRegexRule({ kind: 'regex', pattern: 'example\\.com', target: 'url' }, baseItem).triggered
     ).toBe(true);
   });
 
   it('respects multiline flag', () => {
     const multi: Item = { ...baseItem, title: 'line1\nline2' };
-    expect(
-      runRegexRule({ kind: 'regex', pattern: '^line2', flags: 'm' }, multi)
-        .triggered
-    ).toBe(true);
-    expect(
-      runRegexRule({ kind: 'regex', pattern: '^line2' }, multi).triggered
-    ).toBe(false);
+    expect(runRegexRule({ kind: 'regex', pattern: '^line2', flags: 'm' }, multi).triggered).toBe(
+      true
+    );
+    expect(runRegexRule({ kind: 'regex', pattern: '^line2' }, multi).triggered).toBe(false);
   });
 
   it('treats an invalid regex as non-match (no crash)', () => {
-    expect(
-      runRegexRule({ kind: 'regex', pattern: '([' }, baseItem).triggered
-    ).toBe(false);
+    expect(runRegexRule({ kind: 'regex', pattern: '([' }, baseItem).triggered).toBe(false);
   });
 });

@@ -9,10 +9,7 @@
 
 import { bench, describe } from 'vitest';
 import { fnv1a64, actionId } from '../../src/lib/idem';
-import {
-  computeStats,
-  type StatsRollup,
-} from '../../src/state/statsRollup';
+import { computeStats, type StatsRollup } from '../../src/state/statsRollup';
 import { eventMatchesQuery } from '../../src/client/components/EventSearchInput';
 
 const sampleEvent = {

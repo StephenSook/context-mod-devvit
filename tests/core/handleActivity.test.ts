@@ -24,10 +24,7 @@ vi.mock('../../src/state/recentEvents', () => ({
 }));
 
 vi.mock('../../src/lib/idem', async () => {
-  const actual =
-    await vi.importActual<typeof import('../../src/lib/idem')>(
-      '../../src/lib/idem'
-    );
+  const actual = await vi.importActual<typeof import('../../src/lib/idem')>('../../src/lib/idem');
   return {
     ...actual,
     reserveAction: (...a: unknown[]) => reserveAction(...a),
@@ -119,10 +116,7 @@ describe('handleActivity', () => {
 
     expect(redditRemove).toHaveBeenCalledWith('t3_abc', true);
     expect(recordEvent).toHaveBeenCalledTimes(1);
-    const [event, subPassed] = recordEvent.mock.calls[0] as [
-      Record<string, unknown>,
-      string,
-    ];
+    const [event, subPassed] = recordEvent.mock.calls[0] as [Record<string, unknown>, string];
     expect(subPassed).toBe('cm_devvit_test');
     expect(event.activityId).toBe('t3_abc');
     expect(event.runName).toBe('main');
@@ -138,9 +132,7 @@ describe('handleActivity', () => {
     await handleActivity(item, author, 'sub');
 
     const event = recordEvent.mock.calls[0]![0] as Record<string, unknown>;
-    expect(event.actions).toEqual([
-      { kind: 'remove', ok: false, status: 'error' },
-    ]);
+    expect(event.actions).toEqual([{ kind: 'remove', ok: false, status: 'error' }]);
   });
 
   it('does not record an event when no run triggered', async () => {

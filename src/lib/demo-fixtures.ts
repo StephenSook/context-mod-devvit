@@ -12,14 +12,7 @@
  */
 
 export interface DemoAction {
-  kind:
-    | 'remove'
-    | 'approve'
-    | 'lock'
-    | 'comment'
-    | 'report'
-    | 'ban'
-    | 'userFlair';
+  kind: 'remove' | 'approve' | 'lock' | 'comment' | 'report' | 'ban' | 'userFlair';
   ok: boolean;
 }
 
@@ -44,10 +37,7 @@ export function demoEvents(now: number = Date.now()): DemoEvent[] {
   // Guard against caller passing NaN/Infinity — would propagate to Date and
   // render "Invalid Date" silently. Fall back to Date.now() with a log.
   if (!Number.isFinite(now)) {
-    console.error(
-      '[cm/demo-fixtures] demoEvents called with non-finite now:',
-      now
-    );
+    console.error('[cm/demo-fixtures] demoEvents called with non-finite now:', now);
     now = Date.now();
   }
   return [

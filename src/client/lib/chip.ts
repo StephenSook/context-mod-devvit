@@ -61,10 +61,7 @@ export function chipColorForStatus(
  * - 'skipped-locked' → ' ⊘' (idempotency lock — already done)
  * - undefined        → '✗' if !ok (legacy ZSET back-compat), '' if ok
  */
-export function chipMarkerForStatus(
-  status: ActionStatus | undefined,
-  ok: boolean
-): string {
+export function chipMarkerForStatus(status: ActionStatus | undefined, ok: boolean): string {
   if (status === 'dry-run') return ' ◆';
   if (status === 'error') return ' ✗';
   if (status === 'skipped-locked') return ' ⊘';

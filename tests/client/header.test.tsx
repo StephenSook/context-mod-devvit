@@ -61,9 +61,7 @@ describe('Header component lifecycle (Codex Q4 RTL coverage)', () => {
 
   it('renders without crashing + shows the ago timestamp', () => {
     const t = Date.now();
-    const { container } = render(
-      <Header subreddit="cm_devvit_test" refreshedAt={t} />
-    );
+    const { container } = render(<Header subreddit="cm_devvit_test" refreshedAt={t} />);
     const time = container.querySelector('time');
     expect(time).toBeTruthy();
     expect(time?.textContent ?? '').toMatch(/^\d+[smh] ago$/);
@@ -76,9 +74,7 @@ describe('Header component lifecycle (Codex Q4 RTL coverage)', () => {
     // uses real timers and just confirms the cleanup function fires.
     const clearSpy = vi.spyOn(globalThis, 'clearInterval');
     const before = clearSpy.mock.calls.length;
-    const { unmount } = render(
-      <Header subreddit="cm_devvit_test" refreshedAt={Date.now()} />
-    );
+    const { unmount } = render(<Header subreddit="cm_devvit_test" refreshedAt={Date.now()} />);
     unmount();
     expect(clearSpy.mock.calls.length).toBeGreaterThan(before);
     clearSpy.mockRestore();
@@ -86,18 +82,14 @@ describe('Header component lifecycle (Codex Q4 RTL coverage)', () => {
 
   it('applies cm-refresh-pulse class on refreshedAt prop change', () => {
     const t0 = Date.now();
-    const { rerender, container } = render(
-      <Header subreddit="cm_devvit_test" refreshedAt={t0} />
-    );
+    const { rerender, container } = render(<Header subreddit="cm_devvit_test" refreshedAt={t0} />);
     rerender(<Header subreddit="cm_devvit_test" refreshedAt={t0 + 1000} />);
     const timeEl = container.querySelector('time');
     expect(timeEl?.className).toContain('cm-refresh-pulse');
   });
 
   it('subreddit name renders in header', () => {
-    const { container } = render(
-      <Header subreddit="cm_devvit_test" refreshedAt={Date.now()} />
-    );
+    const { container } = render(<Header subreddit="cm_devvit_test" refreshedAt={Date.now()} />);
     expect(container.textContent).toContain('cm_devvit_test');
   });
 });

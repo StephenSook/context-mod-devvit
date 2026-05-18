@@ -43,10 +43,7 @@ const DEFAULT_AUTHOR: Author = {
   flairText: null,
 };
 
-function sample(
-  item: Partial<Item>,
-  author?: Partial<Author>
-): SimulationSample {
+function sample(item: Partial<Item>, author?: Partial<Author>): SimulationSample {
   return {
     item: { ...DEFAULT_ITEM, ...item },
     author: { ...DEFAULT_AUTHOR, ...author },
@@ -95,11 +92,7 @@ describe('simulateRule', () => {
       .spyOn(runRuleModule, 'runRule')
       .mockRejectedValue(new Error('regex backtrack limit exceeded'));
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
-    const samples = [
-      sample({ id: 't3_a' }),
-      sample({ id: 't3_b' }),
-      sample({ id: 't3_c' }),
-    ];
+    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
     const r = await simulateRule(ruleJson5, samples);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -113,19 +106,13 @@ describe('simulateRule', () => {
 
   it('W5 — partial failures: some samples throw, others succeed', async () => {
     let call = 0;
-    const spy = vi
-      .spyOn(runRuleModule, 'runRule')
-      .mockImplementation(async () => {
-        call++;
-        if (call === 2) throw new Error('flaky regex');
-        return { triggered: true, name: 'r1', kind: 'regex' };
-      });
+    const spy = vi.spyOn(runRuleModule, 'runRule').mockImplementation(async () => {
+      call++;
+      if (call === 2) throw new Error('flaky regex');
+      return { triggered: true, name: 'r1', kind: 'regex' };
+    });
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
-    const samples = [
-      sample({ id: 't3_a' }),
-      sample({ id: 't3_b' }),
-      sample({ id: 't3_c' }),
-    ];
+    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
     const r = await simulateRule(ruleJson5, samples);
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -140,9 +127,7 @@ describe('simulateRule', () => {
 
   it('U1 fix — breakdown includes errored flag per sample', async () => {
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'foo', target: 'title' }`;
-    const r = await simulateRule(ruleJson5, [
-      sample({ id: 't3_x', title: 'foo' }),
-    ]);
+    const r = await simulateRule(ruleJson5, [sample({ id: 't3_x', title: 'foo' })]);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.breakdown[0]?.errored).toBe(false);
@@ -162,12 +147,8 @@ describe('simulateRule', () => {
     if (r.ok) {
       expect(r.totalSamples).toBe(3);
       expect(r.firedCount).toBe(2);
-      expect(r.breakdown.find((b) => b.activityId === 't3_a')?.triggered).toBe(
-        true
-      );
-      expect(r.breakdown.find((b) => b.activityId === 't3_b')?.triggered).toBe(
-        false
-      );
+      expect(r.breakdown.find((b) => b.activityId === 't3_a')?.triggered).toBe(true);
+      expect(r.breakdown.find((b) => b.activityId === 't3_b')?.triggered).toBe(false);
     }
   });
 

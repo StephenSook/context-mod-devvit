@@ -3,9 +3,7 @@ import { ruleKey } from '../../src/state/muteSet';
 
 describe('muteSet.ruleKey', () => {
   it('joins run + check with slash', () => {
-    expect(ruleKey('spam-removal', 'crypto-giveaway')).toBe(
-      'spam-removal/crypto-giveaway'
-    );
+    expect(ruleKey('spam-removal', 'crypto-giveaway')).toBe('spam-removal/crypto-giveaway');
   });
 
   it('handles empty parts (caller responsibility — just composes)', () => {
@@ -13,8 +11,6 @@ describe('muteSet.ruleKey', () => {
   });
 
   it('preserves dashes + underscores', () => {
-    expect(ruleKey('low-karma_unverified', 'check-1')).toBe(
-      'low-karma_unverified/check-1'
-    );
+    expect(ruleKey('low-karma_unverified', 'check-1')).toBe('low-karma_unverified/check-1');
   });
 });

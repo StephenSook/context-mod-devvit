@@ -12,17 +12,13 @@ import { reddit } from '@devvit/web/server';
 import type { BanUserOptions } from '@devvit/reddit';
 import type { BanAction, ActionContext } from '../shared/types';
 
-export async function runBan(
-  action: BanAction,
-  ctx: ActionContext
-): Promise<void> {
+export async function runBan(action: BanAction, ctx: ActionContext): Promise<void> {
   const opts: BanUserOptions = {
     username: ctx.author.name,
     subredditName: ctx.subredditName,
     context: ctx.item.id,
   };
-  if (action.duration != null && action.duration > 0)
-    opts.duration = action.duration;
+  if (action.duration != null && action.duration > 0) opts.duration = action.duration;
   if (action.reason != null) opts.reason = action.reason;
   if (action.note != null) opts.note = action.note;
   if (action.message != null) opts.message = action.message;

@@ -55,9 +55,7 @@ const NON_MOD = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  formatExplainToastMock.mockImplementation(
-    (r: { explanation?: string }) => r?.explanation ?? ''
-  );
+  formatExplainToastMock.mockImplementation((r: { explanation?: string }) => r?.explanation ?? '');
 });
 
 async function postForm(
@@ -108,10 +106,7 @@ describe('POST /set-openai-key-submit (W9)', () => {
       apiKey: 'sk-proj-abcdef1234567890',
     });
     expect(r.showToast).toMatch(/saved/i);
-    expect(setOpenaiKeyMock).toHaveBeenCalledWith(
-      'r_test',
-      'sk-proj-abcdef1234567890'
-    );
+    expect(setOpenaiKeyMock).toHaveBeenCalledWith('r_test', 'sk-proj-abcdef1234567890');
   });
 
   it('accepts nested envelope {values: {apiKey}}', async () => {
@@ -121,10 +116,7 @@ describe('POST /set-openai-key-submit (W9)', () => {
       values: { apiKey: 'sk-proj-abcdef1234567890' },
     });
     expect(r.showToast).toMatch(/saved/i);
-    expect(setOpenaiKeyMock).toHaveBeenCalledWith(
-      'r_test',
-      'sk-proj-abcdef1234567890'
-    );
+    expect(setOpenaiKeyMock).toHaveBeenCalledWith('r_test', 'sk-proj-abcdef1234567890');
   });
 
   it('masks the key in the success toast (first 7 + last 4 only)', async () => {
@@ -162,10 +154,7 @@ describe('POST /explain-rule-submit (W9)', () => {
     getOpenaiKeyMock.mockResolvedValue('sk-redis-key');
     explainRuleMock.mockResolvedValue({ explanation: 'this rule does X' });
     await postForm('/explain-rule-submit', { ruleJson5: '{ kind: "regex" }' });
-    expect(explainRuleMock).toHaveBeenCalledWith(
-      '{ kind: "regex" }',
-      'sk-redis-key'
-    );
+    expect(explainRuleMock).toHaveBeenCalledWith('{ kind: "regex" }', 'sk-redis-key');
 
     vi.clearAllMocks();
     formatExplainToastMock.mockImplementation(

@@ -103,11 +103,7 @@ describe('runRepostRule', () => {
   });
 
   it('honors a custom windowDays', async () => {
-    await runRepostRule(
-      { kind: 'repost', windowDays: 7 },
-      item('https://x.example/a'),
-      'sub1'
-    );
+    await runRepostRule({ kind: 'repost', windowDays: 7 }, item('https://x.example/a'), 'sub1');
     const opts = redisSet.mock.calls[0]![2] as { expiration: Date };
     const sevenDaysMs = 7 * 86_400 * 1000;
     const expected = Date.now() + sevenDaysMs;

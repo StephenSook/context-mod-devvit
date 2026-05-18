@@ -16,9 +16,7 @@ async function fetchModActivity(): Promise<ApiResult<ModActivity[]>> {
     const res = await fetch(`/api/mod-activity${demo ? '?demo=1' : ''}`);
     if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
     const data = await res.json();
-    const activity = Array.isArray(data?.activity)
-      ? (data.activity as ModActivity[])
-      : [];
+    const activity = Array.isArray(data?.activity) ? (data.activity as ModActivity[]) : [];
     if (activity.length === 0) return { ok: true, empty: true };
     return { ok: true, empty: false, data: activity };
   } catch (err) {
@@ -89,11 +87,7 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
             <span className="text-bone-100">u/{a.actor}</span>
             <span className="text-bone-300/70">·</span>
             <span className="telemetry text-bone-200/80">{a.kind}</span>
-            {a.detail && (
-              <span className="telemetry text-bone-300/60 truncate">
-                {a.detail}
-              </span>
-            )}
+            {a.detail && <span className="telemetry text-bone-300/60 truncate">{a.detail}</span>}
           </li>
         ))}
       </ul>

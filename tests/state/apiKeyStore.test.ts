@@ -22,11 +22,7 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
-import {
-  setOpenaiKey,
-  getOpenaiKey,
-  deleteOpenaiKey,
-} from '../../src/state/apiKeyStore';
+import { setOpenaiKey, getOpenaiKey, deleteOpenaiKey } from '../../src/state/apiKeyStore';
 
 beforeEach(() => {
   redisGet.mockReset();
@@ -38,10 +34,7 @@ describe('apiKeyStore (W7)', () => {
   it('setOpenaiKey writes trimmed key at cm:openai-key:{sub}', async () => {
     redisSet.mockResolvedValue('OK');
     await setOpenaiKey('r_test', '  sk-proj-abc123  ');
-    expect(redisSet).toHaveBeenCalledWith(
-      'cm:openai-key:r_test',
-      'sk-proj-abc123'
-    );
+    expect(redisSet).toHaveBeenCalledWith('cm:openai-key:r_test', 'sk-proj-abc123');
   });
 
   it('setOpenaiKey throws on empty sub', async () => {
@@ -50,9 +43,7 @@ describe('apiKeyStore (W7)', () => {
   });
 
   it('setOpenaiKey throws on whitespace-only key', async () => {
-    await expect(setOpenaiKey('r_test', '   ')).rejects.toThrow(
-      /sub \+ apiKey/
-    );
+    await expect(setOpenaiKey('r_test', '   ')).rejects.toThrow(/sub \+ apiKey/);
     expect(redisSet).not.toHaveBeenCalled();
   });
 

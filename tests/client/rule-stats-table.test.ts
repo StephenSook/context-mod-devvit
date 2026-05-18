@@ -67,11 +67,7 @@ describe('aggregateRuleStats', () => {
   });
 
   it('tracks lastFiredTs as max of event timestamps', () => {
-    const stats = aggregateRuleStats([
-      event({ ts: 100 }),
-      event({ ts: 500 }),
-      event({ ts: 200 }),
-    ]);
+    const stats = aggregateRuleStats([event({ ts: 100 }), event({ ts: 500 }), event({ ts: 200 })]);
     expect(stats[0]?.lastFiredTs).toBe(500);
   });
 });

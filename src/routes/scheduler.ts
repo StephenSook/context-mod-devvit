@@ -37,24 +37,18 @@ scheduler.post('/refresh-config', async (c) => {
   try {
     const installId = await redis.get(K.currentInstallId());
     if (!installId) {
-      console.log(
-        '[cm/cron/refresh-config] skipped — no installId pointer (pre-install or wiped)'
-      );
+      console.log('[cm/cron/refresh-config] skipped — no installId pointer (pre-install or wiped)');
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
     const subName = await redis.get(K.installSubname(installId));
     if (!subName) {
-      console.log(
-        `[cm/cron/refresh-config] skipped — no subname for installId=${installId}`
-      );
+      console.log(`[cm/cron/refresh-config] skipped — no subname for installId=${installId}`);
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
 
     const loaded = await loadFromWiki(subName);
     if (!loaded.ok) {
-      console.log(
-        `[cm/cron/refresh-config] skipped sub=${subName}: ${loaded.reason}`
-      );
+      console.log(`[cm/cron/refresh-config] skipped sub=${subName}: ${loaded.reason}`);
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
 
@@ -94,9 +88,7 @@ scheduler.post('/stats-rollup', async (c) => {
     }
     const subName = await redis.get(K.installSubname(installId));
     if (!subName) {
-      console.log(
-        `[cm/cron/stats-rollup] skipped — no subname for installId=${installId}`
-      );
+      console.log(`[cm/cron/stats-rollup] skipped — no subname for installId=${installId}`);
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
     const stats = await writeStatsSnapshot(subName);
@@ -113,8 +105,7 @@ scheduler.post('/image-hash-worker', async (c) => {
   const release = await acquireLock('image-hash-worker');
   if (!release) return c.json<TaskResponse>({ status: 'ignored' }, 200);
   try {
-    const req =
-      await c.req.json<TaskRequest<{ postId?: string; imageUrl?: string }>>();
+    const req = await c.req.json<TaskRequest<{ postId?: string; imageUrl?: string }>>();
     console.log(`[cm/cron/image-hash-worker] post=${req.data?.postId}`);
     // TODO Phase 4 Task 36: fetch image, decode (pure JS), blockhash, store
     //   - Cap: process up to 8 items per invocation

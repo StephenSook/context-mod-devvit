@@ -54,25 +54,19 @@ describe('runHistoryRule', () => {
   it('triggers on commentKarmaLt', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0));
     const rule: HistoryRule = { kind: 'history', commentKarmaLt: 10 };
-    expect(
-      (await runHistoryRule(rule, author({ commentKarma: 5 }))).triggered
-    ).toBe(true);
+    expect((await runHistoryRule(rule, author({ commentKarma: 5 }))).triggered).toBe(true);
   });
 
   it('does not trigger when commentKarma at the boundary', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0));
     const rule: HistoryRule = { kind: 'history', commentKarmaLt: 10 };
-    expect(
-      (await runHistoryRule(rule, author({ commentKarma: 10 }))).triggered
-    ).toBe(false);
+    expect((await runHistoryRule(rule, author({ commentKarma: 10 }))).triggered).toBe(false);
   });
 
   it('triggers on linkKarmaGt', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0));
     const rule: HistoryRule = { kind: 'history', linkKarmaGt: 1_000_000 };
-    expect(
-      (await runHistoryRule(rule, author({ linkKarma: 1_000_001 }))).triggered
-    ).toBe(true);
+    expect((await runHistoryRule(rule, author({ linkKarma: 1_000_001 }))).triggered).toBe(true);
   });
 
   it('triggers on postCountGt against cached posts', async () => {
@@ -95,11 +89,7 @@ describe('runHistoryRule', () => {
 
   it('passes sub through to the cache lookup', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(hist(0, 0));
-    await runHistoryRule(
-      { kind: 'history', commentKarmaLt: 1 },
-      author(),
-      'cm_test_sub'
-    );
+    await runHistoryRule({ kind: 'history', commentKarmaLt: 1 }, author(), 'cm_test_sub');
     expect(getAuthorHistoryMock).toHaveBeenCalledWith('alice', 'cm_test_sub');
   });
 });

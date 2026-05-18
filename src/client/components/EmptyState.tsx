@@ -23,10 +23,7 @@ export function EmptyState({ subreddit }: { subreddit: string }) {
       <p className="text-bone-200 text-[13px]">Nothing has fired yet.</p>
       <p className="text-bone-300/80 text-[11px] font-serif italic leading-relaxed max-w-xs">
         Get started by pasting this into{' '}
-        <span className="not-italic font-sans text-bone-200">
-          r/{subreddit}/wiki/contextmod
-        </span>
-        .
+        <span className="not-italic font-sans text-bone-200">r/{subreddit}/wiki/contextmod</span>.
       </p>
 
       <div className="relative w-full max-w-sm">
@@ -67,8 +64,8 @@ export function EmptyState({ subreddit }: { subreddit: string }) {
         </p>
         <p className="text-bone-300/50 text-[9.5px] tracking-wide">
           Stuck? Mod-menu →{' '}
-          <span className="text-bone-200/80">ContextMod: Test rules on this item</span>{' '}
-          runs a dry-run on any post or comment.
+          <span className="text-bone-200/80">ContextMod: Test rules on this item</span> runs a
+          dry-run on any post or comment.
         </p>
       </div>
     </div>

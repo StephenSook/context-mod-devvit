@@ -51,14 +51,10 @@ describe('actionId fuzz properties (Z2-X22)', () => {
 
   it('order-sensitive — swapping thingId/actionType changes the output', () => {
     fc.assert(
-      fc.property(
-        fc.string({ minLength: 1 }),
-        fc.string({ minLength: 1 }),
-        (a, b) => {
-          fc.pre(a !== b);
-          expect(actionId(a, b, 'p')).not.toBe(actionId(b, a, 'p'));
-        }
-      )
+      fc.property(fc.string({ minLength: 1 }), fc.string({ minLength: 1 }), (a, b) => {
+        fc.pre(a !== b);
+        expect(actionId(a, b, 'p')).not.toBe(actionId(b, a, 'p'));
+      })
     );
   });
 });
@@ -68,10 +64,9 @@ describe('eventMatchesQuery fuzz properties (Z2-X22)', () => {
     activityId: fc.string({ minLength: 1, maxLength: 20 }),
     runName: fc.option(fc.string({ maxLength: 20 }), { nil: undefined }),
     checkName: fc.option(fc.string({ maxLength: 20 }), { nil: undefined }),
-    actions: fc.array(
-      fc.record({ kind: fc.string({ minLength: 1, maxLength: 10 }) }),
-      { maxLength: 5 }
-    ),
+    actions: fc.array(fc.record({ kind: fc.string({ minLength: 1, maxLength: 10 }) }), {
+      maxLength: 5,
+    }),
   });
 
   it('empty + whitespace queries always match', () => {
@@ -93,15 +88,11 @@ describe('eventMatchesQuery fuzz properties (Z2-X22)', () => {
 
   it('query case is ignored', () => {
     fc.assert(
-      fc.property(
-        eventArb,
-        fc.string({ minLength: 1, maxLength: 5 }),
-        (event, q) => {
-          const result = eventMatchesQuery(event, q);
-          expect(eventMatchesQuery(event, q.toUpperCase())).toBe(result);
-          expect(eventMatchesQuery(event, q.toLowerCase())).toBe(result);
-        }
-      )
+      fc.property(eventArb, fc.string({ minLength: 1, maxLength: 5 }), (event, q) => {
+        const result = eventMatchesQuery(event, q);
+        expect(eventMatchesQuery(event, q.toUpperCase())).toBe(result);
+        expect(eventMatchesQuery(event, q.toLowerCase())).toBe(result);
+      })
     );
   });
 });

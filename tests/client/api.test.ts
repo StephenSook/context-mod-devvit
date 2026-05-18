@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-  fetchRecentSafe,
-  fetchStatsSafe,
-  ZERO_STATS,
-} from '../../src/client/lib/api';
+import { fetchRecentSafe, fetchStatsSafe, ZERO_STATS } from '../../src/client/lib/api';
 
 const ORIGINAL_FETCH = global.fetch;
 
@@ -16,11 +12,7 @@ afterEach(() => {
   global.fetch = ORIGINAL_FETCH;
 });
 
-function mockFetch(response: {
-  ok: boolean;
-  status?: number;
-  json?: () => Promise<unknown>;
-}) {
+function mockFetch(response: { ok: boolean; status?: number; json?: () => Promise<unknown> }) {
   global.fetch = vi.fn().mockResolvedValue({
     ok: response.ok,
     status: response.status ?? (response.ok ? 200 : 500),
@@ -53,8 +45,7 @@ describe('fetchRecentSafe', () => {
     // { ok: true, empty: true } and skips the conditional assertion block
     // (Codex Q3 WARN — conditional assertions can silently pass on wrong branch).
     expect(result).toMatchObject({ ok: true, empty: false });
-    if (!result.ok || result.empty)
-      throw new Error('expected non-empty data branch');
+    if (!result.ok || result.empty) throw new Error('expected non-empty data branch');
     expect(result.data).toHaveLength(1);
     expect(result.data[0]?.activityId).toBe('t3_a');
   });
@@ -160,8 +151,7 @@ describe('fetchStatsSafe', () => {
     const result = await fetchStatsSafe();
     // Strict shape assert prevents false-pass (Codex Q3 WARN).
     expect(result).toMatchObject({ ok: true, empty: false });
-    if (!result.ok || result.empty)
-      throw new Error('expected non-empty data branch');
+    if (!result.ok || result.empty) throw new Error('expected non-empty data branch');
     expect(result.data.actionsToday).toBe(5);
     expect(result.data.topRule).toBe('spam-filter');
   });

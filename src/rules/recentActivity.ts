@@ -26,16 +26,12 @@ export async function runRecentActivityRule(
   const targets = new Set(rule.subreddits.map((s) => s.toLowerCase()));
   const hist = await getAuthorHistory(authorName, sub);
 
-  const postCount = hist.posts.filter((p) =>
-    targets.has(p.subredditName.toLowerCase())
-  ).length;
+  const postCount = hist.posts.filter((p) => targets.has(p.subredditName.toLowerCase())).length;
   const commentCount = hist.comments.filter((c) =>
     targets.has(c.subredditName.toLowerCase())
   ).length;
 
-  if (rule.postCountGt != null && postCount > rule.postCountGt)
-    return { triggered: true };
-  if (rule.commentCountGt != null && commentCount > rule.commentCountGt)
-    return { triggered: true };
+  if (rule.postCountGt != null && postCount > rule.postCountGt) return { triggered: true };
+  if (rule.commentCountGt != null && commentCount > rule.commentCountGt) return { triggered: true };
   return { triggered: false };
 }

@@ -13,9 +13,7 @@
 
 export type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
-export type ExplainResult =
-  | { ok: true; explanation: string }
-  | { ok: false; error: string };
+export type ExplainResult = { ok: true; explanation: string } | { ok: false; error: string };
 
 const SYSTEM_PROMPT = `You are an assistant explaining ContextMod moderation rules to non-technical subreddit moderators. Given a JSON5 rule, return a single paragraph (2-3 sentences max) describing in plain English: (1) what trigger condition the rule matches, (2) what kind of post or comment it targets, (3) any caveats a mod should know. Avoid jargon. Avoid AI-tone words like 'powerful' or 'simply'. Do not return code blocks — only the prose explanation.`;
 
@@ -27,8 +25,7 @@ export async function explainRule(
   if (!apiKey || !apiKey.trim()) {
     return {
       ok: false,
-      error:
-        'OpenAI API key is missing. Set it in the app installation settings.',
+      error: 'OpenAI API key is missing. Set it in the app installation settings.',
     };
   }
   if (!ruleJson5 || !ruleJson5.trim()) {
@@ -68,8 +65,7 @@ export async function explainRule(
       try {
         const body = await res.json();
         if (body && typeof body === 'object' && 'error' in body) {
-          const e = (body as { error: { message?: string; code?: string } })
-            .error;
+          const e = (body as { error: { message?: string; code?: string } }).error;
           if (e.message) serverMsg = e.message;
           else if (e.code) serverMsg = e.code;
         }

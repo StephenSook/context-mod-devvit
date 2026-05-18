@@ -58,9 +58,7 @@ export async function unmuteRule(
   }
 }
 
-export async function listMutedRules(
-  sub: string | undefined
-): Promise<string[]> {
+export async function listMutedRules(sub: string | undefined): Promise<string[]> {
   if (!sub) return [];
   try {
     const all = await redis.hGetAll(key(sub));

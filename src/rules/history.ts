@@ -26,18 +26,12 @@ export async function runHistoryRule(
   const postCount = hist.posts.length;
   const commentCount = hist.comments.length;
 
-  if (rule.postCountLt != null && postCount < rule.postCountLt)
-    return { triggered: true };
-  if (rule.postCountGt != null && postCount > rule.postCountGt)
-    return { triggered: true };
-  if (rule.commentCountLt != null && commentCount < rule.commentCountLt)
-    return { triggered: true };
-  if (rule.commentCountGt != null && commentCount > rule.commentCountGt)
-    return { triggered: true };
-  if (rule.linkKarmaLt != null && author.linkKarma < rule.linkKarmaLt)
-    return { triggered: true };
-  if (rule.linkKarmaGt != null && author.linkKarma > rule.linkKarmaGt)
-    return { triggered: true };
+  if (rule.postCountLt != null && postCount < rule.postCountLt) return { triggered: true };
+  if (rule.postCountGt != null && postCount > rule.postCountGt) return { triggered: true };
+  if (rule.commentCountLt != null && commentCount < rule.commentCountLt) return { triggered: true };
+  if (rule.commentCountGt != null && commentCount > rule.commentCountGt) return { triggered: true };
+  if (rule.linkKarmaLt != null && author.linkKarma < rule.linkKarmaLt) return { triggered: true };
+  if (rule.linkKarmaGt != null && author.linkKarma > rule.linkKarmaGt) return { triggered: true };
   if (rule.commentKarmaLt != null && author.commentKarma < rule.commentKarmaLt)
     return { triggered: true };
   if (rule.commentKarmaGt != null && author.commentKarma > rule.commentKarmaGt)

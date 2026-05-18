@@ -3,13 +3,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { useKeyboardShortcuts } from '../../src/client/hooks/useKeyboardShortcuts';
 
-function TestHarness({
-  onR,
-  onQuestion,
-}: {
-  onR: () => void;
-  onQuestion: () => void;
-}) {
+function TestHarness({ onR, onQuestion }: { onR: () => void; onQuestion: () => void }) {
   useKeyboardShortcuts([
     { key: 'r', label: 'reload', handler: onR },
     { key: '?', label: 'help', handler: onQuestion },
@@ -31,9 +25,7 @@ describe('useKeyboardShortcuts', () => {
 
   it('does NOT fire when focus is in an INPUT', () => {
     const onR = vi.fn();
-    const { getByTestId } = render(
-      <TestHarness onR={onR} onQuestion={vi.fn()} />
-    );
+    const { getByTestId } = render(<TestHarness onR={onR} onQuestion={vi.fn()} />);
     const input = getByTestId('text-input');
     input.focus();
     // Simulate keydown w/ target = input
@@ -46,9 +38,7 @@ describe('useKeyboardShortcuts', () => {
   it('does NOT fire when modifier keys held (cmd+R is browser refresh)', () => {
     const onR = vi.fn();
     render(<TestHarness onR={onR} onQuestion={vi.fn()} />);
-    window.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'r', metaKey: true })
-    );
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r', metaKey: true }));
     expect(onR).not.toHaveBeenCalled();
   });
 

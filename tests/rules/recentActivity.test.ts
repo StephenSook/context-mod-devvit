@@ -40,18 +40,7 @@ describe('runRecentActivityRule', () => {
     getAuthorHistoryMock.mockResolvedValueOnce(
       histInSubs(
         [],
-        [
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-          'spam',
-        ]
+        ['spam', 'spam', 'spam', 'spam', 'spam', 'spam', 'spam', 'spam', 'spam', 'spam']
       )
     );
     const rule: RecentActivityRule = {
@@ -75,9 +64,7 @@ describe('runRecentActivityRule', () => {
   });
 
   it('case-insensitive sub name match', async () => {
-    getAuthorHistoryMock.mockResolvedValueOnce(
-      histInSubs([], ['SPAM', 'Spam', 'spam'])
-    );
+    getAuthorHistoryMock.mockResolvedValueOnce(histInSubs([], ['SPAM', 'Spam', 'spam']));
     const rule: RecentActivityRule = {
       kind: 'recentActivity',
       subreddits: ['spam'],
@@ -100,10 +87,7 @@ describe('runRecentActivityRule', () => {
 
   it('ignores activity in non-target subs', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(
-      histInSubs(
-        [],
-        ['askreddit', 'askreddit', 'askreddit', 'askreddit', 'askreddit']
-      )
+      histInSubs([], ['askreddit', 'askreddit', 'askreddit', 'askreddit', 'askreddit'])
     );
     const rule: RecentActivityRule = {
       kind: 'recentActivity',
@@ -114,9 +98,7 @@ describe('runRecentActivityRule', () => {
   });
 
   it('triggers on postCountGt independently of commentCount', async () => {
-    getAuthorHistoryMock.mockResolvedValueOnce(
-      histInSubs(['spam', 'spam', 'spam'], [])
-    );
+    getAuthorHistoryMock.mockResolvedValueOnce(histInSubs(['spam', 'spam', 'spam'], []));
     const rule: RecentActivityRule = {
       kind: 'recentActivity',
       subreddits: ['spam'],

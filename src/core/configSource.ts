@@ -15,11 +15,7 @@
 import { reddit } from '@devvit/web/server';
 import type { AppConfig } from '../shared/types';
 import { parseConfig } from './config';
-import {
-  checkCircuit,
-  recordFailure,
-  recordSuccess,
-} from '../lib/circuitBreaker';
+import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 
 export const WIKI_PAGE = 'botconfig/contextmod';
 
@@ -37,10 +33,7 @@ export type LoadResult =
 // Conservative heuristic: 404-shaped → not-found; everything else → unreachable.
 function isNotFoundError(err: unknown): boolean {
   if (!err) return false;
-  const msg =
-    err instanceof Error
-      ? err.message.toLowerCase()
-      : String(err).toLowerCase();
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
   return (
     msg.includes('not found') ||
     msg.includes('404') ||
@@ -73,9 +66,7 @@ export async function loadFromWiki(subredditName: string): Promise<LoadResult> {
     if (isNotFoundError(err)) {
       // Not-found is the legit pre-install state — does NOT count toward
       // breaker failures (the wiki API is fine, page just doesn't exist).
-      console.warn(
-        `[cm/configSource] wiki page not found: ${subredditName}/${WIKI_PAGE}`
-      );
+      console.warn(`[cm/configSource] wiki page not found: ${subredditName}/${WIKI_PAGE}`);
       return { ok: false, reason: 'not-found', details: err };
     }
     console.error(

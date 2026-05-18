@@ -27,40 +27,29 @@ const DELIMITER_OPEN = '<<<USER_DATA>>>';
 const DELIMITER_CLOSE = '<<</USER_DATA>>>';
 const OPENAI_TIMEOUT_MS = 30_000;
 
-export type ValidationResult =
-  | { ok: true; event: EventSummary }
-  | { ok: false; error: string };
+export type ValidationResult = { ok: true; event: EventSummary } | { ok: false; error: string };
 
 export function validateEventSummary(input: unknown): ValidationResult {
   if (!input || typeof input !== 'object') {
     return { ok: false, error: 'event must be an object' };
   }
   const e = input as Record<string, unknown>;
-  const stringFields = [
-    'runName',
-    'checkName',
-    'matchedRule',
-    'matchedSubstring',
-  ] as const;
+  const stringFields = ['runName', 'checkName', 'matchedRule', 'matchedSubstring'] as const;
   for (const f of stringFields) {
     const v = e[f];
     if (v === undefined) continue;
-    if (typeof v !== 'string')
-      return { ok: false, error: `${f} must be a string` };
-    if (v.length > FIELD_MAX)
-      return { ok: false, error: `${f} exceeds ${FIELD_MAX} chars` };
+    if (typeof v !== 'string') return { ok: false, error: `${f} must be a string` };
+    if (v.length > FIELD_MAX) return { ok: false, error: `${f} exceeds ${FIELD_MAX} chars` };
     if (v.includes(DELIMITER_OPEN) || v.includes(DELIMITER_CLOSE)) {
       return { ok: false, error: `${f} contains reserved delimiter` };
     }
   }
   const actions = e.actions;
-  if (!Array.isArray(actions))
-    return { ok: false, error: 'actions must be an array' };
+  if (!Array.isArray(actions)) return { ok: false, error: 'actions must be an array' };
   if (actions.length > ACTIONS_MAX)
     return { ok: false, error: `actions exceeds ${ACTIONS_MAX} items` };
   for (const a of actions) {
-    if (!a || typeof a !== 'object')
-      return { ok: false, error: 'each action must be an object' };
+    if (!a || typeof a !== 'object') return { ok: false, error: 'each action must be an object' };
     const ao = a as Record<string, unknown>;
     if (typeof ao.kind !== 'string' || ao.kind.length > 50) {
       return { ok: false, error: 'action.kind must be a string ≤50 chars' };
@@ -71,16 +60,12 @@ export function validateEventSummary(input: unknown): ValidationResult {
     if (ao.kind.includes(DELIMITER_OPEN) || ao.kind.includes(DELIMITER_CLOSE)) {
       return { ok: false, error: 'action.kind contains reserved delimiter' };
     }
-    if (typeof ao.ok !== 'boolean')
-      return { ok: false, error: 'action.ok must be boolean' };
+    if (typeof ao.ok !== 'boolean') return { ok: false, error: 'action.ok must be boolean' };
     if (ao.status !== undefined) {
       if (typeof ao.status !== 'string' || ao.status.length > 50) {
         return { ok: false, error: 'action.status must be a string ≤50 chars' };
       }
-      if (
-        ao.status.includes(DELIMITER_OPEN) ||
-        ao.status.includes(DELIMITER_CLOSE)
-      ) {
+      if (ao.status.includes(DELIMITER_OPEN) || ao.status.includes(DELIMITER_CLOSE)) {
         return {
           ok: false,
           error: 'action.status contains reserved delimiter',
@@ -104,8 +89,7 @@ export async function explainEvent(
   if (!apiKey || !apiKey.trim()) {
     return {
       ok: false,
-      error:
-        'OpenAI API key is missing. Set it in the app installation settings.',
+      error: 'OpenAI API key is missing. Set it in the app installation settings.',
     };
   }
 
@@ -136,8 +120,7 @@ export async function explainEvent(
       try {
         const body = await res.json();
         if (body && typeof body === 'object' && 'error' in body) {
-          const e = (body as { error: { message?: string; code?: string } })
-            .error;
+          const e = (body as { error: { message?: string; code?: string } }).error;
           if (e.message) serverMsg = e.message;
           else if (e.code) serverMsg = e.code;
         }
@@ -177,13 +160,9 @@ export function buildUserPrompt(event: EventSummary): string {
   if (event.runName) lines.push(`Run: ${event.runName}`);
   if (event.checkName) lines.push(`Check: ${event.checkName}`);
   if (event.matchedRule) lines.push(`Matched rule: ${event.matchedRule}`);
-  if (event.matchedSubstring)
-    lines.push(`Matched substring: "${event.matchedSubstring}"`);
+  if (event.matchedSubstring) lines.push(`Matched substring: "${event.matchedSubstring}"`);
   const actionsLine = event.actions
-    .map(
-      (a) =>
-        `${a.kind}${a.ok ? '' : ' (failed)'}${a.status ? ` [${a.status}]` : ''}`
-    )
+    .map((a) => `${a.kind}${a.ok ? '' : ' (failed)'}${a.status ? ` [${a.status}]` : ''}`)
     .join(', ');
   if (actionsLine) lines.push(`Actions taken: ${actionsLine}`);
   const body =

@@ -1,11 +1,4 @@
-export type ActionKind =
-  | 'remove'
-  | 'approve'
-  | 'lock'
-  | 'comment'
-  | 'report'
-  | 'ban'
-  | 'userFlair';
+export type ActionKind = 'remove' | 'approve' | 'lock' | 'comment' | 'report' | 'ban' | 'userFlair';
 
 export type EventRecord = {
   ts: number;

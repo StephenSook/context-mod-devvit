@@ -68,9 +68,7 @@ function parseRuleInput(
   const parsed = parseConfig(wrappedJson5);
   if (!parsed.ok) {
     const errStr =
-      typeof parsed.errors === 'string'
-        ? parsed.errors
-        : JSON.stringify(parsed.errors);
+      typeof parsed.errors === 'string' ? parsed.errors : JSON.stringify(parsed.errors);
     return { ok: false, error: `Rule parse failed: ${errStr}` };
   }
   const rule = parsed.config.runs[0]?.checks[0]?.rules[0];
@@ -98,12 +96,7 @@ export async function simulateRule(
     let triggered = false;
     let errored = false;
     try {
-      const result = await runRule(
-        parsed.rule,
-        sample.item,
-        sample.author,
-        sub
-      );
+      const result = await runRule(parsed.rule, sample.item, sample.author, sub);
       triggered = result.triggered;
     } catch (err) {
       // Surface per-sample errors instead of silently marking triggered=false.
@@ -145,8 +138,7 @@ export function formatSimulationToast(result: SimulationResult): string {
     .filter((b) => b.triggered)
     .slice(0, 3)
     .map((b) => b.activityId);
-  const sampleLine =
-    samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
+  const sampleLine = samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
   // Surface errored samples so mod knows the rule crashed rather than just
   // didn't match. Without this, an erroring rule looks safe.
   const errorLine =

@@ -29,9 +29,7 @@ describe('retryWithJitter (X38)', () => {
     const op = vi.fn(async () => {
       throw new Error('persistent');
     });
-    await expect(retryWithJitter(op, { maxAttempts: 3, baseMs: 1 })).rejects.toThrow(
-      'persistent'
-    );
+    await expect(retryWithJitter(op, { maxAttempts: 3, baseMs: 1 })).rejects.toThrow('persistent');
     expect(op).toHaveBeenCalledTimes(3);
   });
 

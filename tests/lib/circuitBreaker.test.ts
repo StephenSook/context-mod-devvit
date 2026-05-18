@@ -30,11 +30,7 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
-import {
-  checkCircuit,
-  recordFailure,
-  recordSuccess,
-} from '../../src/lib/circuitBreaker';
+import { checkCircuit, recordFailure, recordSuccess } from '../../src/lib/circuitBreaker';
 
 beforeEach(() => {
   store.clear();
@@ -54,8 +50,7 @@ describe('circuit breaker (X37)', () => {
   });
 
   it('opens when failures reach threshold', async () => {
-    for (let i = 0; i < 5; i++)
-      await recordFailure('openai', { threshold: 5, openSec: 60 });
+    for (let i = 0; i < 5; i++) await recordFailure('openai', { threshold: 5, openSec: 60 });
     const r = await checkCircuit('openai', { openSec: 60 });
     expect(r.state).toBe('open');
     expect(r.retryInSec).toBeGreaterThan(0);

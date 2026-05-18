@@ -62,9 +62,7 @@ describe('commitAction — done-marker durability + pending-lease safety', () =>
       throw new Error('redis down hard');
     });
 
-    await expect(commitAction('abc', 'tk-test', 'sub1')).rejects.toThrow(
-      /redis down hard/
-    );
+    await expect(commitAction('abc', 'tk-test', 'sub1')).rejects.toThrow(/redis down hard/);
     expect(redisSet).toHaveBeenCalledTimes(3); // attempted retries
     // SAFETY: pending lease must NOT be deleted — otherwise the next retry
     // path would see neither marker and fire the side-effect AGAIN.
@@ -75,9 +73,7 @@ describe('commitAction — done-marker durability + pending-lease safety', () =>
     redisSet.mockResolvedValueOnce('OK');
     redisDel.mockRejectedValueOnce(new Error('del failed'));
 
-    await expect(
-      commitAction('abc', 'tk-test', 'sub1')
-    ).resolves.toBeUndefined();
+    await expect(commitAction('abc', 'tk-test', 'sub1')).resolves.toBeUndefined();
   });
 
   it('Codex C2 — pending del is no-op when token mismatches (successor lease protected)', async () => {

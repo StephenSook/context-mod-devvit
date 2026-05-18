@@ -31,10 +31,7 @@ beforeEach(() => {
 describe('requireModerator', () => {
   it('returns ok:true with sub + username when caller is a mod', async () => {
     getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
-    getModerators.mockResolvedValue([
-      { username: 'mod_alice' },
-      { username: 'mod_bob' },
-    ]);
+    getModerators.mockResolvedValue([{ username: 'mod_alice' }, { username: 'mod_bob' }]);
     const r = await requireModerator();
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -45,10 +42,7 @@ describe('requireModerator', () => {
 
   it('returns 403 when getModerators excludes the caller', async () => {
     getCurrentUser.mockResolvedValue({ username: 'random_user' });
-    getModerators.mockResolvedValue([
-      { username: 'mod_alice' },
-      { username: 'mod_bob' },
-    ]);
+    getModerators.mockResolvedValue([{ username: 'mod_alice' }, { username: 'mod_bob' }]);
     const r = await requireModerator();
     expect(r.ok).toBe(false);
     if (!r.ok) {

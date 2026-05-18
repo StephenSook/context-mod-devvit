@@ -27,10 +27,7 @@ export interface RetryOpts {
  * Retry an async operation with exponential backoff + jitter. Throws the
  * last error if all attempts fail.
  */
-export async function retryWithJitter<T>(
-  op: () => Promise<T>,
-  opts: RetryOpts = {}
-): Promise<T> {
+export async function retryWithJitter<T>(op: () => Promise<T>, opts: RetryOpts = {}): Promise<T> {
   const maxAttempts = opts.maxAttempts ?? 3;
   const baseMs = opts.baseMs ?? 100;
   const jitter = opts.jitter ?? 0.25;

@@ -55,12 +55,7 @@ export function StatsRow({ stats }: { stats: StatsRollup }) {
   const timeFmt = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 px-5 pt-4">
-      <Card
-        label="Actions today"
-        value={String(stats.actionsToday)}
-        accent="bone"
-        delay={0.05}
-      />
+      <Card label="Actions today" value={String(stats.actionsToday)} accent="bone" delay={0.05} />
       <Card label="Mod time saved" value={timeFmt} accent="ok" delay={0.12} />
       <Card
         label="Active rules"

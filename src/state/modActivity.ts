@@ -29,10 +29,7 @@ export interface ModActivity {
 
 const RING_SIZE = 50;
 
-export async function logModActivity(
-  sub: string | undefined,
-  entry: ModActivity
-): Promise<void> {
+export async function logModActivity(sub: string | undefined, entry: ModActivity): Promise<void> {
   if (!sub) return;
   try {
     const key = `cm:mod-activity:${sub}`;
@@ -50,9 +47,7 @@ export async function logModActivity(
   }
 }
 
-export async function readModActivity(
-  sub: string | undefined
-): Promise<ModActivity[]> {
+export async function readModActivity(sub: string | undefined): Promise<ModActivity[]> {
   if (!sub) return [];
   try {
     const key = `cm:mod-activity:${sub}`;

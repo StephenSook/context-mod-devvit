@@ -4,13 +4,7 @@
  * 1.10 (runCheck): if filters fail, the check is skipped entirely.
  */
 
-import type {
-  FilterSpec,
-  AuthorFilter,
-  ItemFilter,
-  Item,
-  Author,
-} from '../shared/types';
+import type { FilterSpec, AuthorFilter, ItemFilter, Item, Author } from '../shared/types';
 
 export function passesFilters(
   filters: FilterSpec | undefined,
@@ -26,28 +20,17 @@ export function passesFilters(
 function passesAuthor(f: AuthorFilter, a: Author): boolean {
   if (f.nameIn && !f.nameIn.includes(a.name)) return false;
   if (f.nameNotIn && f.nameNotIn.includes(a.name)) return false;
-  if (
-    f.flairTextIn &&
-    (a.flairText == null || !f.flairTextIn.includes(a.flairText))
-  )
-    return false;
-  if (
-    f.flairTextNotIn &&
-    a.flairText != null &&
-    f.flairTextNotIn.includes(a.flairText)
-  )
+  if (f.flairTextIn && (a.flairText == null || !f.flairTextIn.includes(a.flairText))) return false;
+  if (f.flairTextNotIn && a.flairText != null && f.flairTextNotIn.includes(a.flairText))
     return false;
   if (f.ageMinSec != null && a.age < f.ageMinSec) return false;
   if (f.ageMaxSec != null && a.age > f.ageMaxSec) return false;
   if (f.linkKarmaMin != null && a.linkKarma < f.linkKarmaMin) return false;
   if (f.linkKarmaMax != null && a.linkKarma > f.linkKarmaMax) return false;
-  if (f.commentKarmaMin != null && a.commentKarma < f.commentKarmaMin)
-    return false;
-  if (f.commentKarmaMax != null && a.commentKarma > f.commentKarmaMax)
-    return false;
+  if (f.commentKarmaMin != null && a.commentKarma < f.commentKarmaMin) return false;
+  if (f.commentKarmaMax != null && a.commentKarma > f.commentKarmaMax) return false;
   if (f.isMod != null && a.isMod !== f.isMod) return false;
-  if (f.isContributor != null && a.isContributor !== f.isContributor)
-    return false;
+  if (f.isContributor != null && a.isContributor !== f.isContributor) return false;
   if (f.verified != null && a.verified !== f.verified) return false;
   if (f.shadowBanned != null && a.shadowBanned !== f.shadowBanned) return false;
   return true;
@@ -77,20 +60,13 @@ function passesItem(f: ItemFilter, i: Item): boolean {
   // src/rules/regex.ts try/catch pattern. Bad pattern → filter-failed = skip.
   // (Parse-time validator + catastrophic-backtracking detection deferred
   // post-hackathon — tracked as MED/LOW Codex findings.)
-  if (f.titleMatches && !safeRegexTest(f.titleMatches, i.title, 'titleMatches'))
-    return false;
-  if (f.bodyMatches && !safeRegexTest(f.bodyMatches, i.body, 'bodyMatches'))
-    return false;
-  if (f.urlMatches && !safeRegexTest(f.urlMatches, i.url, 'urlMatches'))
-    return false;
+  if (f.titleMatches && !safeRegexTest(f.titleMatches, i.title, 'titleMatches')) return false;
+  if (f.bodyMatches && !safeRegexTest(f.bodyMatches, i.body, 'bodyMatches')) return false;
+  if (f.urlMatches && !safeRegexTest(f.urlMatches, i.url, 'urlMatches')) return false;
   return true;
 }
 
-function safeRegexTest(
-  pattern: string,
-  target: string,
-  fieldName: string
-): boolean {
+function safeRegexTest(pattern: string, target: string, fieldName: string): boolean {
   try {
     return new RegExp(pattern).test(target);
   } catch (err) {

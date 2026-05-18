@@ -23,11 +23,7 @@ import { settings, redis } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
-import {
-  checkCircuit,
-  recordFailure,
-  recordSuccess,
-} from '../lib/circuitBreaker';
+import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { log } from '../lib/log';
 import { readStatsSnapshot } from '../state/statsRollup';
 
@@ -35,10 +31,7 @@ export const api = new Hono();
 
 api.get('/recent', async (c) => {
   if (c.req.query('demo') === '1') {
-    log.info(
-      'cm/api/recent',
-      'demo=1 — serving synthetic fixtures (not real ZSET)'
-    );
+    log.info('cm/api/recent', 'demo=1 — serving synthetic fixtures (not real ZSET)');
     return c.json({ events: demoEvents() });
   }
 
@@ -52,10 +45,7 @@ api.get('/recent', async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error('cm/api/recent', 'could not resolve current sub', { err });
-    return c.json(
-      { error: `subreddit context unavailable: ${msg}`, events: [] },
-      503
-    );
+    return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
   }
 
   const events = await readRecent(subName);
@@ -69,10 +59,7 @@ api.get('/recent', async (c) => {
  * without depending on a live install.
  */
 api.get('/config-history', async (c) => {
-  const limit = Math.min(
-    Number.parseInt(c.req.query('limit') ?? '10', 10) || 10,
-    50
-  );
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '10', 10) || 10, 50);
   if (c.req.query('demo') === '1') {
     return c.json({
       revs: [
@@ -82,10 +69,7 @@ api.get('/config-history', async (c) => {
             runs: [
               {
                 name: 'spam-removal',
-                checks: [
-                  { name: 'crypto-giveaway' },
-                  { name: 'low-karma-author' },
-                ],
+                checks: [{ name: 'crypto-giveaway' }, { name: 'low-karma-author' }],
               },
             ],
           },
@@ -93,9 +77,7 @@ api.get('/config-history', async (c) => {
         {
           rev: 2,
           config: {
-            runs: [
-              { name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }] },
-            ],
+            runs: [{ name: 'spam-removal', checks: [{ name: 'crypto-giveaway' }] }],
           },
         },
         {
@@ -214,8 +196,7 @@ api.post('/unmute-rule', async (c) => {
  */
 api.post('/explain-event', async (c) => {
   const body = await c.req.json<{ event?: unknown }>();
-  if (!body?.event)
-    return c.json({ ok: false, error: 'event payload required' }, 400);
+  if (!body?.event) return c.json({ ok: false, error: 'event payload required' }, 400);
   const auth = await requireModerator();
   if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
   // X1: validate BEFORE rate-limit + OpenAI call so a bad payload doesn't
@@ -251,8 +232,7 @@ api.post('/explain-event', async (c) => {
   }
   // X39: resolve apiKey OUTSIDE the try wrapping explainEvent.
   const fromRedis = await getOpenaiKey(auth.sub);
-  const apiKey =
-    fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
+  const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
     const result = await explainEvent(validated.event, apiKey);
     if (!result.ok) {
@@ -304,10 +284,7 @@ function stripServerFields(e: RecentEvent) {
 
 api.get('/stats', async (c) => {
   if (c.req.query('demo') === '1') {
-    log.info(
-      'cm/api/stats',
-      'demo=1 — serving synthetic fixtures (not real rollup)'
-    );
+    log.info('cm/api/stats', 'demo=1 — serving synthetic fixtures (not real rollup)');
     return c.json({ counters: DEMO_STATS });
   }
   // Y1-X7: real counters. Reads cm:stats:snapshot:{sub} (written hourly by
@@ -318,10 +295,7 @@ api.get('/stats', async (c) => {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
     log.error('cm/api/stats', 'subreddit context unavailable', { err });
-    return c.json(
-      { counters: {}, error: 'subreddit context unavailable' },
-      503
-    );
+    return c.json({ counters: {}, error: 'subreddit context unavailable' }, 503);
   }
   const stats = await readStatsSnapshot(subName);
   return c.json({ counters: stats });

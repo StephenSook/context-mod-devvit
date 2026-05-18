@@ -44,18 +44,13 @@ async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
  * Algorithm: classic LCS DP table, then walk back to emit add/del/same tags in
  * the original order. O(n*m) for n+m lines; fine for typical 20-60-line configs.
  */
-export function simpleDiff(
-  a: string,
-  b: string
-): { line: string; tag: 'add' | 'del' | 'same' }[] {
+export function simpleDiff(a: string, b: string): { line: string; tag: 'add' | 'del' | 'same' }[] {
   const aLines = a.split('\n');
   const bLines = b.split('\n');
   const n = aLines.length;
   const m = bLines.length;
   // DP table of LCS lengths
-  const dp: number[][] = Array.from({ length: n + 1 }, () =>
-    new Array<number>(m + 1).fill(0)
-  );
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
       if (aLines[i] === bLines[j]) {
@@ -96,13 +91,7 @@ export function simpleDiff(
 // Z3-X51: function declaration kept named so the existing 7-test suite
 // imports work; a default export below enables React.lazy. ~3KB of diff
 // algorithm + UI out of the initial bundle.
-function ConfigDiffViewer({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+function ConfigDiffViewer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [state, setState] = useState<ApiResult<ConfigRev[]>>({
     ok: true,
     empty: true,
@@ -129,12 +118,8 @@ function ConfigDiffViewer({
         className="cm-fade-up max-w-4xl w-full max-h-[85vh] flex flex-col rounded-xl glass border border-line"
       >
         <header className="flex items-baseline justify-between px-5 py-3 border-b border-line">
-          <h2
-            id="cm-diff-title"
-            className="text-[13px] tracking-tight text-bone-50 font-medium"
-          >
-            Config{' '}
-            <span className="font-serif italic text-bone-200/70">history</span>
+          <h2 id="cm-diff-title" className="text-[13px] tracking-tight text-bone-50 font-medium">
+            Config <span className="font-serif italic text-bone-200/70">history</span>
           </h2>
           <button
             type="button"
@@ -150,8 +135,7 @@ function ConfigDiffViewer({
             <p className="text-[12px] text-signal-err">Error: {state.error}</p>
           ) : state.empty ? (
             <p className="text-[12px] text-bone-300/80">
-              No config history yet. After your first wiki edit + reload,
-              revisions show up here.
+              No config history yet. After your first wiki edit + reload, revisions show up here.
             </p>
           ) : (
             <div className="grid grid-cols-[140px_1fr] gap-4">
@@ -181,11 +165,7 @@ function ConfigDiffViewer({
                 <pre className="telemetry text-[10.5px] leading-relaxed p-3 rounded-sm bg-ink-950 border border-line/60 max-h-[60vh] overflow-auto">
                   {state.data[selectedIdx] && state.data[selectedIdx + 1]
                     ? simpleDiff(
-                        JSON.stringify(
-                          state.data[selectedIdx + 1]!.config,
-                          null,
-                          2
-                        ),
+                        JSON.stringify(state.data[selectedIdx + 1]!.config, null, 2),
                         JSON.stringify(state.data[selectedIdx]!.config, null, 2)
                       ).map((d, i) => (
                         <div
@@ -198,8 +178,7 @@ function ConfigDiffViewer({
                                 : 'text-bone-200/80'
                           }
                         >
-                          {d.tag === 'add' ? '+' : d.tag === 'del' ? '-' : ' '}{' '}
-                          {d.line}
+                          {d.tag === 'add' ? '+' : d.tag === 'del' ? '-' : ' '} {d.line}
                         </div>
                       ))
                     : 'Select two revisions to diff.'}

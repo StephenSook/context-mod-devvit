@@ -16,15 +16,9 @@ import { loadFromWiki, WIKI_PAGE } from '../core/configSource';
 import { K } from '../state/keys';
 import { logModActivity, type ModActivityKind } from '../state/modActivity';
 
-async function logMenuAction(
-  kind: ModActivityKind,
-  detail?: string
-): Promise<void> {
+async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<void> {
   try {
-    const [sub, user] = await Promise.all([
-      reddit.getCurrentSubreddit(),
-      reddit.getCurrentUser(),
-    ]);
+    const [sub, user] = await Promise.all([reddit.getCurrentSubreddit(), reddit.getCurrentUser()]);
     await logModActivity(sub?.name, {
       ts: Date.now(),
       actor: user?.username ?? 'unknown',
@@ -49,10 +43,7 @@ menu.post('/reload-config', async (c) => {
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
-    console.error(
-      '[cm/menu/reload-config] could not resolve current sub:',
-      err
-    );
+    console.error('[cm/menu/reload-config] could not resolve current sub:', err);
     return c.json({
       showToast: 'Could not resolve current subreddit — try again.',
     });
@@ -76,9 +67,7 @@ menu.post('/reload-config', async (c) => {
   try {
     const rev = await configStore.publish(loaded.config, subName);
     await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
-    const ruleCount = loaded.config.runs
-      .flatMap((r) => r.checks)
-      .flatMap((ch) => ch.rules).length;
+    const ruleCount = loaded.config.runs.flatMap((r) => r.checks).flatMap((ch) => ch.rules).length;
     console.log(
       `[cm/menu/reload-config] published rev=${rev} (wiki=${loaded.revisionId}) sub=${subName}`
     );
@@ -120,16 +109,9 @@ menu.post('/recent-actions', async (c) => {
     console.error(`[cm/menu/recent-actions] failed:`, name, msg, err);
 
     let toast = `Could not create dashboard post: ${msg}`;
-    if (
-      msg.toLowerCase().includes('permission') ||
-      msg.toLowerCase().includes('scope')
-    ) {
-      toast =
-        'App is missing the submit-post permission. Reinstall or contact app author.';
-    } else if (
-      msg.toLowerCase().includes('rate') ||
-      msg.toLowerCase().includes('429')
-    ) {
+    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('scope')) {
+      toast = 'App is missing the submit-post permission. Reinstall or contact app author.';
+    } else if (msg.toLowerCase().includes('rate') || msg.toLowerCase().includes('429')) {
       toast = 'Reddit rate-limited us. Try again in 60 seconds.';
     }
     return c.json({ showToast: toast });
@@ -224,8 +206,7 @@ menu.post('/test-rules', async (c) => {
       name: 'testRules',
       form: {
         title: 'ContextMod — Dry-run rules',
-        description:
-          'Evaluate the live rule set against this item. No Reddit actions will fire.',
+        description: 'Evaluate the live rule set against this item. No Reddit actions will fire.',
         fields: [
           {
             type: 'string',

@@ -11,23 +11,17 @@ import { FilterChips } from '../../../src/client/components/FilterChips';
 
 describe('FilterChips snapshot (Y2-X23)', () => {
   it('renders all=active default state', () => {
-    const { container } = render(
-      <FilterChips filter={{ kind: 'all' }} onChange={vi.fn()} />
-    );
+    const { container } = render(<FilterChips filter={{ kind: 'all' }} onChange={vi.fn()} />);
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it('renders kind=remove active', () => {
-    const { container } = render(
-      <FilterChips filter={{ kind: 'remove' }} onChange={vi.fn()} />
-    );
+    const { container } = render(<FilterChips filter={{ kind: 'remove' }} onChange={vi.fn()} />);
     expect(container.firstChild).toMatchSnapshot();
   });
 
   it('renders status=failed active', () => {
-    const { container } = render(
-      <FilterChips filter={{ kind: 'failed' }} onChange={vi.fn()} />
-    );
+    const { container } = render(<FilterChips filter={{ kind: 'failed' }} onChange={vi.fn()} />);
     expect(container.firstChild).toMatchSnapshot();
   });
 });

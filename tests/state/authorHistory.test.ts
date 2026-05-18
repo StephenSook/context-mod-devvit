@@ -74,11 +74,7 @@ describe('getAuthorHistory', () => {
     expect(h.comments).toHaveLength(1);
 
     expect(redisSet).toHaveBeenCalledTimes(1);
-    const [key, value, opts] = redisSet.mock.calls[0] as [
-      string,
-      string,
-      { expiration: Date },
-    ];
+    const [key, value, opts] = redisSet.mock.calls[0] as [string, string, { expiration: Date }];
     expect(key).toBe('cm:sub1:author:hist:alice');
     expect(JSON.parse(value).username).toBe('alice');
     expect(opts.expiration.getTime()).toBeGreaterThan(Date.now());

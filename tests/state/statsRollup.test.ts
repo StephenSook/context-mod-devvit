@@ -21,24 +21,14 @@ vi.mock('../../src/state/recentEvents', () => ({
   readRecent: (...a: unknown[]) => readRecentMock(...a),
 }));
 
-import {
-  computeStats,
-  readStatsSnapshot,
-  writeStatsSnapshot,
-} from '../../src/state/statsRollup';
+import { computeStats, readStatsSnapshot, writeStatsSnapshot } from '../../src/state/statsRollup';
 
 beforeEach(() => {
   store.clear();
   readRecentMock.mockReset();
 });
 
-function event(
-  ts: number,
-  runName: string,
-  checkName: string,
-  kind: string,
-  ok = true
-) {
+function event(ts: number, runName: string, checkName: string, kind: string, ok = true) {
   return {
     v: 1,
     nonce: 'n',
@@ -97,9 +87,7 @@ describe('computeStats (Y1-X7)', () => {
   it('caps topRules at 5', async () => {
     const now = Date.now();
     readRecentMock.mockResolvedValue(
-      Array.from({ length: 10 }, (_, i) =>
-        event(now, 'r', `check${i}`, 'remove')
-      )
+      Array.from({ length: 10 }, (_, i) => event(now, 'r', `check${i}`, 'remove'))
     );
     const stats = await computeStats('r_test');
     expect(stats.topRules.length).toBe(5);

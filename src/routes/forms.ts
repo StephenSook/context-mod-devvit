@@ -24,21 +24,13 @@ import {
   type CommentSubmitPayload,
 } from '../shared/normalize';
 import * as configStore from '../state/configStore';
-import {
-  simulateRule,
-  formatSimulationToast,
-  type SimulationSample,
-} from '../core/simulateRule';
+import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
 import { explainRule, formatExplainToast } from '../core/explainRule';
 import { settings } from '@devvit/web/server';
 import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
-import {
-  checkCircuit,
-  recordFailure,
-  recordSuccess,
-} from '../lib/circuitBreaker';
+import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 
 /**
  * Wave V hotfix — resolve OpenAI API key with fallback chain:
@@ -51,9 +43,7 @@ import {
 async function resolveOpenaiKey(sub: string): Promise<string> {
   const fromRedis = await getOpenaiKey(sub);
   if (fromRedis) return fromRedis;
-  const fromSettings = (
-    (await settings.get<string>('openai_api_key')) ?? ''
-  ).trim();
+  const fromSettings = ((await settings.get<string>('openai_api_key')) ?? '').trim();
   return fromSettings;
 }
 import type { AppConfig } from '../shared/types';
@@ -87,9 +77,7 @@ interface FetchedComment {
   createdAt?: number | Date | string;
 }
 
-function asPayloadTimestamp(
-  t?: number | Date | string
-): number | string | undefined {
+function asPayloadTimestamp(t?: number | Date | string): number | string | undefined {
   if (t == null) return undefined;
   if (typeof t === 'number') return t;
   if (typeof t === 'string') return t;
@@ -105,17 +93,14 @@ forms.post('/test-rules-submit', async (c) => {
   const auth = await requireModerator();
   if (!auth.ok) {
     return c.json({
-      showToast:
-        "Mod-only action. Only this sub's moderators can dry-run ContextMod.",
+      showToast: "Mod-only action. Only this sub's moderators can dry-run ContextMod.",
     });
   }
   const thingId =
     (body as { thingId?: string }).thingId ??
     (body as { values?: { thingId?: string } }).values?.thingId ??
-    (body as { payload?: { values?: { thingId?: string } } }).payload?.values
-      ?.thingId ??
-    (body as { form?: { values?: { thingId?: string } } }).form?.values
-      ?.thingId;
+    (body as { payload?: { values?: { thingId?: string } } }).payload?.values?.thingId ??
+    (body as { form?: { values?: { thingId?: string } } }).form?.values?.thingId;
   console.log(`[cm/forms/test-rules-submit] thingId=${thingId}`);
 
   if (!thingId) {
@@ -159,9 +144,7 @@ forms.post('/test-rules-submit', async (c) => {
       };
       ({ item, author } = await normalizeComment(payload, config));
     } else {
-      const post = (await reddit.getPostById(
-        thingId as `t3_${string}`
-      )) as unknown as FetchedPost;
+      const post = (await reddit.getPostById(thingId as `t3_${string}`)) as unknown as FetchedPost;
       const payload: PostSubmitPayload = {
         post: {
           id: post.id ?? thingId,
@@ -188,8 +171,7 @@ forms.post('/test-rules-submit', async (c) => {
 
     if (!result.configPresent) {
       return c.json({
-        showToast:
-          'No config published yet — run "Reload config from wiki" first, then retry.',
+        showToast: 'No config published yet — run "Reload config from wiki" first, then retry.',
       });
     }
 
@@ -225,8 +207,7 @@ forms.post('/simulate-rule-submit', async (c) => {
   const auth = await requireModerator();
   if (!auth.ok) {
     return c.json({
-      showToast:
-        "Mod-only action. Only this sub's moderators can simulate rules.",
+      showToast: "Mod-only action. Only this sub's moderators can simulate rules.",
     });
   }
   const ruleJson5 =
@@ -290,10 +271,7 @@ forms.post('/simulate-rule-submit', async (c) => {
         samples.push({ item: normalized.item, author: normalized.author });
       } catch (perPostErr) {
         // skip individual normalization failures, keep going
-        console.warn(
-          '[cm/forms/simulate-rule-submit] skipped sample:',
-          perPostErr
-        );
+        console.warn('[cm/forms/simulate-rule-submit] skipped sample:', perPostErr);
       }
     }
 
@@ -405,8 +383,7 @@ forms.post('/set-openai-key-submit', async (c) => {
   const auth = await requireModerator();
   if (!auth.ok) {
     return c.json({
-      showToast:
-        "Mod-only action. Only this sub's moderators can set the OpenAI key.",
+      showToast: "Mod-only action. Only this sub's moderators can set the OpenAI key.",
     });
   }
   const apiKey =
@@ -445,9 +422,7 @@ interface RedditListingLike<T> {
   all?: () => Promise<T[]> | T[];
 }
 
-async function fetchRecentPostsSafe(
-  subredditName: string
-): Promise<RedditPostLike[]> {
+async function fetchRecentPostsSafe(subredditName: string): Promise<RedditPostLike[]> {
   try {
     const redditAny = reddit as unknown as {
       getNewPosts?: (opts: {
@@ -466,10 +441,7 @@ async function fetchRecentPostsSafe(
     const all = typeof listing.all === 'function' ? await listing.all() : [];
     return all.slice(0, SIMULATION_SAMPLE_LIMIT);
   } catch (err) {
-    console.warn(
-      '[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:',
-      err
-    );
+    console.warn('[cm/forms/simulate-rule-submit] fetchRecentPostsSafe failed:', err);
     return [];
   }
 }

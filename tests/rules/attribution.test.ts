@@ -33,13 +33,7 @@ beforeEach(() => {
 describe('runAttributionRule', () => {
   it('triggers when 100% of posts match the domain', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains([
-        'example.com',
-        'example.com',
-        'example.com',
-        'example.com',
-        'example.com',
-      ])
+      histWithDomains(['example.com', 'example.com', 'example.com', 'example.com', 'example.com'])
     );
     const rule: AttributionRule = {
       kind: 'attribution',
@@ -51,13 +45,7 @@ describe('runAttributionRule', () => {
 
   it('does not trigger when below the percent', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains([
-        'example.com',
-        'example.com',
-        'other.com',
-        'other.com',
-        'other.com',
-      ])
+      histWithDomains(['example.com', 'example.com', 'other.com', 'other.com', 'other.com'])
     );
     const rule: AttributionRule = {
       kind: 'attribution',
@@ -87,13 +75,7 @@ describe('runAttributionRule', () => {
 
   it('multiple domains — union match', async () => {
     getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains([
-        'youtube.com',
-        'twitch.tv',
-        'kick.com',
-        'other.com',
-        'other.com',
-      ])
+      histWithDomains(['youtube.com', 'twitch.tv', 'kick.com', 'other.com', 'other.com'])
     );
     const rule: AttributionRule = {
       kind: 'attribution',
@@ -104,9 +86,7 @@ describe('runAttributionRule', () => {
   });
 
   it('respects minPosts — 1/1 = 100% does not trigger under the floor', async () => {
-    getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains(['example.com'])
-    );
+    getAuthorHistoryMock.mockResolvedValueOnce(histWithDomains(['example.com']));
     const rule: AttributionRule = {
       kind: 'attribution',
       domains: ['example.com'],
@@ -116,9 +96,7 @@ describe('runAttributionRule', () => {
   });
 
   it('honors a custom minPosts override', async () => {
-    getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains(['example.com', 'example.com'])
-    );
+    getAuthorHistoryMock.mockResolvedValueOnce(histWithDomains(['example.com', 'example.com']));
     const rule: AttributionRule = {
       kind: 'attribution',
       domains: ['example.com'],
@@ -149,9 +127,7 @@ describe('runAttributionRule', () => {
   });
 
   it('ignores posts with empty domain (unparseable url)', async () => {
-    getAuthorHistoryMock.mockResolvedValueOnce(
-      histWithDomains(['', '', '', '', 'example.com'])
-    );
+    getAuthorHistoryMock.mockResolvedValueOnce(histWithDomains(['', '', '', '', 'example.com']));
     const rule: AttributionRule = {
       kind: 'attribution',
       domains: ['example.com'],

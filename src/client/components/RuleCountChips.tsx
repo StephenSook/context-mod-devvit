@@ -32,9 +32,7 @@ export function RuleCountChips({ events }: { events: EventRecord[] }) {
         </span>
       ))}
       {overflow > 0 && (
-        <span className="telemetry text-[10px] text-bone-300 px-1">
-          +{overflow} more
-        </span>
+        <span className="telemetry text-[10px] text-bone-300 px-1">+{overflow} more</span>
       )}
     </div>
   );

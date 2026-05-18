@@ -37,10 +37,7 @@ export async function handleActivity(
       // X3: distinguish parse-fail / Redis-fail from no-config. recordEvent
       // surfaces as a red row in the dashboard so the mod sees moderation
       // has stopped instead of assuming the bot is idle.
-      console.error(
-        '[cm/handleActivity] config read failed — moderation stopped this event:',
-        err
-      );
+      console.error('[cm/handleActivity] config read failed — moderation stopped this event:', err);
       const msg = err instanceof Error ? err.message : String(err);
       await recordEvent(
         {

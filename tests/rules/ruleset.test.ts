@@ -90,10 +90,7 @@ describe('runRuleSet — nested', () => {
       {
         kind: 'ruleset',
         combinator: 'AND',
-        rules: [
-          { kind: 'ruleset', combinator: 'OR', rules: [ruleMiss, ruleHit] },
-          ruleHit,
-        ],
+        rules: [{ kind: 'ruleset', combinator: 'OR', rules: [ruleMiss, ruleHit] }, ruleHit],
       },
       baseItem,
       baseAuthor

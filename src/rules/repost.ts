@@ -52,11 +52,7 @@ export async function runRepostRule(
   } catch (err) {
     // Fail-OPEN on Redis error — repost is a soft signal, not a safety gate.
     // Bias toward letting posts through rather than mass-flagging during outage.
-    console.error(
-      '[cm/rules/repost] redis err — fail-open (no trigger):',
-      item.id,
-      err
-    );
+    console.error('[cm/rules/repost] redis err — fail-open (no trigger):', item.id, err);
     return { triggered: false };
   }
 }

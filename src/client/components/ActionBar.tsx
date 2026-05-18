@@ -68,9 +68,7 @@ export function ActionBar({
             size={12}
             strokeWidth={1.8}
             className={
-              busy
-                ? 'animate-spin'
-                : 'group-hover:rotate-180 transition-transform duration-500'
+              busy ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'
             }
           />
           <span className="tracking-wide">
@@ -86,9 +84,7 @@ export function ActionBar({
           onClick={handleExport}
           disabled={exportDisabled}
           title={
-            exportDisabled
-              ? 'No events to export yet'
-              : `Download last ${events.length} as CSV`
+            exportDisabled ? 'No events to export yet' : `Download last ${events.length} as CSV`
           }
           className="group inline-flex items-center gap-1.5 text-[11px] text-bone-200 hover:text-bone-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >

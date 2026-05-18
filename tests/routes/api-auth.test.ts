@@ -226,10 +226,7 @@ describe('POST /api/explain-event (W8)', () => {
     explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
     const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(res.status).toBe(200);
-    expect(explainEvent).toHaveBeenCalledWith(
-      { kind: 'remove' },
-      'sk-redis-key'
-    );
+    expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-redis-key');
   });
 
   it('falls back to Devvit setting when Redis returns null', async () => {
@@ -238,10 +235,7 @@ describe('POST /api/explain-event (W8)', () => {
     settingsGet.mockResolvedValue('sk-settings-key');
     explainEvent.mockResolvedValue({ ok: true, explanation: 'because spam' });
     await postJson('/explain-event', { event: { kind: 'remove' } });
-    expect(explainEvent).toHaveBeenCalledWith(
-      { kind: 'remove' },
-      'sk-settings-key'
-    );
+    expect(explainEvent).toHaveBeenCalledWith({ kind: 'remove' }, 'sk-settings-key');
   });
 });
 

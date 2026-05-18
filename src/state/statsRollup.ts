@@ -101,11 +101,7 @@ export async function readStatsSnapshot(sub: string): Promise<StatsRollup> {
       }
     }
   } catch (err) {
-    console.warn(
-      '[cm/statsRollup] snapshot read failed (falling through to compute):',
-      sub,
-      err
-    );
+    console.warn('[cm/statsRollup] snapshot read failed (falling through to compute):', sub, err);
   }
   return computeStats(sub);
 }
