@@ -54,6 +54,22 @@ export async function handleActivity(
 
   for (const run of current.config.runs) {
     const result = await runRun(run, item, author, subredditName);
+    // X47: surface terminated runs (iteration-limit / goto-missing) to the
+    // dashboard so mods see misconfigured postBehavior + circular gotos
+    // without digging through server logs.
+    if (result.terminated) {
+      const detail = result.terminated === 'goto-missing'
+        ? `goto target "${result.missingGotoTarget}" not found in run "${run.name}"`
+        : `iteration limit hit in run "${run.name}" (last check: ${result.lastCheckName})`;
+      await recordEvent({
+        ts: Date.now(),
+        activityId: item.id,
+        runName: run.name,
+        checkName: `(${result.terminated})`,
+        triggered: false,
+        actions: [{ kind: 'config-error', ok: false, status: 'error', wouldHaveCalled: detail }],
+      }, subredditName);
+    }
     if (!result.triggered) continue;
 
     // Codex session-review HIGH 2026-05-16: propagate full ActionResult

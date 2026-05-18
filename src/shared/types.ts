@@ -263,8 +263,10 @@ export interface RunResult {
   triggered: boolean;
   checkName: string;
   actions: Action[];                  // actions to fire when triggered === true
-  terminated?: 'iteration-limit';
+  terminated?: 'iteration-limit' | 'goto-missing';
   lastCheckName?: string;             // populated when terminated set
+  /** X47: target name when terminated === 'goto-missing'. */
+  missingGotoTarget?: string;
 }
 
 export interface ActionResult {

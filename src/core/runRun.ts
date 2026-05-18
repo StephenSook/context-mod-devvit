@@ -47,8 +47,18 @@ export async function runRun(run: Run, item: Item, author: Author, sub?: string)
       if (typeof behavior === 'object' && 'goto' in behavior) {
         const target = indexByName.get(behavior.goto);
         if (target == null) {
+          // X47: surface goto-missing so handleActivity can recordEvent.
+          // Without this, a mod's typo in postBehavior.goto silently
+          // truncates the run with only a console.error visible.
           console.error('[cm/runRun] postBehavior.goto target not found:', behavior.goto, 'in run', run.name);
-          break;
+          return {
+            triggered: collectedActions.length > 0,
+            checkName: firstTriggeredCheckName,
+            actions: collectedActions,
+            terminated: 'goto-missing',
+            lastCheckName,
+            missingGotoTarget: behavior.goto,
+          };
         }
         i = target;
         continue;

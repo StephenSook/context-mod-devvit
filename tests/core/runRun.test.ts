@@ -68,7 +68,7 @@ describe('runRun', () => {
     expect(res.actions.map((a) => a.kind)).toEqual(['remove', 'lock']);
   });
 
-  it('goto to unknown name → bails out, returns collected', async () => {
+  it('X47 — goto to unknown name → returns terminated:goto-missing + target name', async () => {
     const run: Run = {
       name: 'r',
       checks: [
@@ -82,7 +82,9 @@ describe('runRun', () => {
     };
     const res = await runRun(run, baseItem, baseAuthor);
     expect(res.actions).toEqual([removeA]);
-    expect(res.terminated).toBeUndefined();
+    expect(res.terminated).toBe('goto-missing');
+    expect(res.missingGotoTarget).toBe('does-not-exist');
+    expect(res.lastCheckName).toBe('c1');
   });
 
   it('100-iter limit terminates a circular goto', async () => {
