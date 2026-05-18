@@ -6,6 +6,8 @@
 > Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, and Observatory dashboard all ship live in v0.2.0 (Phase 1+2+3 complete 2026-05-16, in Reddit App Directory review). Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-400%20passing-brightgreen.svg)](./tests)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
 [![Hackathon](https://img.shields.io/badge/Reddit-Mod%20Tools%20Hackathon%202026-orange.svg)](https://mod-tools-migration.devpost.com/)
