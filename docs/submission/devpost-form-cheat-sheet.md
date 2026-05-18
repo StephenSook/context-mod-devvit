@@ -163,19 +163,19 @@ Two parallel sources available — pick the mix that tells the strongest story. 
 
 **Recommended upload order (5 slots — judges land on first image):**
 
-1. **`docs/screenshots/dashboard-desktop.png`** — Observatory dashboard hero (Wave F Playwright capture against `?demo=1` synthetic; rich event stream + populated stat cards)
-   - **Caption + alt-text:** *"Observatory dashboard: 4 stat cards (Actions today, Mod time saved, Active rules, Top rule), 24-hour hourly-actions sparkline, recent moderation events with REMOVE / COMMENT / APPROVE / LOCK action chips. Rendered with ?demo=1 synthetic for screenshot capture; production renders live events:recent50 ZSET data."*
+1. **`assets/gallery-live-b-dryrun-repost-expanded.png`** ⭐ NEW SCENARIO B CAPTURE — **MULTI-FEATURE MONEY SHOT** — drill-down expanded view showing dry-run repost rule fire + RULE CONTEXT (run/check names) + ACTIONS (`remove◆  dry-run → remove`) + "✨ Explain with AI" button + RAW EVENT JSON expandable
+   - **Caption + alt-text:** *"Per-event drill-down expanded on a LIVE dry-run repost firing in r/cm_devvit_test. Shows the full rule chain (repost-watch / url-dedupe-30d), would-have-called action (remove), and the 'Explain with AI' button that posts the event context to OpenAI for a plain-English summary. Five user-facing features visible in a single frame — drill-down (S2), status-aware chips (status: dry-run), Wave-S+T mod ergonomics, V7 AI summary integration, raw-JSON debug surface."*
 
-2. **`assets/gallery-live-g-reload-toast.png`** — LIVE mod-menu reload toast `Loaded 3 rules (rev 1).` (cropped 1200×800 from `scenario-g-reload-toast.png`)
-   - **Caption + alt-text:** *"Mod menu action 'ContextMod: Reload config from wiki' firing live on r/cm_devvit_test. Toast confirms 3 rules loaded from the sub's wiki JSON5 config at rev 1, after the loadFromWiki() pipeline parsed + AJV-validated + atomically published the snapshot."*
+2. **`assets/gallery-live-b-dryrun-repost.png`** — LIVE dashboard overview after Scenario B fires (rule stats table + recent actions feed both showing the dry-run event)
+   - **Caption + alt-text:** *"Observatory dashboard after Scenario B dry-run repost capture: RULE STATS table shows repost-watch/url-dedupe-30d fired 1 time (0 ok, 0 err, 1 dry-run), RECENT ACTIONS feed surfaces the matching event with diamond marker. Live render against r/cm_devvit_test after submitting the same URL twice within the 30-day window."*
 
-3. **`assets/gallery-live-f-dryrun-form.png`** — LIVE Step 3.6 dry-run modal `ContextMod — Dry-run rules` w/ Thing ID pre-filled (cropped 1200×800)
+3. **`assets/gallery-live-g-reload-toast.png`** — LIVE mod-menu reload toast `Loaded N rules (rev N).`
+   - **Caption + alt-text:** *"Mod menu action 'ContextMod: Reload config from wiki' firing live on r/cm_devvit_test. Toast confirms rules loaded from the sub's wiki JSON5 config, after the loadFromWiki() pipeline parsed + AJV-validated + atomically published the snapshot."*
+
+4. **`assets/gallery-live-f-dryrun-form.png`** — LIVE Step 3.6 dry-run modal `ContextMod — Dry-run rules` w/ Thing ID pre-filled
    - **Caption + alt-text:** *"Dry-run rule tester modal from the post mod menu. Thing ID pre-filled; submit runs the full rule pipeline against this item with zero Reddit side-effects so mods can validate config before going live."*
 
-4. **`assets/gallery-live-f-dryrun-toast.png`** — LIVE dry-run result toast `No rules triggered. Evaluated 3 run(s) at rev 1.` (cropped 1200×800)
-   - **Caption + alt-text:** *"Dry-run result rendered as a Reddit toast. Pipeline evaluated all 3 rule runs against the selected item, reported zero triggers (Observatory post by mod-bot → authorIs filters short-circuit), all without firing a single mod action."*
-
-5. **`assets/gallery-live-h-dashboard-empty.png`** — LIVE dashboard empty-state capture (cropped 1200×800; supersedes `assets/gallery-modmenu.png` banana mockup)
+5. **`assets/gallery-live-h-dashboard-empty.png`** — LIVE dashboard empty-state capture (first-install UX)
    - **Caption + alt-text:** *"Empty-state Observatory dashboard right after first install on r/cm_devvit_test — before any mod action has fired. Shows the starter-config snippet + copy-to-clipboard button so first-time mods know exactly what JSON5 shape to paste at r/<sub>/wiki/botconfig/contextmod."*
 
 **Plus thumbnail** (separate slot, Step 2): **`assets/thumbnail.png`** already generated via Banana (1200×800, Observatory aesthetic — warm-dark + concentric rings + green accent + "ContextMod · Devvit Web port" overlay).
