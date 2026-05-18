@@ -15,6 +15,7 @@ import { K } from '../state/keys';
 import * as configStore from '../state/configStore';
 import { loadFromWiki } from '../core/configSource';
 import { writeStatsSnapshot } from '../state/statsRollup';
+import { log } from '../lib/log';
 
 export const scheduler = new Hono();
 
@@ -31,40 +32,43 @@ export const scheduler = new Hono();
 scheduler.post('/refresh-config', async (c) => {
   const release = await acquireLock('refresh-config');
   if (!release) {
-    console.log('[cm/cron/refresh-config] skipped — locked');
+    log.info('cm/cron/refresh-config', 'skipped — locked');
     return c.json<TaskResponse>({ status: 'ignored' }, 200);
   }
   try {
     const installId = await redis.get(K.currentInstallId());
     if (!installId) {
-      console.log('[cm/cron/refresh-config] skipped — no installId pointer (pre-install or wiped)');
+      log.info('cm/cron/refresh-config', 'skipped — no installId pointer (pre-install or wiped)');
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
     const subName = await redis.get(K.installSubname(installId));
     if (!subName) {
-      console.log(`[cm/cron/refresh-config] skipped — no subname for installId=${installId}`);
+      log.info('cm/cron/refresh-config', 'skipped — no subname for installId', { installId });
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
 
     const loaded = await loadFromWiki(subName);
     if (!loaded.ok) {
-      console.log(`[cm/cron/refresh-config] skipped sub=${subName}: ${loaded.reason}`);
+      log.info('cm/cron/refresh-config', 'skipped', { sub: subName, reason: loaded.reason });
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
 
     const last = await redis.get(K.cfgLastWikiRev(subName));
     if (last === loaded.revisionId) {
-      console.log(
-        `[cm/cron/refresh-config] no change for sub=${subName} (rev=${loaded.revisionId})`
-      );
+      log.info('cm/cron/refresh-config', 'no change', {
+        sub: subName,
+        rev: loaded.revisionId,
+      });
       return c.json<TaskResponse>({ status: 'success' }, 200);
     }
 
     const rev = await configStore.publish(loaded.config, subName);
     await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
-    console.log(
-      `[cm/cron/refresh-config] published rev=${rev} from wiki revision=${loaded.revisionId} sub=${subName}`
-    );
+    log.info('cm/cron/refresh-config', 'published', {
+      sub: subName,
+      rev,
+      wikiRev: loaded.revisionId,
+    });
   } finally {
     await release();
   }
@@ -83,24 +87,28 @@ scheduler.post('/stats-rollup', async (c) => {
   try {
     const installId = await redis.get(K.currentInstallId());
     if (!installId) {
-      console.log('[cm/cron/stats-rollup] skipped — no installId pointer');
+      log.info('cm/cron/stats-rollup', 'skipped — no installId pointer');
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
     const subName = await redis.get(K.installSubname(installId));
     if (!subName) {
-      console.log(`[cm/cron/stats-rollup] skipped — no subname for installId=${installId}`);
+      log.info('cm/cron/stats-rollup', 'skipped — no subname for installId', { installId });
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
     const { stats, persisted, error } = await writeStatsSnapshot(subName);
     if (!persisted) {
-      console.error(
-        `[cm/cron/stats-rollup] sub=${subName} compute ok but Redis write failed: ${error}`
-      );
+      log.error('cm/cron/stats-rollup', 'compute ok but Redis write failed', {
+        sub: subName,
+        err: error,
+      });
       return c.json<TaskResponse>({ status: 'ignored' }, 200);
     }
-    console.log(
-      `[cm/cron/stats-rollup] sub=${subName} total=${stats.total} today=${stats.today} lastHour=${stats.lastHour}`
-    );
+    log.info('cm/cron/stats-rollup', 'snapshot written', {
+      sub: subName,
+      total: stats.total,
+      today: stats.today,
+      lastHour: stats.lastHour,
+    });
   } finally {
     await release();
   }
@@ -112,7 +120,7 @@ scheduler.post('/image-hash-worker', async (c) => {
   if (!release) return c.json<TaskResponse>({ status: 'ignored' }, 200);
   try {
     const req = await c.req.json<TaskRequest<{ postId?: string; imageUrl?: string }>>();
-    console.log(`[cm/cron/image-hash-worker] post=${req.data?.postId}`);
+    log.info('cm/cron/image-hash-worker', 'received', { postId: req.data?.postId });
     // TODO Phase 4 Task 36: fetch image, decode (pure JS), blockhash, store
     //   - Cap: process up to 8 items per invocation
     //   - Memory: bail if fetch body > 6MB
