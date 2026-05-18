@@ -4,8 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1   | :x:                |
+| 0.3.x   | :white_check_mark: |
+| < 0.3   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -39,6 +39,13 @@ In scope:
 - Per-subreddit isolation bypass (one sub's data leaking to another)
 - HTTP fetch policy bypass / unapproved domain calls
 - Token / API-key disclosure in repo or logs
+- Auth-gate bypass on any `/api/*` mutation or cost-bearing endpoint
+- Prompt injection via user-controlled fields → OpenAI completion exfiltration
+- Rate-limit / circuit-breaker bypass that allows OpenAI quota burn
+- Log spoofing via request body fields landing in `cm:mod-activity:<sub>`
+- Lease-token spoofing in `reserveAction` → action replay
+
+See [`THREAT-MODEL.md`](./THREAT-MODEL.md) for the full STRIDE inventory: 15 cataloged threats, their mitigations, and the residual risks we've acknowledged.
 
 Out of scope (file as bugs, not security):
 - Rate limits applied by Reddit's API
