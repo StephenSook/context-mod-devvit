@@ -69,4 +69,28 @@ describe('loadFromWiki', () => {
     if (out.ok) return;
     expect(out.reason).toBe('parse-failed');
   });
+
+  it('X4 — returns unreachable on non-404 throw (network/auth failure)', async () => {
+    getWikiPage.mockRejectedValueOnce(new Error('ECONNRESET'));
+    const out = await loadFromWiki('my_sub');
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.reason).toBe('unreachable');
+  });
+
+  it('X4 — returns not-found on 404-shaped throw', async () => {
+    getWikiPage.mockRejectedValueOnce(new Error('page does not exist'));
+    const out = await loadFromWiki('my_sub');
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.reason).toBe('not-found');
+  });
+
+  it('X4 — auth/permission errors are unreachable, not not-found', async () => {
+    getWikiPage.mockRejectedValueOnce(new Error('403 forbidden'));
+    const out = await loadFromWiki('my_sub');
+    expect(out.ok).toBe(false);
+    if (out.ok) return;
+    expect(out.reason).toBe('unreachable');
+  });
 });

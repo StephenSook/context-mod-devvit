@@ -47,9 +47,14 @@ menu.post('/reload-config', async (c) => {
 
   const loaded = await loadFromWiki(subName);
   if (!loaded.ok) {
-    const msg = loaded.reason === 'not-found'
-      ? `Wiki page "${WIKI_PAGE}" not found in r/${subName}. Create it first, then retry.`
-      : `Config parse failed — check the wiki page for JSON5/schema errors.`;
+    let msg: string;
+    if (loaded.reason === 'not-found') {
+      msg = `Wiki page "${WIKI_PAGE}" not found in r/${subName}. Create it first, then retry.`;
+    } else if (loaded.reason === 'unreachable') {
+      msg = `Wiki page unreachable (network/auth blip). Retry in ~30s.`;
+    } else {
+      msg = `Config parse failed — check the wiki page for JSON5/schema errors.`;
+    }
     return c.json({ showToast: msg });
   }
 
