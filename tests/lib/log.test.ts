@@ -53,4 +53,31 @@ describe('log (X33)', () => {
   it('does NOT crash on undefined ctx', () => {
     expect(() => log.info('cm/test', 'no ctx')).not.toThrow();
   });
+
+  it('AC — newTraceId returns a UUID v4 string', () => {
+    const id = log.newTraceId();
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+  });
+
+  it('AC — two newTraceId calls return distinct IDs', () => {
+    const a = log.newTraceId();
+    const b = log.newTraceId();
+    expect(a).not.toBe(b);
+  });
+
+  it('AC — error level captures err.stack first 5 lines; info level does not', () => {
+    const err = new Error('boom');
+    err.stack = 'Error: boom\n    at one\n    at two\n    at three\n    at four\n    at five\n    at six';
+    log.error('cm/test', 'oops', { err });
+    const errEmit = JSON.parse(errorSpy.mock.calls[0]?.[0] as string);
+    // Top-5 lines includes the "Error: boom" header line + 4 frames.
+    expect(errEmit.errStack).toContain('at one');
+    expect(errEmit.errStack).toContain('at four');
+    expect(errEmit.errStack).not.toContain('at five');
+    expect(errEmit.errStack).not.toContain('at six');
+
+    log.info('cm/test', 'fyi', { err });
+    const infoEmit = JSON.parse(logSpy.mock.calls[0]?.[0] as string);
+    expect(infoEmit.errStack).toBeUndefined();
+  });
 });

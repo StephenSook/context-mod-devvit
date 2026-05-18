@@ -39,4 +39,30 @@ test.describe('Observatory dashboard a11y (Z3-X53)', () => {
     );
     expect(blocking).toEqual([]);
   });
+
+  test('AC — light-mode toggle preserves WCAG AA contrast (no new violations)', async ({
+    page,
+  }) => {
+    await page.goto('/?demo=1');
+    await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
+    await page.reload();
+    await expect(page.getByText('Actions today').first()).toBeVisible();
+
+    // Toggle to light mode + verify data-theme attribute flips
+    await page.getByRole('button', { name: /Switch to light mode/i }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    // Re-scan after the contrast/background invert — color-contrast is the
+    // exact axe-checkable surface a light-mode regression would break.
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    const blocking = results.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    if (blocking.length > 0) {
+      console.log('light-mode axe violations:', JSON.stringify(blocking, null, 2));
+    }
+    expect(blocking).toEqual([]);
+  });
 });
