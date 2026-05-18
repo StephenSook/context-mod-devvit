@@ -15,6 +15,7 @@ import * as configStore from '../state/configStore';
 import { loadFromWiki, WIKI_PAGE } from '../core/configSource';
 import { K } from '../state/keys';
 import { logModActivity, type ModActivityKind } from '../state/modActivity';
+import { log } from '../lib/log';
 
 async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<void> {
   try {
@@ -28,10 +29,7 @@ async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<vo
   } catch (err) {
     // X48: best-effort — never blocks the menu action — but surface the
     // failure so ops sees activity-log writes are dropping when they are.
-    console.warn('[cm/menu/logMenuAction] best-effort log failed:', {
-      kind,
-      err,
-    });
+    log.warn('cm/menu/logMenuAction', 'best-effort log failed', { kind, err });
   }
 }
 
@@ -43,7 +41,7 @@ menu.post('/reload-config', async (c) => {
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
-    console.error('[cm/menu/reload-config] could not resolve current sub:', err);
+    log.error('cm/menu/reload-config', 'could not resolve current sub', { err });
     return c.json({
       showToast: 'Could not resolve current subreddit — try again.',
     });
@@ -68,14 +66,16 @@ menu.post('/reload-config', async (c) => {
     const rev = await configStore.publish(loaded.config, subName);
     await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
     const ruleCount = loaded.config.runs.flatMap((r) => r.checks).flatMap((ch) => ch.rules).length;
-    console.log(
-      `[cm/menu/reload-config] published rev=${rev} (wiki=${loaded.revisionId}) sub=${subName}`
-    );
+    log.info('cm/menu/reload-config', 'published', {
+      rev,
+      wikiRev: loaded.revisionId,
+      sub: subName,
+    });
     await logMenuAction('reload-config', `${ruleCount} rules @ rev ${rev}`);
     return c.json({ showToast: `Loaded ${ruleCount} rules (rev ${rev}).` });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[cm/menu/reload-config] publish failed:', err);
+    log.error('cm/menu/reload-config', 'publish failed', { err });
     return c.json({ showToast: `Publish failed: ${msg}` });
   }
 });
@@ -83,7 +83,7 @@ menu.post('/reload-config', async (c) => {
 menu.post('/recent-actions', async (c) => {
   try {
     await c.req.json<MenuItemRequest>();
-    console.log(`[cm/menu/recent-actions] creating Observatory post`);
+    log.info('cm/menu/recent-actions', 'creating Observatory post');
     const subreddit = await reddit.getCurrentSubreddit();
     const post = await reddit.submitCustomPost({
       subredditName: subreddit.name,
@@ -95,7 +95,7 @@ menu.post('/recent-actions', async (c) => {
           'Open this post in a Devvit-compatible Reddit client to view the dashboard.',
       },
     });
-    console.log(`[cm/menu/recent-actions] post created ${post.id}`);
+    log.info('cm/menu/recent-actions', 'post created', { postId: post.id });
     await logMenuAction('recent-actions');
     return c.json({
       navigateTo: `https://reddit.com${post.permalink}`,
@@ -105,8 +105,7 @@ menu.post('/recent-actions', async (c) => {
     // Surface real error class to the mod so they have something actionable.
     // Mods cannot read Devvit server logs, so "check logs" is useless to them.
     const msg = err instanceof Error ? err.message : String(err);
-    const name = err instanceof Error ? err.name : 'Error';
-    console.error(`[cm/menu/recent-actions] failed:`, name, msg, err);
+    log.error('cm/menu/recent-actions', 'failed', { err });
 
     let toast = `Could not create dashboard post: ${msg}`;
     if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('scope')) {
@@ -194,7 +193,7 @@ menu.post('/simulate-rule', async (c) => {
 
 menu.post('/test-rules', async (c) => {
   const evt = await c.req.json<MenuItemRequest>();
-  console.log(`[cm/menu/test-rules] targetId=${evt.targetId}`);
+  log.info('cm/menu/test-rules', 'opened', { targetId: evt.targetId });
   if (!evt.targetId) {
     return c.json({
       showToast:
