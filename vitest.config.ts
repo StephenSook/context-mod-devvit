@@ -20,6 +20,16 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.d.ts', 'src/client/main.tsx', 'src/lib/demo-fixtures.ts'],
       reportsDirectory: './coverage',
+      // AA: informational thresholds. ci.yml runs --coverage w/
+      // continue-on-error so a dip doesn't block CI; thresholds give the
+      // report a target to track against. Tuned to current baseline w/ a
+      // small buffer so honest regressions show up + style noise doesn't.
+      thresholds: {
+        statements: 55,
+        branches: 70,
+        functions: 65,
+        lines: 55,
+      },
     },
   },
   // Allow .tsx test files (Header RTL renders use JSX).
