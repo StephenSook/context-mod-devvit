@@ -20,6 +20,9 @@ const readRecent = vi.fn();
 const explainEvent = vi.fn();
 const validateEventSummary = vi.fn();
 const checkRateLimit = vi.fn();
+const checkCircuit = vi.fn();
+const recordFailure = vi.fn();
+const recordSuccess = vi.fn();
 const getOpenaiKey = vi.fn();
 const settingsGet = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
@@ -56,6 +59,11 @@ vi.mock('../../src/state/apiKeyStore', () => ({
 vi.mock('../../src/lib/ratelimit', () => ({
   checkRateLimit: (...a: unknown[]) => checkRateLimit(...a),
 }));
+vi.mock('../../src/lib/circuitBreaker', () => ({
+  checkCircuit: (...a: unknown[]) => checkCircuit(...a),
+  recordFailure: (...a: unknown[]) => recordFailure(...a),
+  recordSuccess: (...a: unknown[]) => recordSuccess(...a),
+}));
 
 import { api } from '../../src/routes/api';
 
@@ -66,6 +74,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   validateEventSummary.mockImplementation((event: unknown) => ({ ok: true, event }));
   checkRateLimit.mockResolvedValue({ allowed: true, count: 1, max: 30, resetInSec: 3600 });
+  checkCircuit.mockResolvedValue({ state: 'closed' });
+  recordFailure.mockResolvedValue(undefined);
+  recordSuccess.mockResolvedValue(undefined);
 });
 
 async function postJson(path: string, body: unknown): Promise<Response> {
@@ -146,6 +157,32 @@ describe('POST /api/explain-event (W8)', () => {
     const res = await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(res.status).toBe(429);
     expect(explainEvent).not.toHaveBeenCalled();
+  });
+
+  it('X37 returns 503 when circuit breaker is open', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    checkCircuit.mockResolvedValueOnce({ state: 'open', retryInSec: 42 });
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(res.status).toBe(503);
+    expect(explainEvent).not.toHaveBeenCalled();
+  });
+
+  it('X37 records success when explainEvent returns ok', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    getOpenaiKey.mockResolvedValue('sk-x');
+    explainEvent.mockResolvedValue({ ok: true, explanation: 'why' });
+    await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(recordSuccess).toHaveBeenCalledWith('openai');
+    expect(recordFailure).not.toHaveBeenCalled();
+  });
+
+  it('X37 records failure when explainEvent returns error', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    getOpenaiKey.mockResolvedValue('sk-x');
+    explainEvent.mockResolvedValue({ ok: false, error: 'OpenAI 500' });
+    await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(recordFailure).toHaveBeenCalledWith('openai');
+    expect(recordSuccess).not.toHaveBeenCalled();
   });
 
   it('prefers Redis key over Devvit setting when both present', async () => {

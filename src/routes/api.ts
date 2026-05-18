@@ -23,6 +23,7 @@ import { settings, redis } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
+import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 
 export const api = new Hono();
 
@@ -193,13 +194,28 @@ api.post('/explain-event', async (c) => {
       error: `Rate limit: ${rl.count}/${rl.max} calls this hour. Try again in ~${Math.ceil(rl.resetInSec / 60)}min.`,
     }, 429);
   }
+  // X37: circuit breaker — if OpenAI is failing repeatedly (5 consecutive
+  // errors), open for 60s before letting a probe through. Stops quota
+  // burn during sustained outages.
+  const cb = await checkCircuit('openai');
+  if (cb.state === 'open') {
+    return c.json({
+      ok: false,
+      error: `OpenAI temporarily unavailable (breaker open). Retry in ~${cb.retryInSec ?? 60}s.`,
+    }, 503);
+  }
   try {
     const fromRedis = await getOpenaiKey(auth.sub);
     const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
     const result = await explainEvent(validated.event, apiKey);
-    if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+    if (!result.ok) {
+      await recordFailure('openai');
+      return c.json({ ok: false, error: result.error }, 500);
+    }
+    await recordSuccess('openai');
     return c.json({ ok: true, explanation: result.explanation });
   } catch (err) {
+    await recordFailure('openai');
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/api/explain-event] failed:', err);
     return c.json({ ok: false, error: `Explain failed: ${msg}` }, 500);
