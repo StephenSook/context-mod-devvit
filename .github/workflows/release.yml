@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract changelog section + create release
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NO_V="${REF_NAME#v}"
+          NOTES_FILE="$(mktemp)"
+          awk -v tag="$TAG_NO_V" '
+            $0 ~ "^## \\[" tag "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "(no CHANGELOG section found for $REF_NAME — see CHANGELOG.md)" > "$NOTES_FILE"
+          fi
+          gh release create "$REF_NAME" \
+            --title "$REF_NAME" \
+            --notes-file "$NOTES_FILE"
