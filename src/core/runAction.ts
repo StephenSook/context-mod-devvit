@@ -51,7 +51,7 @@ function payloadDigest(a: Action): string {
 export async function runAction(action: Action, ctx: ActionContext): Promise<ActionResult> {
   // Dry-run gate (Phase 2.5). Global config.dryRun is AUTHORITATIVE — per-action
   // can only ELEVATE to dry-run, never demote a globally-safe config to live.
-  // Codex HIGH 2026-05-16: previous `??` semantics let per-action dryRun: false
+  // OR (not ??) so a per-action dryRun:false cannot override a global dryRun:true.
   // override config.dryRun: true (catastrophic safety-gate bypass).
   const dry = ctx.config.dryRun === true || action.dryRun === true;
   if (dry) {
@@ -81,7 +81,7 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
     return { status: 'ok', kind: action.kind };
   } catch (err) {
     if (sideEffectDone) {
-      // Codex CRITICAL fix: side-effect succeeded but commitAction threw on
+      // Side-effect succeeded but commitAction threw on
       // done-marker write failure. Pending lease was NOT released by
       // commitAction (intentional — prevents instant double-action). Surface
       // as 'error' so dashboard shows red + mod investigates. NOT releaseAction:

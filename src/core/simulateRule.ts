@@ -98,9 +98,9 @@ export async function simulateRule(
       const result = await runRule(parsed.rule, sample.item, sample.author, sub);
       triggered = result.triggered;
     } catch (err) {
-      // Wave U BLOCKER fix (Codex CR3 #1): surface per-sample errors instead of
-      // silently marking triggered=false. Mod previously saw "0/25" lie when
-      // every sample threw — now sees "X/Y, Z errored: <first error>".
+      // Surface per-sample errors instead of silently marking triggered=false.
+      // Without this, every-sample-throws looks like "0/25 fired" — mod thinks
+      // the rule is safe when it's actually crashing.
       errored = true;
       erroredCount++;
       if (firstError === undefined) {
@@ -138,8 +138,8 @@ export function formatSimulationToast(result: SimulationResult): string {
     .slice(0, 3)
     .map((b) => b.activityId);
   const sampleLine = samples.length > 0 ? ` Examples: ${samples.join(', ')}` : '';
-  // Wave U BLOCKER fix: surface errored samples so mod knows the rule crashed
-  // rather than just didn't match. Without this, an erroring rule looks safe.
+  // Surface errored samples so mod knows the rule crashed rather than just
+  // didn't match. Without this, an erroring rule looks safe.
   const errorLine = result.erroredCount > 0
     ? ` ⚠ ${result.erroredCount} sample${result.erroredCount === 1 ? '' : 's'} errored${result.firstError ? `: ${result.firstError.slice(0, 100)}` : ''}.`
     : '';

@@ -55,7 +55,7 @@ export async function explainRule(
       }),
     });
     if (!res.ok) {
-      // Wave U WARN fix (Codex CR3 #5): parse OpenAI error envelope for actionable msg
+      // Parse OpenAI error envelope so toast carries the actual reason
       // (invalid_api_key / insufficient_quota / rate_limit_exceeded).
       let serverMsg = res.statusText;
       try {
@@ -80,7 +80,7 @@ export async function explainRule(
     }
     return { ok: true, explanation: text };
   } catch (err) {
-    // Wave U WARN fix (Codex CR3 #5): branch on error class for actionable msg.
+    // Branch on error class so toast tells the mod what to retry.
     const name = err instanceof Error ? err.name : 'Error';
     const msg = err instanceof Error ? err.message : String(err);
     if (name === 'AbortError') return { ok: false, error: 'OpenAI request aborted (timeout). Retry.' };

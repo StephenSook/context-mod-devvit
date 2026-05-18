@@ -21,9 +21,8 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[]) {
       const match = shortcuts.find((s) => s.key === e.key);
       if (match) {
         e.preventDefault();
-        // Wave U WARN fix (Codex CR3 #10): wrap handler so a thrown error
-        // doesn't kill the listener silently. React error boundaries don't
-        // catch errors inside DOM event listeners.
+        // Wrap handler so a thrown error doesn't kill the listener silently
+        // — React error boundaries don't catch errors inside DOM listeners.
         try {
           match.handler();
         } catch (err) {

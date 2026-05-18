@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 const STORAGE_KEY = 'cm-tour-seen-v1';
 
 /**
- * Wave U BUG fix (Codex CR3 #9): in-session fallback when localStorage is
- * blocked (Safari/Firefox enhanced tracking + iframe-restricted storage). Tour
- * never reappears within the same session even if persistence fails.
+ * In-session fallback when localStorage is blocked (Safari/Firefox enhanced
+ * tracking + iframe-restricted storage). Tour never reappears within the
+ * same session even if persistence fails.
  */
 let inMemorySeen = false;
 
@@ -33,10 +33,9 @@ export function hasSeenTour(): boolean {
   try {
     return localStorage.getItem(STORAGE_KEY) === '1';
   } catch {
-    // Wave U BUG fix (Codex CR3 #9): fail-OPEN on localStorage exception so
-    // first-time mods in restricted iframes (Safari/Firefox enhanced tracking)
-    // still see the tour. Previously failed-CLOSED which silently stripped the
-    // feature for those browsers.
+    // Fail-OPEN on localStorage exception so first-time mods in restricted
+    // iframes (Safari/Firefox enhanced tracking) still see the tour. Closing
+    // here would silently strip the feature for those browsers.
     console.warn('[cm/onboarding] localStorage read blocked, falling back to in-memory flag');
     return false;
   }

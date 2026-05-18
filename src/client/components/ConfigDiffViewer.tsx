@@ -9,7 +9,7 @@ async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      // Wave U WARN fix: try to parse server error envelope for actionable msg
+      // Try to parse server error envelope for an actionable msg
       let serverErr: string | null = null;
       try {
         const body = await res.json();
@@ -26,21 +26,18 @@ async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
     if (revs.length === 0) return { ok: true, empty: true };
     return { ok: true, empty: false, data: revs };
   } catch (err) {
-    // Wave U WARN fix (Codex CR3 #7): log url + stack for repro before mapping to user-facing string
+    // Log url + stack for repro before mapping to user-facing string
     console.error('[cm/config-diff] fetch failed', url, err);
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
 /**
- * Wave U CRITICAL fix (Codex CR4): replace set-diff with positional LCS-based
- * line diff. Old set-diff collapsed duplicate lines + showed reordered lines as
- * "same" — silently wrong for any config where order matters (postBehavior +
- * check-order do matter in ContextMod).
+ * Positional LCS-based line diff. Set-diff would be wrong because postBehavior
+ * + check ordering matter in ContextMod — reordered lines are not "same".
  *
  * Algorithm: classic LCS DP table, then walk back to emit add/del/same tags in
- * the original order. O(n*m) for n+m lines which is fine for sub-100-line
- * configs (typical wiki config = 20-60 lines).
+ * the original order. O(n*m) for n+m lines; fine for typical 20-60-line configs.
  */
 export function simpleDiff(a: string, b: string): { line: string; tag: 'add' | 'del' | 'same' }[] {
   const aLines = a.split('\n');
