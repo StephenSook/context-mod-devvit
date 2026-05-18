@@ -12,6 +12,38 @@ Forward-looking (post-v0.3.1):
 - Hard-mute integration in `runCheck` (Vinh wires `isRuleMuted` against the Wave S10 storage shape)
 - Post-hackathon operator outreach to 15+ FoxxMD operator pool
 
+## [0.3.2] — 2026-05-18
+
+Wave X mid-review fix pass — 5 commits applying findings from 3 parallel sub-agent reviews (Codex adversarial, silent-failure-hunter, type-design-analyzer, Gemini architecture sweep) launched against Wave X primitives.
+
+### Fixed — Codex CRITICAL findings
+
+- **X43 per-sub circuit breaker bucket** — `'openai'` → `'openai:${sub}'`. Stops one sub's bad key from opening the breaker for every other sub on the same install.
+- **X43 smart failure classification** — `isTransientOpenaiError()` filter so the breaker only opens on 5xx/timeout/network/abort/429. Auth errors (401, missing key, insufficient quota) bypass — they're user-config issues, not OpenAI being down.
+- **X43 /api/muted-rules requireModerator gate** — was open while sibling mod-activity + config-history were gated. Closes the asymmetry.
+
+### Fixed — silent-failure-hunter findings
+
+- **X39 /api/explain-event handler chain reorder** — `checkCircuit` runs BEFORE `checkRateLimit` (cheap GET first, avoids burning a rate-limit token on a breaker-rejected request).
+- **X39 try-block narrowed** — `getOpenaiKey` + `settings.get` resolved OUTSIDE the try; only `explainEvent()` is wrapped. Stops Redis-settings hiccups from burning OpenAI breaker tokens.
+- **X39 ratelimit.ts degraded:true flag** + console.error upgrade — caller can now distinguish "actually allowed" from "fail-open under Redis blip".
+- **X39 triggers.ts getCurrentSubreddit wrapped** in try/catch on both /post-submit + /comment-submit — Reddit context loss returns 200 + status='subreddit-unavailable' instead of 500'ing the handler and triggering Devvit's retry storm.
+
+### Fixed — type-design-analyzer findings
+
+- **X38 log.ts spread order** — `{...ctx, ts, level, tag, msg}` so caller-supplied ctx can't shadow the structured fields.
+- **X38 ratelimit.ts dead ternary** — removed `count >= max ? windowSec : windowSec`.
+- **X38 circuitBreaker.ts tagged union** — `BreakerCheck` discriminates `retryInSec` to only-exist on the `state:'open'` variant.
+
+### Changed
+
+- **X40 README + DESIGN.md drift fix** — opening blurb v0.2.0 → v0.3.x, test badge 400 → 446, status row Wave X + Phase 4, config example fixed to match current schema (combinator/pattern/target/filter/isSpam/template renames).
+- **X41 Status row** — Phase 4 history/attribution/recentActivity flipped from 🟡 in-progress to ✅ shipped (Vinh's commit e0abd86, +179 tests).
+
+### Tests
+
+414 (v0.3.1) → 446 passing (+32 from Vinh's Phase 4 author-cache + 3 stretch rules).
+
 ## [0.3.1] — 2026-05-18
 
 Wave X — second deep-review pass after Stephen requested "leave nothing on the table." 30+ atomic commits across security hardening, observability, reliability, docs, and developer experience.
