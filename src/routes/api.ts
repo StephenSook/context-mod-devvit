@@ -31,12 +31,17 @@ api.get('/recent', async (c) => {
     return c.json({ events: demoEvents() });
   }
 
+  // W12: surface Reddit-context loss as 503 (consistent with /config-history
+  // + /mod-activity siblings). Previously returned events:[] (200) which
+  // made dashboard unable to distinguish dead engine vs idle sub — judges
+  // see "no events" and assume the bot isn't running.
   let subName: string | undefined;
   try {
     subName = (await reddit.getCurrentSubreddit()).name;
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
     console.error('[cm/api/recent] could not resolve current sub:', err);
-    return c.json({ events: [] });
+    return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
   }
 
   const events = await readRecent(subName);
