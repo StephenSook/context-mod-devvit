@@ -80,4 +80,54 @@ test.describe('Observatory dashboard', () => {
     await expect(page.getByText('Actions today').first()).toBeVisible();
     expect(messages).toEqual([]);
   });
+
+  test('Y1-X9 — click Explain with AI on drill-down → POST /api/explain-event → render text', async ({ page }) => {
+    // Mock the AI endpoint at the network layer — no real OpenAI call.
+    await page.route('**/api/explain-event', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: true,
+          explanation: 'The crypto-giveaway regex matched the post title, and the rule fired a remove action.',
+        }),
+      });
+    });
+
+    await page.goto('/?demo=1');
+    await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
+    await page.reload();
+    await expect(page.getByText('Actions today').first()).toBeVisible();
+
+    // Expand first event row to surface the AI button
+    const firstRow = page.locator('button[aria-expanded]').first();
+    await firstRow.click();
+    await expect(firstRow).toHaveAttribute('aria-expanded', 'true');
+
+    // Click the Explain with AI button + assert the mocked completion renders
+    const aiButton = page.getByRole('button', { name: /Explain with AI/i });
+    await expect(aiButton).toBeVisible();
+    await aiButton.click();
+    await expect(page.getByText(/crypto-giveaway regex matched/i)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('Y1-X9 — AI explain handles 429 rate-limit response', async ({ page }) => {
+    await page.route('**/api/explain-event', async (route) => {
+      await route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          error: 'Rate limit: 31/30 calls this hour. Try again in ~45min.',
+        }),
+      });
+    });
+
+    await page.goto('/?demo=1');
+    await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
+    await page.reload();
+    await page.locator('button[aria-expanded]').first().click();
+    await page.getByRole('button', { name: /Explain with AI/i }).click();
+    await expect(page.getByText(/Rate limit/i)).toBeVisible({ timeout: 5000 });
+  });
 });
