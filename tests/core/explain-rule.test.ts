@@ -38,7 +38,7 @@ describe('explainRule', () => {
     });
     const r = await explainRule("{kind:'regex',pattern:'crypto'}", 'sk-fake', fetcher);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.explanation).toContain('crypto');
+    if (r.ok) expect(r.value).toContain('crypto');
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
@@ -87,7 +87,7 @@ describe('explainRule', () => {
 
 describe('formatExplainToast', () => {
   it('truncates explanations to 400 chars', () => {
-    const r = { ok: true as const, explanation: 'x'.repeat(800) };
+    const r = { ok: true as const, value: 'x'.repeat(800) };
     expect(formatExplainToast(r).length).toBe(400);
   });
 

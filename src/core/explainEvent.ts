@@ -7,6 +7,7 @@
  */
 
 import type { Fetcher, ExplainResult } from './explainRule';
+import { type Result, ok, err } from '../lib/result';
 
 // Tight event summary — only fields the AI needs. Excludes raw post body
 // for privacy + token budget.
@@ -27,53 +28,51 @@ const DELIMITER_OPEN = '<<<USER_DATA>>>';
 const DELIMITER_CLOSE = '<<</USER_DATA>>>';
 const OPENAI_TIMEOUT_MS = 30_000;
 
-export type ValidationResult = { ok: true; event: EventSummary } | { ok: false; error: string };
+/**
+ * AD Phase 4: ValidationResult is now `Result<EventSummary>`. Validated
+ * event lives at `.value` (uniform w/ ExplainResult + other Result types).
+ */
+export type ValidationResult = Result<EventSummary>;
 
 export function validateEventSummary(input: unknown): ValidationResult {
-  if (!input || typeof input !== 'object') {
-    return { ok: false, error: 'event must be an object' };
-  }
+  if (!input || typeof input !== 'object') return err('event must be an object');
   const e = input as Record<string, unknown>;
   const stringFields = ['runName', 'checkName', 'matchedRule', 'matchedSubstring'] as const;
   for (const f of stringFields) {
     const v = e[f];
     if (v === undefined) continue;
-    if (typeof v !== 'string') return { ok: false, error: `${f} must be a string` };
-    if (v.length > FIELD_MAX) return { ok: false, error: `${f} exceeds ${FIELD_MAX} chars` };
+    if (typeof v !== 'string') return err(`${f} must be a string`);
+    if (v.length > FIELD_MAX) return err(`${f} exceeds ${FIELD_MAX} chars`);
     if (v.includes(DELIMITER_OPEN) || v.includes(DELIMITER_CLOSE)) {
-      return { ok: false, error: `${f} contains reserved delimiter` };
+      return err(`${f} contains reserved delimiter`);
     }
   }
   const actions = e.actions;
-  if (!Array.isArray(actions)) return { ok: false, error: 'actions must be an array' };
-  if (actions.length > ACTIONS_MAX)
-    return { ok: false, error: `actions exceeds ${ACTIONS_MAX} items` };
+  if (!Array.isArray(actions)) return err('actions must be an array');
+  if (actions.length > ACTIONS_MAX) return err(`actions exceeds ${ACTIONS_MAX} items`);
   for (const a of actions) {
-    if (!a || typeof a !== 'object') return { ok: false, error: 'each action must be an object' };
+    if (!a || typeof a !== 'object') return err('each action must be an object');
     const ao = a as Record<string, unknown>;
     if (typeof ao.kind !== 'string' || ao.kind.length > 50) {
-      return { ok: false, error: 'action.kind must be a string ≤50 chars' };
+      return err('action.kind must be a string ≤50 chars');
     }
     // X46 (Codex WARN): action.kind + action.status are interpolated into
     // the OpenAI prompt. Reject reserved delimiters here too, not just on
     // top-level string fields.
     if (ao.kind.includes(DELIMITER_OPEN) || ao.kind.includes(DELIMITER_CLOSE)) {
-      return { ok: false, error: 'action.kind contains reserved delimiter' };
+      return err('action.kind contains reserved delimiter');
     }
-    if (typeof ao.ok !== 'boolean') return { ok: false, error: 'action.ok must be boolean' };
+    if (typeof ao.ok !== 'boolean') return err('action.ok must be boolean');
     if (ao.status !== undefined) {
       if (typeof ao.status !== 'string' || ao.status.length > 50) {
-        return { ok: false, error: 'action.status must be a string ≤50 chars' };
+        return err('action.status must be a string ≤50 chars');
       }
       if (ao.status.includes(DELIMITER_OPEN) || ao.status.includes(DELIMITER_CLOSE)) {
-        return {
-          ok: false,
-          error: 'action.status contains reserved delimiter',
-        };
+        return err('action.status contains reserved delimiter');
       }
     }
   }
-  return { ok: true, event: input as EventSummary };
+  return ok(input as EventSummary);
 }
 
 // System prompt explicitly tells the model to ignore instructions inside the
@@ -87,10 +86,7 @@ export async function explainEvent(
   fetcher: Fetcher = fetch
 ): Promise<ExplainResult> {
   if (!apiKey || !apiKey.trim()) {
-    return {
-      ok: false,
-      error: 'OpenAI API key is missing. Set it in the app installation settings.',
-    };
+    return err('OpenAI API key is missing. Set it in the app installation settings.');
   }
 
   const userPrompt = buildUserPrompt(event);
@@ -133,23 +129,17 @@ export async function explainEvent(
           : res.status === 429
             ? ' (rate-limited or billing exhausted)'
             : '';
-      return {
-        ok: false,
-        error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}`,
-      };
+      return err(`OpenAI HTTP ${res.status}: ${serverMsg}${hint}`);
     }
     const data: unknown = await res.json();
     const text = extractCompletionText(data);
-    if (!text) {
-      return { ok: false, error: 'OpenAI returned no completion text.' };
-    }
-    return { ok: true, explanation: text };
-  } catch (err) {
-    const name = err instanceof Error ? err.name : 'Error';
-    const msg = err instanceof Error ? err.message : String(err);
-    if (name === 'AbortError')
-      return { ok: false, error: 'OpenAI request timed out after 30s. Retry.' };
-    return { ok: false, error: `OpenAI fetch failed: ${msg}` };
+    if (!text) return err('OpenAI returned no completion text.');
+    return ok(text);
+  } catch (caught) {
+    const name = caught instanceof Error ? caught.name : 'Error';
+    const msg = caught instanceof Error ? caught.message : String(caught);
+    if (name === 'AbortError') return err('OpenAI request timed out after 30s. Retry.');
+    return err(`OpenAI fetch failed: ${msg}`);
   } finally {
     clearTimeout(timeoutId);
   }

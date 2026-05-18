@@ -243,7 +243,7 @@ api.post('/explain-event', async (c) => {
   const fromRedis = await getOpenaiKey(auth.sub);
   const apiKey = fromRedis ?? ((await settings.get<string>('openai_api_key')) ?? '').trim();
   try {
-    const result = await explainEvent(validated.event, apiKey);
+    const result = await explainEvent(validated.value, apiKey);
     if (!result.ok) {
       // X43: classify failures — only recordFailure on transient OpenAI
       // outages (5xx, network, timeout). Auth errors (401/missing key)
@@ -254,7 +254,9 @@ api.post('/explain-event', async (c) => {
       return c.json({ ok: false, error: result.error }, 500);
     }
     await recordSuccess(cbBucket);
-    return c.json({ ok: true, explanation: result.explanation });
+    // AD Phase 4: internal Result<string> exposes the text at `.value`; the
+    // wire envelope keeps the `explanation` key for client backward-compat.
+    return c.json({ ok: true, explanation: result.value });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // AD Tier-1 #3: parity w/ the result.error path above — classify the

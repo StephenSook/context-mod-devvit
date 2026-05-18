@@ -48,7 +48,7 @@ describe('explainEvent', () => {
     });
     const r = await explainEvent(baseEvent, 'sk-fake', fetcher);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.explanation).toContain('crypto');
+    if (r.ok) expect(r.value).toContain('crypto');
   });
 
   it('surfaces OpenAI 401 + actionable hint', async () => {

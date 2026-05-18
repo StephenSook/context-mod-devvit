@@ -70,7 +70,7 @@ const NON_MOD = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  formatExplainToastMock.mockImplementation((r: { explanation?: string }) => r?.explanation ?? '');
+  formatExplainToastMock.mockImplementation((r: { value?: string }) => r?.value ?? '');
 });
 
 async function postForm(
@@ -167,18 +167,18 @@ describe('POST /explain-rule-submit (W9)', () => {
   it('uses Redis key when present + falls back to settings when null', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKeyMock.mockResolvedValue('sk-redis-key');
-    explainRuleMock.mockResolvedValue({ explanation: 'this rule does X' });
+    explainRuleMock.mockResolvedValue({ ok: true, value: 'this rule does X' });
     await postForm('/explain-rule-submit', { ruleJson5: '{ kind: "regex" }' });
     expect(explainRuleMock).toHaveBeenCalledWith('{ kind: "regex" }', 'sk-redis-key');
 
     vi.clearAllMocks();
     formatExplainToastMock.mockImplementation(
-      (r: { explanation?: string }) => r?.explanation ?? ''
+      (r: { value?: string }) => r?.value ?? ''
     );
     requireModeratorMock.mockResolvedValue(AS_MOD);
     getOpenaiKeyMock.mockResolvedValue(null);
     settingsGet.mockResolvedValue('sk-settings-key');
-    explainRuleMock.mockResolvedValue({ explanation: 'this rule does Y' });
+    explainRuleMock.mockResolvedValue({ ok: true, value: 'this rule does Y' });
     await postForm('/explain-rule-submit', { ruleJson5: '{}' });
     expect(explainRuleMock).toHaveBeenCalledWith('{}', 'sk-settings-key');
   });

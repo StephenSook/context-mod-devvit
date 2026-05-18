@@ -78,7 +78,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   validateEventSummary.mockImplementation((event: unknown) => ({
     ok: true,
-    event,
+    value: event,
   }));
   checkRateLimit.mockResolvedValue({
     allowed: true,

@@ -11,9 +11,17 @@
  * HTTP layer without crawling the real OpenAI API.
  */
 
+import { type Result, ok, err } from '../lib/result';
+
 export type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
-export type ExplainResult = { ok: true; explanation: string } | { ok: false; error: string };
+/**
+ * AD Phase 4: ExplainResult is now an alias for the shared Result<string>
+ * shape. Success value lives at `.value` (uniform w/ other Result types in
+ * the codebase). The api.ts wire envelope still emits {ok, explanation: ...}
+ * for backward compatibility w/ the React client + existing OpenAPI docs.
+ */
+export type ExplainResult = Result<string>;
 
 const SYSTEM_PROMPT = `You are an assistant explaining ContextMod moderation rules to non-technical subreddit moderators. Given a JSON5 rule, return a single paragraph (2-3 sentences max) describing in plain English: (1) what trigger condition the rule matches, (2) what kind of post or comment it targets, (3) any caveats a mod should know. Avoid jargon. Avoid AI-tone words like 'powerful' or 'simply'. Do not return code blocks — only the prose explanation.`;
 
@@ -23,22 +31,13 @@ export async function explainRule(
   fetcher: Fetcher = fetch
 ): Promise<ExplainResult> {
   if (!apiKey || !apiKey.trim()) {
-    return {
-      ok: false,
-      error: 'OpenAI API key is missing. Set it in the app installation settings.',
-    };
+    return err('OpenAI API key is missing. Set it in the app installation settings.');
   }
   if (!ruleJson5 || !ruleJson5.trim()) {
-    return {
-      ok: false,
-      error: 'Paste a rule JSON5 in the form field, then submit.',
-    };
+    return err('Paste a rule JSON5 in the form field, then submit.');
   }
   if (ruleJson5.length > 4000) {
-    return {
-      ok: false,
-      error: 'Rule too long (max 4000 chars). Trim and try again.',
-    };
+    return err('Rule too long (max 4000 chars). Trim and try again.');
   }
 
   try {
@@ -78,26 +77,19 @@ export async function explainRule(
           : res.status === 429
             ? ' (rate-limited or billing exhausted)'
             : '';
-      return {
-        ok: false,
-        error: `OpenAI HTTP ${res.status}: ${serverMsg}${hint}`,
-      };
+      return err(`OpenAI HTTP ${res.status}: ${serverMsg}${hint}`);
     }
     const data: unknown = await res.json();
     const text = extractCompletionText(data);
-    if (!text) {
-      return { ok: false, error: 'OpenAI returned no completion text.' };
-    }
-    return { ok: true, explanation: text };
-  } catch (err) {
+    if (!text) return err('OpenAI returned no completion text.');
+    return ok(text);
+  } catch (caught) {
     // Branch on error class so toast tells the mod what to retry.
-    const name = err instanceof Error ? err.name : 'Error';
-    const msg = err instanceof Error ? err.message : String(err);
-    if (name === 'AbortError')
-      return { ok: false, error: 'OpenAI request aborted (timeout). Retry.' };
-    if (msg.toLowerCase().includes('fetch'))
-      return { ok: false, error: `OpenAI network failure: ${msg}` };
-    return { ok: false, error: `OpenAI fetch failed: ${msg}` };
+    const name = caught instanceof Error ? caught.name : 'Error';
+    const msg = caught instanceof Error ? caught.message : String(caught);
+    if (name === 'AbortError') return err('OpenAI request aborted (timeout). Retry.');
+    if (msg.toLowerCase().includes('fetch')) return err(`OpenAI network failure: ${msg}`);
+    return err(`OpenAI fetch failed: ${msg}`);
   }
 }
 
@@ -109,5 +101,5 @@ function extractCompletionText(data: unknown): string | null {
 
 export function formatExplainToast(result: ExplainResult): string {
   if (!result.ok) return result.error.slice(0, 400);
-  return result.explanation.slice(0, 400);
+  return result.value.slice(0, 400);
 }
