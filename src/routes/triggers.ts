@@ -191,24 +191,35 @@ triggers.post('/post-submit', async (c) => {
     // turns red + the mod sees their bot has stopped working.
     const msg = err instanceof Error ? err.message : String(err);
     log.error('cm/post-submit', 'config read failed — moderation stopped', { err });
-    await recordEvent(
-      {
-        ts: Date.now(),
-        activityId: post.id,
-        runName: 'config-read-fail',
-        checkName: '(infrastructure)',
-        triggered: false,
-        actions: [
-          {
-            kind: 'config-read',
-            ok: false,
-            status: 'error',
-            wouldHaveCalled: msg.slice(0, 200),
-          },
-        ],
-      },
-      subName
-    );
+    // AD LOW #10: recordEvent itself writes Redis. If THAT throws (the
+    // Redis blip that broke config-read is still ongoing), the trigger
+    // 500s and rides Devvit's retry storm — the exact scenario this
+    // catch block exists to prevent. Wrap so the recovery path can't
+    // become a worse failure than the original.
+    try {
+      await recordEvent(
+        {
+          ts: Date.now(),
+          activityId: post.id,
+          runName: 'config-read-fail',
+          checkName: '(infrastructure)',
+          triggered: false,
+          actions: [
+            {
+              kind: 'config-read',
+              ok: false,
+              status: 'error',
+              wouldHaveCalled: msg.slice(0, 200),
+            },
+          ],
+        },
+        subName
+      );
+    } catch (recordErr) {
+      log.error('cm/post-submit', 'recordEvent failed during config-read recovery', {
+        err: recordErr,
+      });
+    }
     return c.json({ status: 'config-read-fail' });
   }
   const config: AppConfig = current?.config ?? {
@@ -264,24 +275,32 @@ triggers.post('/comment-submit', async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error('cm/comment-submit', 'config read failed — moderation stopped', { err });
-    await recordEvent(
-      {
-        ts: Date.now(),
-        activityId: comment.id,
-        runName: 'config-read-fail',
-        checkName: '(infrastructure)',
-        triggered: false,
-        actions: [
-          {
-            kind: 'config-read',
-            ok: false,
-            status: 'error',
-            wouldHaveCalled: msg.slice(0, 200),
-          },
-        ],
-      },
-      subName
-    );
+    // AD LOW #10: mirror of /post-submit — recovery recordEvent must
+    // not 500 the handler if Redis is still flaky.
+    try {
+      await recordEvent(
+        {
+          ts: Date.now(),
+          activityId: comment.id,
+          runName: 'config-read-fail',
+          checkName: '(infrastructure)',
+          triggered: false,
+          actions: [
+            {
+              kind: 'config-read',
+              ok: false,
+              status: 'error',
+              wouldHaveCalled: msg.slice(0, 200),
+            },
+          ],
+        },
+        subName
+      );
+    } catch (recordErr) {
+      log.error('cm/comment-submit', 'recordEvent failed during config-read recovery', {
+        err: recordErr,
+      });
+    }
     return c.json({ status: 'config-read-fail' });
   }
   const config: AppConfig = current?.config ?? {
