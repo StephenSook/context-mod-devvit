@@ -1,0 +1,17 @@
+# Default reviewer for everything
+* @StephenSook
+
+# Backend engine (Vinh's Phase 4 work + ongoing rule additions)
+/src/rules/             @vinhbin @StephenSook
+/src/core/runCheck.ts   @vinhbin @StephenSook
+/src/core/runRun.ts     @vinhbin @StephenSook
+
+# Security-sensitive surfaces — extra eyes required
+/src/routes/api.ts          @StephenSook
+/src/routes/forms.ts        @StephenSook
+/src/lib/requireModerator.ts @StephenSook
+/src/lib/ratelimit.ts        @StephenSook
+/src/lib/idem.ts             @StephenSook
+/SECURITY.md                 @StephenSook
+/THREAT-MODEL.md             @StephenSook
+/PRIVACY.md                  @StephenSook
