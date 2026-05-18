@@ -28,8 +28,10 @@ async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<vo
       kind,
       ...(detail ? { detail } : {}),
     });
-  } catch {
-    // best-effort, never blocks the menu action
+  } catch (err) {
+    // X48: best-effort — never blocks the menu action — but surface the
+    // failure so ops sees activity-log writes are dropping when they are.
+    console.warn('[cm/menu/logMenuAction] best-effort log failed:', { kind, err });
   }
 }
 

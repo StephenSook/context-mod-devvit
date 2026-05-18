@@ -52,15 +52,21 @@ export async function readModActivity(sub: string | undefined): Promise<ModActiv
   try {
     const key = `cm:mod-activity:${sub}`;
     const entries = await redis.zRange(key, 0, -1, { by: 'score', reverse: true });
-    return entries
+    let parseFails = 0;
+    const parsed = entries
       .map((e) => {
         try {
           return JSON.parse(e.member) as ModActivity;
         } catch {
+          parseFails++;
           return null;
         }
       })
       .filter((x): x is ModActivity => x !== null);
+    if (parseFails > 0) {
+      console.warn('[cm/modActivity] dropped corrupt members:', { sub, parseFails, totalEntries: entries.length });
+    }
+    return parsed;
   } catch (err) {
     console.warn('[cm/modActivity] read failed:', err);
     return [];

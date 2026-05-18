@@ -62,7 +62,11 @@ export async function isRuleMuted(sub: string, runName: string, checkName: strin
   try {
     const value = await redis.hGet(key(sub), ruleKey(runName, checkName));
     return value != null;
-  } catch {
+  } catch (err) {
+    // X48: surface the failure instead of silent-false. Soft fail-open is
+    // intentional (a Redis blip on the mute check shouldn't kill the rule),
+    // but the log line gives ops visibility.
+    console.warn('[cm/muteSet] isRuleMuted failed (fail-open):', { sub, runName, checkName, err });
     return false;
   }
 }
