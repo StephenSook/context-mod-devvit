@@ -30,7 +30,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 0.7 | First playtest + domain approval submit | terminal | **Stephen** | ✅ | 0.5, 0.8 | Run `npx devvit playtest <sub>`. Triggers Reddit domain approval review. |
 | 0.8 | Create private test sub | reddit.com | **Stephen** | ✅ | — | <200 members per hackathon rule. e.g., r/cowsufficient_cm_test |
 | 0.9 | GitHub repo create + push | github.com | **Stephen** | ✅ | 0.1 | Private; flip public before submission. Needs explicit Bash permission. |
-| 0.10 | Image-decode + blockhash spike | `experiments/image-spike/` | **Vinh** | ⬜ | 0.8 | ⚠️ GO/NO-GO gate for Phase 4 image hashing. Day 0–2 max. → Vinh |
+| 0.10 | Image-decode + blockhash spike | `experiments/image-spike/` | **Vinh** | ✅ 2026-05-18 PARTIAL-GO | 0.8 | Stage 1 only (Stage 2 deliberately skipped — low signal-to-effort given T-9d to deadline). Pure-JS pipeline (upng-js + jpeg-js + blockhash-core) timing budget passes on all image kinds (PNG 369ms cold / JPEG-meme 207ms / JPEG-4K 913ms — all <5s). **RSS budget fails on 4K phone JPEGs (~179MB peak vs 100MB ceiling) — decoded RGBA buffer alone is 48MB at 4032×3024.** Mitigation for 4.7 if built: fetch resized variant from `preview.redd.it` (already in allowlist) instead of full-res `i.redd.it` — free CDN downscale, <5MB decoded, negligible hash drift at 16-bit blockhash precision. Full numbers + learnings in `experiments/image-spike/RESULTS.md` (gitignored — local artifact). |
 
 ### Phase 1 — Core engine (Day 2–5, ~24h)
 
@@ -89,7 +89,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 | 4.4 | HistoryRule | `src/rules/history.ts` | **Vinh** | ✅ 2026-05-18 | 4.3 | Flat OR-of-thresholds: `postCountLt/Gt`, `commentCountLt/Gt`, `linkKarmaLt/Gt`, `commentKarmaLt/Gt`. Karma reads off enriched `Author` (forces `needsAuthorEnrichment` when karma thresholds present); counts off the cache. Diverged from PLAN's nested `{greaterThan, lessThan}` shape — flat is simpler and the demo storyline uses `commentKarmaLt: 100` + `postCountLt: 3` for the "fresh low-karma account" beat. Commit 62a0985. Verified live 2026-05-18 in `r/contextmod_vinh_dev`: rule matched + action dispatched on fresh-account test post (comment write Reddit-rate-limited mid-burst — not a rule failure). Template gotcha caught during verification: `{{author}}` crashes Mustache w/ `TypeError: e.replace`; templates must use `{{author.nameSafe}}` (already the Phase 2.5 default). |
 | 4.5 | AttributionRule | `src/rules/attribution.ts` | **Vinh** | ✅ 2026-05-18 | 4.3 | % of cached posts matching a domain list (case-insensitive substring on `post.domain`). `minPosts` floor (default 5) guards against the 1/1=100% tiny-sample false-positive trap. No `window` param in v1 — rules operate over whatever's in the 1h cache. Commit 62a0985. Not exercised live 2026-05-18 (needs YouTube-dominant author) but uses the same `getAuthorHistory` substrate as 4.4 + 4.6 which both verified live — 9 unit tests cover the projection logic. |
 | 4.6 | RecentActivityRule | `src/rules/recentActivity.ts` | **Vinh** | ✅ 2026-05-18 | 4.3 | Per-target-sub count from cached posts + comments (case-insensitive sub-name match). `postCountGt` / `commentCountGt` independent triggers. No `window` param in v1. Commit 62a0985. ✅ Verified live 2026-05-18 in `r/contextmod_vinh_dev`: wiki config `subreddits: ['AskReddit'], commentCountGt: 0` triggered after the test author dropped one r/AskReddit comment — bot reply landed on the test post. End-to-end: trigger → handleActivity → cached history → rule match → comment action. |
-| 4.7 | Image-hash port + worker + multi-index LSH | `src/image/*`, `src/rules/imageRepost.ts` | **Vinh** | ⛔ | 0.10 | ⚠️ Blocked on 0.10 spike which never ran (Day-2 deadline passed). Stephen flagged image-hash as "most important part" of Phase 4 for demo narrative 2026-05-17; if the demo storyline still wants it, 0.10 spike must complete first. Spike scope: fetch one i.redd.it image, decode in pure JS (no native deps), compute blockhash, log timing — GO if <5s + <100MB peak, NO-GO otherwise. ~90 min timebox. |
+| 4.7 | Image-hash port + worker + multi-index LSH | `src/image/*`, `src/rules/imageRepost.ts` | **Vinh** | ⬜ unblocked | 0.10 | 0.10 spike resolved 2026-05-18 as PARTIAL-GO — pure-JS pipeline is feasible if image fetch goes through `preview.redd.it` resized variants (not full-res `i.redd.it`) to stay inside RAM budget. Unblocked but un-scoped given T-9d to deadline (Phase 5 tests + scenarios + writeup still ⬜). Decision pending with Stephen on demo-storyline priority: keep image-hash for repost-detection beat, or cut and lean on the rule-ladder demo narrative (history/attribution/recent-activity already verified live). |
 | 4.8 | DispatchAction | — | — | ✂️ | — | Cut per Codex+ultraplan synthesis |
 | 4.9 | SentimentRule | — | — | ✂️ | — | Cut — NLP libs won't bundle in Devvit runtime |
 | 4.10 | Full RepostRule w/ YouTube | — | — | ✂️ | — | Cut — 4.1+4.7 cover MVP |
@@ -173,8 +173,8 @@ u/CowSufficient3840 (Stephen's logged-in account on devvit). Reflected in `polic
 
 ## Open Questions
 
-- [ ] **Q1:** Image-hash spike outcome — GO or NO-GO? (Task 0.10 result). **Decides:** finalize D8, sets Phase 4 shape. Owner: Vinh.
-- [ ] **Q2:** Does `i.redd.it` fetch work post-approval? CDN auth/referer behavior unknown. Test in playtest. **Decides:** image-hash viability even if blockhash decode works. Owner: Vinh during 0.10 spike.
+- [x] **Q1:** Image-hash spike outcome — GO or NO-GO? **PARTIAL-GO 2026-05-18.** Timing budget passes (PNG 369ms / meme JPEG 207ms / 4K JPEG 913ms cold — all <5s). RSS budget fails on 4K phone JPEGs (~179MB vs 100MB ceiling) — decoded RGBA buffer alone is 48MB at 4032×3024. Buildable if 4.7 fetches resized variants from `preview.redd.it` instead of full-res `i.redd.it`. See `experiments/image-spike/RESULTS.md` (gitignored).
+- [x] **Q2:** Does `i.redd.it` fetch work? Already PASS — public CDN, no auth headers needed, already in `devvit.json` allowlist + powering observatory dashboard in prod. Confirmed during 0.10 Stage 1: 3/3 fetches succeeded with default `User-Agent`, 28–268ms latency.
 - [ ] **Q3:** Submission framing — "Devvit-native full port" vs "spiritual successor + dashboard"? Lean former if Phase 4 ships clean. **Decides:** Stephen by Day 14.
 - [x] **Q4:** Custom post height in `devvit.json.post.entrypoints` — set to `tall` in `devvit.json`. Observatory dashboard needs the vertical room for the action stream + stat cards + sparkline. Decided May 13, 2026 by Stephen.
 
@@ -212,4 +212,4 @@ u/CowSufficient3840 (Stephen's logged-in account on devvit). Reflected in `polic
 
 ---
 
-_Last updated: 2026-05-18 by Vinh — Phase 4 4.3–4.6 ✅ + live-verified in `r/contextmod_vinh_dev`, 4.7 ⛔ (blocked on 0.10)._
+_Last updated: 2026-05-18 by Vinh — Phase 0.10 spike ✅ PARTIAL-GO (timing passes, RSS fails at 4K — mitigation: preview.redd.it). 4.7 ⬜ unblocked, un-scoped (T-9d, Phase 5 priority)._
