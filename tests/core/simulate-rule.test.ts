@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { simulateRule, formatSimulationToast, type SimulationSample } from '../../src/core/simulateRule';
+import * as runRuleModule from '../../src/core/runRule';
 import type { Item, Author } from '../../src/shared/types';
 
 const DEFAULT_ITEM: Item = {
@@ -45,6 +46,10 @@ function sample(item: Partial<Item>, author?: Partial<Author>): SimulationSample
   };
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('simulateRule', () => {
   it('rejects unparseable JSON5 input', async () => {
     const r = await simulateRule('not valid {', []);
@@ -63,18 +68,55 @@ describe('simulateRule', () => {
     }
   });
 
-  it('U1 fix — surfaces per-sample errors in erroredCount + firstError (Codex CR3 BLOCKER)', async () => {
-    // Bad regex pattern that catastrophic-backtracks or throws inside runRule
+  it('U1 happy-path — well-formed rule + sample reports zero errors', async () => {
     const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid-pattern', target: 'title' }`;
-    // Build a sample whose author is malformed so runRule downstream throws
     const goodSample = sample({ id: 't3_a', title: 'valid-pattern matches' });
     const r = await simulateRule(ruleJson5, [goodSample]);
     expect(r.ok).toBe(true);
     if (r.ok) {
-      // Happy path — no errors expected for this case
       expect(r.erroredCount).toBe(0);
       expect(r.firstError).toBeUndefined();
     }
+  });
+
+  it('W5 — runRule throws on every sample → erroredCount = N + firstError populated', async () => {
+    // The W5 regression: previously named "U1 fix" but actually exercised the
+    // happy path. Force runRule to throw to pin that simulateRule actually
+    // surfaces per-sample errors (Codex CR3 BLOCKER #1 — mod sees "0/25 fired"
+    // when every sample crashed, looks like the rule was safe).
+    const spy = vi.spyOn(runRuleModule, 'runRule').mockRejectedValue(new Error('regex backtrack limit exceeded'));
+    const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
+    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
+    const r = await simulateRule(ruleJson5, samples);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.erroredCount).toBe(3);
+      expect(r.firedCount).toBe(0);
+      expect(r.firstError).toBe('regex backtrack limit exceeded');
+      expect(r.breakdown.every((b) => b.errored)).toBe(true);
+    }
+    spy.mockRestore();
+  });
+
+  it('W5 — partial failures: some samples throw, others succeed', async () => {
+    let call = 0;
+    const spy = vi.spyOn(runRuleModule, 'runRule').mockImplementation(async () => {
+      call++;
+      if (call === 2) throw new Error('flaky regex');
+      return { triggered: true, name: 'r1', kind: 'regex' };
+    });
+    const ruleJson5 = `{ kind: 'regex', name: 'r1', pattern: 'valid', target: 'title' }`;
+    const samples = [sample({ id: 't3_a' }), sample({ id: 't3_b' }), sample({ id: 't3_c' })];
+    const r = await simulateRule(ruleJson5, samples);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.erroredCount).toBe(1);
+      expect(r.firedCount).toBe(2);
+      expect(r.firstError).toBe('flaky regex');
+      expect(r.breakdown[1]?.errored).toBe(true);
+      expect(r.breakdown[0]?.triggered).toBe(true);
+    }
+    spy.mockRestore();
   });
 
   it('U1 fix — breakdown includes errored flag per sample', async () => {
