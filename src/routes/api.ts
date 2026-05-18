@@ -19,7 +19,7 @@ import { readModActivity } from '../state/modActivity';
 import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
 import { explainEvent, validateEventSummary } from '../core/explainEvent';
-import { settings } from '@devvit/web/server';
+import { settings, redis } from '@devvit/web/server';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
@@ -233,4 +233,57 @@ api.get('/health', (c) => {
     version: process.env.npm_package_version ?? 'unknown',
     ts: Date.now(),
   });
+});
+
+/**
+ * X34: deep health — pings Redis + Reddit-context resolution. Slower than
+ * /health (1 round-trip each) so reserve for explicit probes, not poll-loops.
+ * Returns 200 with per-check {ok, latencyMs, err?} so an external monitor
+ * can alert on degraded-but-not-down state.
+ */
+api.get('/health/deep', async (c) => {
+  const ts = Date.now();
+
+  const redisStart = Date.now();
+  let redisCheck: { ok: boolean; latencyMs: number; err?: string };
+  try {
+    await redis.set('cm:health:probe', String(ts));
+    const echo = await redis.get('cm:health:probe');
+    redisCheck = {
+      ok: echo === String(ts),
+      latencyMs: Date.now() - redisStart,
+    };
+  } catch (err) {
+    redisCheck = {
+      ok: false,
+      latencyMs: Date.now() - redisStart,
+      err: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const redditStart = Date.now();
+  let redditCheck: { ok: boolean; latencyMs: number; sub?: string; err?: string };
+  try {
+    const sub = await reddit.getCurrentSubreddit();
+    redditCheck = {
+      ok: true,
+      latencyMs: Date.now() - redditStart,
+      sub: sub.name,
+    };
+  } catch (err) {
+    redditCheck = {
+      ok: false,
+      latencyMs: Date.now() - redditStart,
+      err: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  const ok = redisCheck.ok && redditCheck.ok;
+  return c.json({
+    ok,
+    name: 'cm-devvit',
+    version: process.env.npm_package_version ?? 'unknown',
+    ts,
+    checks: { redis: redisCheck, reddit: redditCheck },
+  }, ok ? 200 : 503);
 });
