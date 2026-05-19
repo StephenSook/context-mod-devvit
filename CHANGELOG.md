@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — UX honesty
+
+- **AE Polish #46: "Mod time saved (est.)" label qualifier** —
+  silent-failure-hunter Finding 3. `timeSavedMin` is a heuristic
+  (`today * 4` min/action), not a measurement. Without the qualifier
+  the stat card lies about precision. Minimal-cascade fix: keep field
+  name + wire shape stable, change UI label to surface "(est.)".
+  Field-comment in `StatsRollup` now declares "HEURISTIC ESTIMATE —
+  not a measurement" so future devs don't promote it to a real
+  measured field.
+
+### Security — bounded-input ReDoS defense
+
+- **AE Polish #45: bounded `safeTest()` wraps RegExp.test in regex
+  cache** — silent-failure-hunter Finding 5. `safe-regex` v2.x only
+  analyzes star-height on the NFA; it does NOT detect backref
+  (`/^(.*?)\1+$/`) or lookaround (`/^(?=(a+))\1*$/`) ReDoS
+  patterns. Both V8-supported, both catastrophic on adversarial
+  input. Mod-controlled wiki configs could embed these and slip
+  through Pull-Forward #8's `safeRegex()` check. Defense-in-depth:
+  `safeTest(re, target)` truncates target to 100KB before
+  `.test()`. Bounded input → bounded worst-case backtracking time.
+  Doesn't make pattern SAFE but keeps event loop responsive. Wired
+  into BOTH `src/rules/regex.ts` AND `src/core/filters.ts`. Module
+  docblock explicitly calls out the known safe-regex gap. +3 tests
+  (short passthrough, 200KB adversarial → bounded <500ms, match-at-
+  boundary).
+
+### Fixed — stats edges (silent-failure-hunter findings 2 + 4)
+
+- **AE Polish #43: `hourlyActions24h` bucket boundary off-by-one** —
+  Pre-fix: `if (e.ts <= dayStart || ...) continue;` excluded events at
+  exactly `dayStart` (24h ago to the ms), but `Math.floor((0) /
+  3_600_000) === 0` would have assigned the dayStart-exact event to
+  bucket 0. Bounds check + bucket assignment disagreed at the lower
+  edge. Fixed to `e.ts < dayStart` so events at exactly the boundary
+  land cleanly in bucket 0. +2 tests pinning the boundary on both
+  ends (dayStart-exact → bucket 0, now-exact → bucket 23).
+
+- **AE Polish #44: shape-stale snapshot DELETED on fall-through** —
+  Polish #40 detected pre-Polish-#38 shape + recomputed, but didn't
+  delete the bad key. Result: every `/api/stats` poll (~10s cadence)
+  for the next 1h would re-GET + re-parse the same stale snapshot,
+  fall through again, recompute again — defeating the cache. Mirrors
+  the Polish #6 corrupt-snapshot delete pattern. +1 test pinning that
+  the snapshot key is GONE after a shape-stale fall-through.
+
 ### Fixed — orchestrator hang defense
 
 - **AE Polish #42: `handleActivity` per-run TIMEOUT** — silent-failure-
