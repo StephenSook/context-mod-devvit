@@ -247,7 +247,13 @@ export default function App() {
         shortcuts={shortcuts}
       />
       <ConfigDiffViewer open={historyOpen} onClose={() => setHistoryOpen(false)} />
-      {tourOpen && <OnboardingTour onDone={() => setTourOpen(false)} />}
+      {/* AE Polish #3: gate tour on !initialLoad so the modal doesn't open
+          on top of shimmer-skeleton dashboard. Judges who haven't seen
+          the tour got the modal at t=0 + couldn't see what it was
+          pointing at (Header / StatsRow / EventStream were all
+          skeleton-rendered behind it). After initialLoad clears the
+          modal opens against the real dashboard chrome. */}
+      {tourOpen && !initialLoad && <OnboardingTour onDone={() => setTourOpen(false)} />}
     </div>
   );
 }
