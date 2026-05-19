@@ -24,7 +24,11 @@ function demoSuffix(): string {
  * generic "HTTP 503" banner instead of the more useful
  * "subreddit context unavailable: <detail>" the server already returns.
  */
-async function extractServerError(res: Response): Promise<string> {
+// AE Polish #58: exported so ConfigDiffViewer + ModActivityFeed (which
+// had their OWN ad-hoc `HTTP ${res.status}` error paths) can reuse the
+// same body-extraction logic. Centralizes the "surface server error
+// detail" behavior introduced in Polish #21.
+export async function extractServerError(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as { error?: unknown };
     if (typeof body?.error === 'string' && body.error.trim().length > 0) {

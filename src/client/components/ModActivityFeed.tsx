@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ApiResult } from '../lib/types';
+import { extractServerError } from '../lib/api';
 
 type ModActivity = {
   ts: number;
@@ -14,7 +15,11 @@ async function fetchModActivity(): Promise<ApiResult<ModActivity[]>> {
       typeof window !== 'undefined' &&
       new URLSearchParams(window.location.search).get('demo') === '1';
     const res = await fetch(`/api/mod-activity${demo ? '?demo=1' : ''}`);
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    // AE Polish #58: extract server-supplied error body (Polish #21
+    // parity — previously this returned just `HTTP 403`, losing the
+    // "Mod-only action" / "subreddit context unavailable" detail that
+    // /api/mod-activity actually emits on auth/context failures).
+    if (!res.ok) return { ok: false, error: await extractServerError(res) };
     const data = await res.json();
     const activity = Array.isArray(data?.activity) ? (data.activity as ModActivity[]) : [];
     if (activity.length === 0) return { ok: true, empty: true };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ApiResult } from '../lib/types';
+import { extractServerError } from '../lib/api';
 
 export type ConfigRev = { rev: number; config: unknown };
 
@@ -10,19 +11,11 @@ async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
   const url = `/api/config-history${demo ? '?demo=1' : ''}`;
   try {
     const res = await fetch(url);
-    if (!res.ok) {
-      // Try to parse server error envelope for an actionable msg
-      let serverErr: string | null = null;
-      try {
-        const body = await res.json();
-        if (body && typeof body === 'object' && 'error' in body) {
-          serverErr = String((body as { error: unknown }).error);
-        }
-      } catch {
-        // body not JSON — fall through to HTTP status
-      }
-      return { ok: false, error: serverErr ?? `HTTP ${res.status}` };
-    }
+    // AE Polish #58: refactored from a one-off body-extract to the shared
+    // extractServerError helper. Output format is now "HTTP 403: not a
+    // moderator of this sub" — consistent with the rest of the client
+    // error surfaces (fetchRecentSafe, fetchStatsSafe, ModActivityFeed).
+    if (!res.ok) return { ok: false, error: await extractServerError(res) };
     const data = await res.json();
     const revs = Array.isArray(data?.revs) ? (data.revs as ConfigRev[]) : [];
     if (revs.length === 0) return { ok: true, empty: true };
