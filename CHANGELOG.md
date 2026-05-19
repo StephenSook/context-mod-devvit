@@ -6,7 +6,37 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.1): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.2): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.2] — 2026-05-18
+
+Wave AE Pull-Forward Tier continues — 3 more items shipped post-v0.6.1.
+**All 10 Pull-Forward items now complete.**
+
+### Added — security
+
+- **safe-regex catastrophic-backtracking guard** in `src/rules/regex.ts` —
+  a pattern that compiles cleanly but fails NFA-shape analysis (e.g.
+  `(a+)+$`) is cached as null + logged. Closes Codex MED finding —
+  prevents mod-config-induced event-loop DoS.
+
+### Added — upstream FoxxMD parity
+
+- **`windowSec` param** on `history`, `attribution`, `recentActivity` rules.
+  Counts only entries within the last N seconds before applying thresholds.
+  Without it, the cache TTL was the only window control. Mods can now
+  write "5+ comments in the LAST HOUR" or "30%+ self-promo domains in
+  the LAST DAY". Optional, defaults unlimited (preserves prior behavior).
+- **`scripts/migrate-upstream-config.mjs`** — one-shot YAML→JSON5 migrator
+  for upstream FoxxMD CM configs. Applies 10 schema renames, drops the
+  3 unsupported rule kinds + 7 unsupported action kinds + 3 top-level
+  cuts, emits `// CUT:` header naming everything dropped. Exit 0 clean /
+  2 cuts-happened. Closes the operator-adoption story — 15+ FoxxMD
+  operators no longer face "translate by hand" as the porting tax.
+
+### Tests
+
+578 → 588 passing (+10 for migration script, +2 for safe-regex).
 
 ## [0.6.1] — 2026-05-18
 
