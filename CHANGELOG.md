@@ -6,7 +6,43 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.3): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.4): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.4] — 2026-05-18
+
+Wave AE Polish Tier — second batch (3 items). All 13 Polish items now
+shipped across v0.6.3 + v0.6.4.
+
+### Fixed — silent failures
+
+- **normalize.ts extractTypedField** (Agent B #9): getUserByUsername's
+  untyped shape used to silently default `isModerator → false` if Devvit
+  renamed the field in a minor release → all authors appear non-mod →
+  mod-bypass filters stop matching → bot starts removing mods' own
+  posts. Added extractTypedField() that type-checks each field + warn-
+  logs missing/wrong-type fields so ops sees shape drift before mass
+  mis-moderation lands. Fail-OPEN semantics preserved.
+
+### Fixed — operational correctness
+
+- **migrations.ts returns Result** (Agent B #10): runMigrations() used
+  to return void + caller advanced the schema-version pointer
+  regardless. A failed migration was recorded as success → next upgrade
+  skipped retry → state corruption permanent. Now returns
+  Result<void, string>; /app-upgrade trigger only advances the pointer
+  on success.
+
+### Changed — CI
+
+- **Coverage hard-gate** (Agent D #6): vitest --coverage was
+  continue-on-error:true. A coverage-thresholds failure (or vitest
+  crash) shipped green. Now fails the job — realistic thresholds are
+  cheap to loosen in vitest.config.ts rather than mask in CI.
+
+### Tests
+
+594 still passing (no new tests — type-validation + Result refactor
+exercised by existing passing test paths).
 
 ## [0.6.3] — 2026-05-18
 
