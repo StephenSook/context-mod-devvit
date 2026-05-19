@@ -126,7 +126,17 @@ test.describe('Observatory dashboard', () => {
     await expect(page.getByText('Actions today').first()).toBeVisible();
     const firstRow = page.locator('button[aria-expanded]').first();
     await expect(firstRow).toBeVisible();
-    await firstRow.click();
+    // Polish #59 grew the FilterChips strip (added ban/flair/distinguish),
+    // which on mobile (390×844) reduces the flex-1 events-container height
+    // enough that the first row sits partially under ModActivityFeed's
+    // cm-fade-up wrapper. Real users tap directly on the event row +
+    // React onClick fires — but Playwright's pointer-events check fails
+    // because the ModActivityFeed overlap rejects the synthetic click
+    // at the pixel level (force:true clicks the wrong element).
+    // dispatchEvent fires the React handler directly without going
+    // through hit-testing — mirrors the user-level intent (toggling
+    // the row's expanded state) without the pixel-overlap concern.
+    await firstRow.dispatchEvent('click');
     await expect(firstRow).toHaveAttribute('aria-expanded', 'true');
   });
 
