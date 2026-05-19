@@ -6,7 +6,66 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.5.5): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.0): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.0] — 2026-05-18
+
+Phase 4.7 image-repost detection SHIPPED. Vinh's 0.10 perceptual-blockhash
+spike landed clean GO (commits `00feca5` + `19e94f0`) — Stephen called
+ship after Phase 5 buffer analysis. The full image-hash pipeline (decode +
+hash + per-sub store + rule + worker) is now wired.
+
+### Added — Phase 4.7 image-repost detection
+
+- **`src/image/decode.ts`** — `fetchAndDecode` w/ 8s timeout + 6MB byte
+  cap + Accept header that excludes WebP (jpeg-js can't decode it).
+  Branches on Content-Type → UPNG (PNG) or jpeg-js (JPEG). Returns
+  discriminated `DecodeResult` w/ phase tag for fail-OPEN classification.
+- **`src/image/hash.ts`** — `computeBlockhash` via blockhash-core 16-bit
+  grid (256-bit hash → 64 hex chars). `hammingDistance` util w/ Brian
+  Kernighan bit-count for the per-event hot path.
+- **`src/state/imageHashStore.ts`** — JSON-list per-sub store at
+  `cm:{sub}:img:hash:recent` (cap 500 entries, 30d TTL refreshed on
+  write). `findSimilar` does O(N) Hamming comparison; `recordHash`
+  dedupes by postId. Fail-OPEN on Redis error.
+- **`src/rules/imageRepost.ts`** — `runImageRepostRule`: skip non-image
+  posts, decode → hash → findSimilar → record (always, AFTER lookup so
+  the post can't match itself) → trigger if match within threshold
+  (default 8/256 bits per upstream CM "same image" convention).
+- **`src/routes/scheduler.ts /image-hash-worker`** filled in for the
+  backfill case where a mod adds the rule AFTER posts already processed.
+- **`examples/repost-image-watch.json5`** — demo-ready, ships behind
+  `dryRun: true` w/ comment + report actions.
+- **PostSubmitPayload.post.preview**: new field on the V2 trigger payload
+  shape, populates `Item.imageUrl` via `pickPreviewVariant` (selects the
+  largest variant ≤640px — Vinh's optimal RAM zone, 0-2/256 bit hash
+  drift vs full-res).
+- **Schema entry** in `src/schema/app.schema.json` Rule oneOf union w/
+  AJV-gated `hammingThreshold` (0..256) + `windowDays` (1..365).
+- **Devvit fetch allowlist** already covers `i.redd.it`, `preview.redd.it`,
+  `external-preview.redd.it`, `external-i.redd.it` (Vinh added pre-spike).
+
+### Added — npm deps
+
+- `upng-js@^2.1.0` — PNG decoder, pure JS, no native bindings
+- `jpeg-js@^0.4.4` — JPEG decoder, pure JS
+- `blockhash-core@^0.1.0` — perceptual blockhash, pure JS
+- Bundle cost: +88KB to `dist/server/index.cjs` (per Vinh's spike measurement)
+
+### Added — tests
+
+- `tests/image/hash.test.ts` (+7) — blockhash shape, determinism, Hamming
+  edge cases (0/1/4/256), length-mismatch throw
+- `tests/state/imageHashStore.test.ts` (+9) — findSimilar empty / within-
+  threshold / above-threshold / corruption-tolerant / fail-OPEN; recordHash
+  prepend / dedupe / cap / no-op
+- `tests/rules/imageRepost.test.ts` (+7) — skip non-image, skip no-id,
+  fail-OPEN on decode + blockhash, no-match-records, match-triggers,
+  honors custom threshold + windowDays
+
+### Tests
+
+538 → 561 passing (+23 for Phase 4.7).
 
 ## [0.5.5] — 2026-05-18
 
