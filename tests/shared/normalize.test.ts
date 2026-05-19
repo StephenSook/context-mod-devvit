@@ -11,6 +11,7 @@ import {
   normalizePost,
   normalizeComment,
   computeNeedsAuthorEnrichment,
+  BadTriggerIdError,
 } from '../../src/shared/normalize';
 import type { AppConfig } from '../../src/shared/types';
 
@@ -213,5 +214,82 @@ describe('computeNeedsAuthorEnrichment', () => {
       ],
     };
     expect(computeNeedsAuthorEnrichment(cfg)).toBe(true);
+  });
+});
+
+// AE Polish #81: BadTriggerIdError boundary tests. The pre-Polish action-
+// layer "throws on unexpected ID prefix" guards in lock.ts + distinguish.ts
+// became provably unreachable code under the ThingId brand (TS narrows the
+// `t3_${string}` | `t1_${string}` union exhaustively via isPostId). Runtime
+// validation moved UP to normalize.ts where the V2 trigger payload's
+// optional `id?` field gets validated at construction time. Malformed
+// payloads now hit BadTriggerIdError at the trigger boundary so
+// handleActivity's per-run catch records them as (run-error) instead of
+// silently swallowing into the `?? ''` empty-string path that would have
+// reached the action layer.
+describe('BadTriggerIdError (Polish #81 — ThingId brand boundary guard)', () => {
+  beforeEach(() => {
+    getUserByUsername.mockReset();
+  });
+
+  it('throws on a post payload with missing id field', async () => {
+    await expect(
+      normalizePost({ post: { title: 'no-id' }, author: { name: 'alice' } }, baseConfig)
+    ).rejects.toThrow(BadTriggerIdError);
+  });
+
+  it('throws on a comment payload with missing id field', async () => {
+    await expect(
+      normalizeComment({ comment: { body: 'no-id' }, author: { name: 'alice' } }, baseConfig)
+    ).rejects.toThrow(BadTriggerIdError);
+  });
+
+  it('throws on a post payload with malformed (non-prefix) id', async () => {
+    await expect(
+      normalizePost(
+        { post: { id: 'xx_garbage', title: 'a' }, author: { name: 'alice' } },
+        baseConfig
+      )
+    ).rejects.toThrow(BadTriggerIdError);
+  });
+
+  it('throws on a post payload with t1_ prefix (wrong kind for post)', async () => {
+    // Defense-in-depth: post payloads should carry t3_ IDs. A t1_ id here
+    // would be an upstream payload bug; we accept either prefix at the
+    // type level (ThingId is post|comment union) but downstream actions
+    // dispatch on prefix anyway, so we don't over-constrain here.
+    // Verifying instead that t1_ DOES pass — looser-but-correct.
+    const { item } = await normalizePost(
+      { post: { id: 't1_unexpected_for_post', title: 'x' }, author: { name: 'a' } },
+      baseConfig
+    );
+    expect(item.id).toBe('t1_unexpected_for_post');
+  });
+
+  it('BadTriggerIdError carries the raw value + kind tag for telemetry', async () => {
+    try {
+      await normalizePost({ post: { id: '' }, author: { name: 'a' } }, baseConfig);
+      expect.fail('expected throw');
+    } catch (err) {
+      expect(err).toBeInstanceOf(BadTriggerIdError);
+      expect((err as BadTriggerIdError).rawId).toBe('');
+      expect((err as BadTriggerIdError).kind).toBe('post');
+    }
+  });
+
+  it('happy path: t3_-prefixed post id validates cleanly', async () => {
+    const { item } = await normalizePost(
+      { post: { id: 't3_validated', title: 'x' }, author: { name: 'a' } },
+      baseConfig
+    );
+    expect(item.id).toBe('t3_validated');
+  });
+
+  it('happy path: t1_-prefixed comment id validates cleanly', async () => {
+    const { item } = await normalizeComment(
+      { comment: { id: 't1_validated', body: 'x' }, author: { name: 'a' } },
+      baseConfig
+    );
+    expect(item.id).toBe('t1_validated');
   });
 });

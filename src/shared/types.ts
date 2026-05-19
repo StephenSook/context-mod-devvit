@@ -8,9 +8,42 @@
  * handleActivity + Step 3.5 recordEvent all type-check end-to-end.
  */
 
+// AE Polish #81: type-design-analyzer #2 — branded Reddit thing-id.
+// Reddit's fullname format is `t<type>_<base36>`; rule engine only sees
+// posts (t3_) and comments (t1_), so the union is closed. Branding the
+// shape at the type system level lets action-dispatch sites (lock.ts,
+// report.ts, distinguish.ts) narrow via `startsWith('t3_')` /
+// `startsWith('t1_')` and drop their ad-hoc `as` casts. Critically,
+// distinguish.ts:36's `throw new Error('unexpected id prefix')` becomes
+// provably unreachable code after narrowing (TS can prove the if/else
+// covers the union exhaustively).
+//
+// Construction-site validation lives in src/shared/normalize.ts —
+// invalid IDs throw BadTriggerIdError; handleActivity's per-run
+// try/catch records that as a (run-error) event so the dashboard sees
+// the failure instead of the activity silently disappearing.
+export type ThingId = `t3_${string}` | `t1_${string}`;
+export type PostId = `t3_${string}`;
+export type CommentId = `t1_${string}`;
+
+export function isThingId(s: string): s is ThingId {
+  return s.startsWith('t3_') || s.startsWith('t1_');
+}
+
+// Per-arm narrowing. TS 4.5+'s template-literal-union narrowing via
+// startsWith doesn't always trigger automatically on a wide union; an
+// explicit `is`-predicate guard reliably narrows ThingId → PostId/
+// CommentId at action-dispatch sites (lock / report / distinguish).
+export function isPostId(id: ThingId): id is PostId {
+  return id.startsWith('t3_');
+}
+export function isCommentId(id: ThingId): id is CommentId {
+  return id.startsWith('t1_');
+}
+
 // Inputs — Item & Author (post-normalization, no `undefined` fields).
 export interface Item {
-  id: string; // t3_xxx (post) or t1_xxx (comment)
+  id: ThingId; // t3_xxx (post) or t1_xxx (comment) — branded; constructed via normalize.ts
   title: string; // empty for comments
   body: string; // selftext for posts, body for comments
   url: string;

@@ -29,8 +29,9 @@ export async function runComment(action: CommentAction, ctx: ActionContext): Pro
     },
   };
   const text = render(action.template, tplCtx);
+  // Polish #81: cast dropped — ctx.item.id is ThingId via shared brand.
   await reddit.submitComment({
-    id: ctx.item.id as `t3_${string}` | `t1_${string}`,
+    id: ctx.item.id,
     text,
   });
 }

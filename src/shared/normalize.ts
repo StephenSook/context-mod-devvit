@@ -12,8 +12,29 @@
  */
 
 import { reddit } from '@devvit/web/server';
-import type { Item, Author, AppConfig } from './types';
+import type { Item, Author, AppConfig, ThingId } from './types';
+import { isThingId } from './types';
 import { escapeMarkdown } from '../core/template';
+
+// AE Polish #81: invalid thing-ID throw. Reddit's triggers ALWAYS send
+// well-formed t3_/t1_ IDs in production; this throw is the runtime
+// guard that pairs with the ThingId brand at the type level. If a
+// malformed payload arrives (test harness, partial mock, hypothetical
+// Devvit API regression), handleActivity's per-run try/catch records
+// it as a (run-error) event instead of silently swallowing into the
+// `?? ''` empty-string path that previously routed to actions and
+// 400'd far from the source.
+export class BadTriggerIdError extends Error {
+  constructor(public readonly rawId: string, public readonly kind: 'post' | 'comment') {
+    super(`normalize: ${kind} trigger payload has invalid thing-id ${JSON.stringify(rawId)}`);
+    this.name = 'BadTriggerIdError';
+  }
+}
+
+function assertThingId(raw: string, kind: 'post' | 'comment'): ThingId {
+  if (!isThingId(raw)) throw new BadTriggerIdError(raw, kind);
+  return raw;
+}
 
 // Local payload shapes — `OnPostSubmitRequest` / `OnCommentSubmitRequest` are
 // NOT re-exported by `@devvit/web/server`; they live in `@devvit/shared/types`
@@ -315,9 +336,13 @@ export async function normalizePost(
     a.id ?? p.authorId ?? '',
     config.needsAuthorEnrichment ?? false
   );
+  // AE Polish #81: validate the thing-id at the boundary. Invalid =
+  // BadTriggerIdError → handleActivity's per-run catch records as
+  // (run-error). Pre-Polish this fell through to `id: ''` which
+  // produced 400s deep in the action layer.
   const item: Item = {
     ...ITEM_DEFAULTS,
-    id: p.id ?? '',
+    id: assertThingId(p.id ?? '', 'post'),
     title: p.title ?? '',
     body: p.selftext ?? '',
     url: p.url ?? '',
@@ -373,9 +398,12 @@ export async function normalizeComment(
     }
   }
 
+  // AE Polish #81: branded-id validation for comments. Same posture
+  // as normalizePost — invalid → BadTriggerIdError → handleActivity
+  // run-error record.
   const item: Item = {
     ...ITEM_DEFAULTS,
-    id: c.id ?? '',
+    id: assertThingId(c.id ?? '', 'comment'),
     title: parentTitle,
     body: c.body ?? '',
     url: '',

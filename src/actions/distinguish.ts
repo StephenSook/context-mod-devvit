@@ -19,20 +19,24 @@
 
 import { reddit } from '@devvit/web/server';
 import type { DistinguishAction, ActionContext } from '../shared/types';
+import { isPostId } from '../shared/types';
 
 export async function runDistinguish(
   action: DistinguishAction,
   ctx: ActionContext
 ): Promise<void> {
+  // AE Polish #81: ThingId brand makes the pre-Polish `else throw` branch
+  // provably unreachable — TS sees `t3_${string}` | `t1_${string}` as
+  // exhaustively narrowed by startsWith('t3_'). Casts dropped. The
+  // runtime guard moves UP to normalize.ts where BadTriggerIdError is
+  // thrown at construction-time if a malformed payload ever lands.
   const id = ctx.item.id;
-  if (id.startsWith('t3_')) {
-    const post = await reddit.getPostById(id as `t3_${string}`);
+  if (isPostId(id)) {
+    const post = await reddit.getPostById(id);
     await post.distinguish();
-  } else if (id.startsWith('t1_')) {
-    const comment = await reddit.getCommentById(id as `t1_${string}`);
+  } else {
+    const comment = await reddit.getCommentById(id);
     const sticky = action.sticky ?? false;
     await comment.distinguish(sticky);
-  } else {
-    throw new Error(`distinguish: unexpected id prefix ${id}`);
   }
 }

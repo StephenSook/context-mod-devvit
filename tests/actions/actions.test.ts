@@ -154,10 +154,14 @@ describe('runLock', () => {
     expect(commentLock).toHaveBeenCalled();
     expect(getPostById).not.toHaveBeenCalled();
   });
-  it('throws on unexpected ID prefix', async () => {
-    const bad: Item = { ...post, id: 'xx_abc' };
-    await expect(runLock({ kind: 'lock' }, baseCtx(bad))).rejects.toThrow();
-  });
+  // AE Polish #81: pre-Polish runLock had `if (t3_) post / else if (t1_)
+  // comment / else throw('unexpected id prefix')`. The runtime guard moved
+  // UP to src/shared/normalize.ts BadTriggerIdError so malformed IDs are
+  // rejected at the trigger boundary (handleActivity records as run-error)
+  // instead of deep in the action layer. The action-layer test asserting
+  // the runLock throw is obsolete — TS now PROVES the unreachable branch
+  // (id is `t3_${string}` | `t1_${string}`, exhaustively narrowed by
+  // isPostId). Equivalent coverage moved to tests/shared/normalize.test.ts.
 });
 
 describe('runReport', () => {
@@ -249,8 +253,8 @@ describe('runDistinguish (AE Pull-Forward #2)', () => {
     expect(commentDistinguish).toHaveBeenCalledWith(true);
   });
 
-  it('throws on unexpected ID prefix', async () => {
-    const bad: Item = { ...post, id: 'xx_abc' };
-    await expect(runDistinguish({ kind: 'distinguish' }, baseCtx(bad))).rejects.toThrow();
-  });
+  // Polish #81: action-layer "unexpected ID prefix" throw removed — TS
+  // proves the branch unreachable via the ThingId brand. Equivalent
+  // coverage lives at tests/shared/normalize.test.ts for the new
+  // BadTriggerIdError site.
 });
