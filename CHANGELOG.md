@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — request hygiene
+
+- **AE Polish #25: `explainRule.ts` wires AbortController + 30s timeout**
+  — the rule-explainer form path had an `AbortError` catch branch but
+  NO `AbortController` was actually instantiated, so a hung OpenAI
+  request would block the form forever (mod sees stuck spinner, no
+  retry path). `explainEvent.ts` has the timeout wired correctly —
+  this was inconsistency drift between the two parallel paths. Added
+  `OPENAI_TIMEOUT_MS = 30_000` + `controller.signal` on the fetch +
+  `clearTimeout(timeoutId)` in `finally`. +2 tests covering: signal
+  is passed to fetcher, simulated AbortError → "aborted (timeout)"
+  error message. 630 tests green (was 628).
+
 ### Security — defense-in-depth
 
 - **AE Polish #23: image decode Content-Length pre-check** — Phase 4.7's

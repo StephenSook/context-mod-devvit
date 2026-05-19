@@ -83,6 +83,35 @@ describe('explainRule', () => {
     expect(body.model).toBe('gpt-4o-mini');
     expect(body.messages).toHaveLength(2);
   });
+
+  it('Polish #25: passes AbortSignal to fetcher (timeout protection)', async () => {
+    // Before fix: AbortError catch branch existed but no controller was wired,
+    // so a hung OpenAI request would block forever. Now signal is set.
+    const fetcher = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), { status: 200 })
+    );
+    await explainRule('{kind:"regex"}', 'sk-test', fetcher);
+    const init = fetcher.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init?.signal).toBeDefined();
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('Polish #25: AbortError from timed-out fetcher → "aborted (timeout)" error', async () => {
+    // Simulate the underlying fetch surfacing AbortError after the controller
+    // fires its timeout.
+    const fetcher = vi.fn(async () => {
+      const err = new Error('The operation was aborted');
+      err.name = 'AbortError';
+      throw err;
+    });
+    const r = await explainRule('{kind:"regex"}', 'sk-test', fetcher);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error).toMatch(/aborted/i);
+      expect(r.error).toMatch(/timeout/i);
+    }
+  });
 });
 
 describe('formatExplainToast', () => {

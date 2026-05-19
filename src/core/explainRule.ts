@@ -23,6 +23,15 @@ export type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
  */
 export type ExplainResult = Result<string>;
 
+/**
+ * Polish #25: matches explainEvent.ts. Without this, a hung OpenAI request
+ * blocks the form submit forever — the mod sees a stuck spinner with no
+ * way to retry. AbortError branch in the catch (line ~90) already exists
+ * but had no AbortController to fire it. 30s is generous for gpt-4o-mini
+ * (typical 2-8s latency) without making mods wait through obvious hangs.
+ */
+const OPENAI_TIMEOUT_MS = 30_000;
+
 const SYSTEM_PROMPT = `You are an assistant explaining ContextMod moderation rules to non-technical subreddit moderators. Given a JSON5 rule, return a single paragraph (2-3 sentences max) describing in plain English: (1) what trigger condition the rule matches, (2) what kind of post or comment it targets, (3) any caveats a mod should know. Avoid jargon. Avoid AI-tone words like 'powerful' or 'simply'. Do not return code blocks — only the prose explanation.`;
 
 export async function explainRule(
@@ -40,9 +49,12 @@ export async function explainRule(
     return err('Rule too long (max 4000 chars). Trim and try again.');
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
   try {
     const res = await fetcher('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -90,6 +102,8 @@ export async function explainRule(
     if (name === 'AbortError') return err('OpenAI request aborted (timeout). Retry.');
     if (msg.toLowerCase().includes('fetch')) return err(`OpenAI network failure: ${msg}`);
     return err(`OpenAI fetch failed: ${msg}`);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
