@@ -6,7 +6,44 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.4): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.5): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.5] — 2026-05-18
+
+Wave AE wrap-up release. **31/31 audit findings closed** across
+Critical (8/8), Pull-Forward (10/10), and Polish (16/16). Submission
+docs refreshed for the May 27 deadline + the v0.6.x reality.
+
+### Changed — docs
+
+- **blog-post-draft.md** — v0.2.0 + 256 tests → v0.6.4 + 594 tests;
+  "what ships" rewritten to enumerate Phase 4 SHIPPED, Phase 4.7
+  image-repost SHIPPED, distinguish action, NOT combinator, windowSec,
+  migration tool, 13 hardening waves w/ specific finding examples
+- **demo-video-runbook.md** — recording window 5/17-19 → 5/24-26;
+  fallback path marked historical
+- **outreach-drafts.md** — 3 send-window refreshes for the May 27
+  hard deadline
+
+### Added — test gap close
+
+- **triggers-recovery.test.ts** (NEW, 3 tests) — pins the AD LOW #10
+  fix; double-Redis-failure scenario for /post-submit + /comment-submit
+  now exercised. Agent D finding #2 closed.
+- **a11y.spec.ts AI panel scan** (+1 test) — axe-core scans the AI
+  explainer loading skeleton + friendly-error state. Agent D #7 closed.
+
+### Refactored
+
+- **recentEvents pre-v1 back-stamp removed** (Agent B #8) — minting a
+  nonce on every READ caused inconsistent dedup if a pre-v1 row was
+  ever written back. v0.5.x is past skeleton; pre-v1 rows would be a
+  corruption signal. Drop loudly instead.
+
+### Tests
+
+594 → 597 passing (+3 recovery tests; AI-panel a11y is e2e-only +
+doesn't count in the unit-test total).
 
 ## [0.6.4] — 2026-05-18
 
