@@ -36,19 +36,32 @@ export class ActionTimeoutError extends Error {
   }
 }
 
+// Internal sentinel — used as the resolve-value of the timer-side promise.
+// Picked as a fresh Symbol so it can never collide with any T the caller
+// races against, even if T extends string/number/etc.
+const TIMEOUT_SENTINEL: unique symbol = Symbol('cm/timeout/fired');
+
 export async function withTimeout<T>(
   p: Promise<T>,
   ms: number,
   errFactory: () => Error
 ): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Polish #50: timer-side promise RESOLVES with a sentinel (not rejects)
+  // so Promise.race never settles via a rejection path. This avoids
+  // unhandled-rejection noise under vitest fake timers + Node strict
+  // unhandled-rejection tracking. The error is thrown explicitly after
+  // race settles, and the factory is still called at timeout-fire time
+  // (preserving the stack-at-reject semantic).
+  const timerPromise = new Promise<typeof TIMEOUT_SENTINEL>((resolve) => {
+    timer = setTimeout(() => resolve(TIMEOUT_SENTINEL), ms);
+  });
   try {
-    return await Promise.race<T>([
-      p,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(errFactory()), ms);
-      }),
-    ]);
+    const result = await Promise.race<T | typeof TIMEOUT_SENTINEL>([p, timerPromise]);
+    if (result === TIMEOUT_SENTINEL) {
+      throw errFactory();
+    }
+    return result;
   } finally {
     if (timer) clearTimeout(timer);
   }

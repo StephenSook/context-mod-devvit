@@ -55,6 +55,25 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
   the Polish #6 corrupt-snapshot delete pattern. +1 test pinning that
   the snapshot key is GONE after a shape-stale fall-through.
 
+### Tested — shared primitive coverage
+
+- **AE Polish #50: `tests/lib/timeout.test.ts` (sibling-convention pin)**
+  — gemini-agent third-pass review MEDIUM finding. Every other primitive
+  in `src/lib/` has a sibling test (`circuitBreaker.test.ts`, `idem.test
+  .ts`, `retry.test.ts`, `result.test.ts`, etc.) but `timeout.ts`
+  (extracted in Polish #48) had coverage only via consumers. Added 12
+  direct tests pinning: fast-path resolve, slow-path timeout fires +
+  rejects, `errFactory` called AT timeout (factory not value — preserves
+  stack-at-reject semantic), timer cleanup in finally on both
+  resolve + reject paths, sub-wrappers use correct budget + correct
+  error class, `RunTimeoutError`/`ActionTimeoutError` instanceof
+  differentiation (catch blocks can tag failures correctly), exported
+  constants are sensible (run > action, run > imageRepost's internal
+  8s). Refactored timer-side promise to RESOLVE w/ a sentinel (vs
+  reject) so Promise.race never settles via rejection — avoids
+  unhandled-rejection noise under vitest fake timers + Node strict
+  mode. 747 tests green (was 735).
+
 ### Fixed — sibling-orchestrator parity
 
 - **AE Polish #48: `dryRunActivity` per-run isolation + timeout +
