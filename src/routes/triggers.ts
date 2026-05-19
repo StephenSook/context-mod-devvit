@@ -131,7 +131,19 @@ triggers.post('/app-upgrade', async (c) => {
     return c.json({ status: 'ok' });
   }
   log.info('cm/app-upgrade', 'migrating', { from: stored, to: SCHEMA_VERSION });
-  await runMigrations(stored, SCHEMA_VERSION);
+  const result = await runMigrations(stored, SCHEMA_VERSION);
+  // AE Polish #12: only advance the schema-version pointer when the
+  // migration actually succeeded. Previously we set the pointer regardless
+  // → a partially-migrated install was recorded as fully migrated → next
+  // upgrade skipped the retry → corrupt state forever.
+  if (!result.ok) {
+    log.error('cm/app-upgrade', 'migration failed — schema version pointer NOT advanced (will retry on next upgrade)', {
+      from: stored,
+      to: SCHEMA_VERSION,
+      err: result.error,
+    });
+    return c.json({ status: 'migration-failed' });
+  }
   await redis.set(K.schemaVersion(), SCHEMA_VERSION);
   return c.json({ status: 'ok' });
 });
