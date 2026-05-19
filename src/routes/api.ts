@@ -51,7 +51,23 @@ api.get('/recent', async (c) => {
     return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
   }
 
-  const events = await readRecent(subName);
+  // AE Polish #68: silent-failure-hunter MEDIUM finding. readRecent's
+  // OWN try/catch on the zRange returns [] on Redis failure, but its
+  // inner JSON.parse / migrate() at line 84-90 catches per-row failures
+  // — and a SYNCHRONOUS throw (e.g. malformed key, key argument
+  // construction blow-up) that happens BEFORE entering readRecent's
+  // try would propagate up here. Hono's default 500 response is HTML
+  // — client extractServerError would surface "Unexpected token <"
+  // noise instead of an actionable error. Wrap defensively so even
+  // an unexpected throw produces a clean 503 + structured error body.
+  let events;
+  try {
+    events = await readRecent(subName);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.error('cm/api/recent', 'readRecent threw — returning 503', { err: msg, sub: subName });
+    return c.json({ error: `events unavailable: ${msg}`, events: [] }, 503);
+  }
   return c.json({ events: events.map(stripServerFields) });
 });
 
@@ -372,7 +388,19 @@ api.get('/stats', async (c) => {
     log.error('cm/api/stats', 'subreddit context unavailable', { err });
     return c.json({ counters: {}, error: 'subreddit context unavailable' }, 503);
   }
-  const stats = await readStatsSnapshot(subName);
+  // AE Polish #68: same defense-in-depth as /api/recent above. Wrap
+  // readStatsSnapshot so any unexpected throw (Redis call setup,
+  // pre-try synchronous error, JSON.parse blowing up at the fallback
+  // compute path) produces a structured 503 instead of Hono's default
+  // HTML 500 (which client extractServerError can't parse).
+  let stats;
+  try {
+    stats = await readStatsSnapshot(subName);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.error('cm/api/stats', 'readStatsSnapshot threw — returning 503', { err: msg, sub: subName });
+    return c.json({ counters: {}, error: `stats unavailable: ${msg}` }, 503);
+  }
   return c.json({ counters: stats });
 });
 
