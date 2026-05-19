@@ -29,6 +29,17 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Tested
 
+- **AE Polish #24: `runMigrations` Result contract pinned** —
+  `src/state/migrations.ts` had zero test coverage despite its
+  `Result<void, string>` return type being the load-bearing seam that
+  decides whether `/app-upgrade` advances `cm:schema-version`. Added 4
+  contract tests covering: `from === to` fast-path, missing-migration
+  silent no-op, arbitrary version handshake, + SCHEMA_VERSION shape.
+  MIGRATIONS map is empty by design today so the throwing-migration
+  path isn't tested w/o monkey-patching the module-level Record (left
+  as a TODO comment for when a real migration lands). 628 tests green
+  (was 624).
+
 - **AE Polish #22: `migrate-upstream-config.mjs` failure-path coverage**
   — operator-facing migration script (run by 15+ FoxxMD operators per
   the migration story doc) had tests pinning exit code 0 (clean) and
