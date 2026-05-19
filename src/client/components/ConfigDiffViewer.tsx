@@ -43,10 +43,28 @@ async function fetchConfigHistory(): Promise<ApiResult<ConfigRev[]>> {
  *
  * Algorithm: classic LCS DP table, then walk back to emit add/del/same tags in
  * the original order. O(n*m) for n+m lines; fine for typical 20-60-line configs.
+ *
+ * AE Polish #52 — MAX_LINES guard. A 1000-line config (100+ rules, deeply
+ * nested namedRules) would produce a 1000x1000 dp table (8MB heap) and
+ * potentially hang the browser for a second on each diff render. Cap at
+ * 500 lines per side (10x the typical max wiki-config length). Above the
+ * cap, return a single "too-large" marker so the UI surfaces it cleanly
+ * vs silently lagging. Mods w/ truly huge configs can use git/external
+ * diff tools — the dashboard's purpose is glanceable not source-of-truth.
  */
-export function simpleDiff(a: string, b: string): { line: string; tag: 'add' | 'del' | 'same' }[] {
+export const DIFF_MAX_LINES = 500;
+export type DiffEntry = { line: string; tag: 'add' | 'del' | 'same' | 'too-large' };
+export function simpleDiff(a: string, b: string): DiffEntry[] {
   const aLines = a.split('\n');
   const bLines = b.split('\n');
+  if (aLines.length > DIFF_MAX_LINES || bLines.length > DIFF_MAX_LINES) {
+    return [
+      {
+        line: `Config too large for inline diff (${aLines.length} vs ${bLines.length} lines, cap ${DIFF_MAX_LINES}). Use git or an external diff tool.`,
+        tag: 'too-large',
+      },
+    ];
+  }
   const n = aLines.length;
   const m = bLines.length;
   // DP table of LCS lengths
@@ -175,10 +193,19 @@ function ConfigDiffViewer({ open, onClose }: { open: boolean; onClose: () => voi
                               ? 'text-signal-ok'
                               : d.tag === 'del'
                                 ? 'text-signal-err'
-                                : 'text-bone-200/80'
+                                : d.tag === 'too-large'
+                                  ? 'text-signal-warn'
+                                  : 'text-bone-200/80'
                           }
                         >
-                          {d.tag === 'add' ? '+' : d.tag === 'del' ? '-' : ' '} {d.line}
+                          {d.tag === 'add'
+                            ? '+'
+                            : d.tag === 'del'
+                              ? '-'
+                              : d.tag === 'too-large'
+                                ? '⚠'
+                                : ' '}{' '}
+                          {d.line}
                         </div>
                       ))
                     : 'Select two revisions to diff.'}

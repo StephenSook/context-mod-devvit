@@ -49,4 +49,30 @@ describe('simpleDiff (Wave U CRITICAL — LCS-based, not set-diff)', () => {
     const sameCount = result.filter((d) => d.tag === 'same').length;
     expect(sameCount).toBeLessThan(3);
   });
+
+  it('Polish #52: input >DIFF_MAX_LINES → too-large marker, no O(n*m) compute', () => {
+    // A 1000-line config (rare but possible w/ deep namedRules nesting) would
+    // produce a 1000x1000 dp table = ~8MB heap + potentially second-long hang.
+    // Cap at 500 lines per side. Above cap → single too-large entry, no compute.
+    const huge = Array.from({ length: 501 }, (_, i) => `line ${i}`).join('\n');
+    const small = 'a\nb\nc';
+    const start = Date.now();
+    const result = simpleDiff(huge, small);
+    const elapsed = Date.now() - start;
+    expect(result).toHaveLength(1);
+    expect(result[0]?.tag).toBe('too-large');
+    expect(result[0]?.line).toMatch(/too large/i);
+    expect(result[0]?.line).toMatch(/501/);
+    expect(result[0]?.line).toMatch(/500/); // cap value mentioned
+    expect(elapsed).toBeLessThan(100); // short-circuit, no LCS compute
+  });
+
+  it('Polish #52: both sides at boundary (500 lines) still run full diff', () => {
+    // Cap is "strictly greater than" 500, so exactly 500 lines per side
+    // should run the full LCS compute without short-circuiting.
+    const lines = Array.from({ length: 500 }, (_, i) => `line ${i}`);
+    const result = simpleDiff(lines.join('\n'), lines.join('\n'));
+    expect(result.filter((d) => d.tag === 'too-large')).toHaveLength(0);
+    expect(result.filter((d) => d.tag === 'same')).toHaveLength(500);
+  });
 });
