@@ -124,6 +124,15 @@ function isValidRecentEventShape(obj: Record<string, unknown>): boolean {
   return true;
 }
 
+/**
+ * AE Polish #16 (Agent B #8): pre-v1 read-time backfill removed. v0.5.x
+ * is well past skeleton — every install has been writing v:1-stamped
+ * events since recordEvent() landed in Phase 2.3. The pre-v1 case was
+ * minting a new crypto.randomUUID() nonce on every READ (no write-through)
+ * which made dedup behave inconsistently if a pre-v1 row ever DID get
+ * written back. Removing the branch eliminates that hazard + keeps the
+ * single source of nonce truth at recordEvent write time.
+ */
 function migrate(raw: unknown): RecentEvent | null {
   if (raw == null || typeof raw !== 'object') return null;
   const obj = raw as Record<string, unknown>;
@@ -135,23 +144,7 @@ function migrate(raw: unknown): RecentEvent | null {
         );
       }
       return obj as unknown as RecentEvent;
-    case undefined: {
-      // Pre-v1 event written before schema versioning existed — stamp v:1 + nonce.
-      // AE Polish #5: validate the post-stamping shape, not the raw — defensive
-      // against pre-v1 events that already had a malformed `actions`.
-      const stamped = {
-        ...(obj as Omit<RecentEvent, 'v' | 'nonce'>),
-        v: 1 as const,
-        nonce: typeof obj.nonce === 'string' ? obj.nonce : crypto.randomUUID(),
-      };
-      if (!isValidRecentEventShape(stamped as unknown as Record<string, unknown>)) {
-        throw new Error(
-          'migrate(): pre-v1 event failed shape validation after stamping'
-        );
-      }
-      return stamped;
-    }
     default:
-      throw new Error(`migrate(): unknown RecentEvent version ${String(obj.v)}`);
+      throw new Error(`migrate(): unsupported RecentEvent version ${String(obj.v)} (pre-v1 dropped 2026-05-18)`);
   }
 }

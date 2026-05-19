@@ -169,7 +169,12 @@ describe('readRecent', () => {
     expect(out[0]?.activityId).toBe('t3_b');
   });
 
-  it('back-stamps pre-v1 events with v:1 + nonce', async () => {
+  it('AE Polish #16: pre-v1 events (missing v field) are dropped, not back-stamped', async () => {
+    // Pre-v1 back-stamp path was removed 2026-05-18 — v0.5.x is well past
+    // skeleton + every install has written v:1 events since Phase 2.3.
+    // A pre-v1 row in production today would be a corruption signal, not
+    // a legitimate migration case; drop it loudly rather than re-mint
+    // nonces on every read.
     zRange.mockResolvedValueOnce([
       {
         score: 1,
@@ -184,9 +189,7 @@ describe('readRecent', () => {
       },
     ]);
     const out = await readRecent();
-    expect(out).toHaveLength(1);
-    expect(out[0]?.v).toBe(1);
-    expect(typeof out[0]?.nonce).toBe('string');
+    expect(out).toHaveLength(0);
   });
 
   it('returns [] on redis error (best-effort read)', async () => {
