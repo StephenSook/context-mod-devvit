@@ -26,6 +26,7 @@ import type { ImageRepostRule, Item, RuleResult } from '../shared/types';
 import { fetchAndDecode } from '../image/decode';
 import { computeBlockhash } from '../image/hash';
 import { findSimilar, recordHash, type SimilarMatch } from '../state/imageHashStore';
+import { acquireLock } from '../lib/idem';
 
 const DEFAULT_HAMMING_THRESHOLD = 8;
 const DEFAULT_WINDOW_DAYS = 30;
@@ -77,32 +78,50 @@ export async function runImageRepostRule(
   // invariant explicit AT the rule layer: a Redis blip during evaluation
   // must NEVER abort the surrounding handleActivity loop (which would
   // skip every later run's rules + actions for the same event).
+  //
+  // AE Polish #61: per-sub lock around findSimilar+recordHash. codex-rescue
+  // 4th-pass review caught a read-modify-write race: two simultaneous
+  // duplicate-image posts both run findSimilar against the pre-write list
+  // → both miss → both recordHash GET-SET the entire list, losing one
+  // entry. Concurrent distinct posts can also drop a hash. The lock
+  // serializes the critical section per sub. Fail-OPEN on lock failure
+  // (acquireLock returns null on Redis blip) — same posture as the
+  // surrounding storage calls. Lock TTL is 60s (acquireLock default) but
+  // we release immediately after recordHash in the finally; the only
+  // tail-latency risk is if the rule somehow hangs after acquireLock
+  // (Polish #42 caps the entire run at 10s, so worst case the lock
+  // expires 50s after we'd naturally release).
+  const release = await acquireLock(`imghash:${sub ?? '_'}`);
   let match: SimilarMatch | null = null;
   try {
-    match = await findSimilar(candidateHash, threshold, sub);
-  } catch (err) {
-    console.warn(
-      '[cm/rules/imageRepost] findSimilar threw — fail-open (no trigger):',
-      item.id,
-      err
-    );
-    return { triggered: false };
-  }
-  // Always record AFTER the lookup so the same post can't match itself.
-  try {
-    await recordHash(
-      { postId: item.id, hash: candidateHash, ts: Date.now() },
-      ttlSec,
-      sub
-    );
-  } catch (err) {
-    // Lookup already succeeded; honor its decision. Lost record means
-    // future posts won't dedupe against THIS post, but won't false-positive.
-    console.warn(
-      '[cm/rules/imageRepost] recordHash threw — trigger decision still honored from lookup:',
-      item.id,
-      err
-    );
+    try {
+      match = await findSimilar(candidateHash, threshold, sub);
+    } catch (err) {
+      console.warn(
+        '[cm/rules/imageRepost] findSimilar threw — fail-open (no trigger):',
+        item.id,
+        err
+      );
+      return { triggered: false };
+    }
+    // Always record AFTER the lookup so the same post can't match itself.
+    try {
+      await recordHash(
+        { postId: item.id, hash: candidateHash, ts: Date.now() },
+        ttlSec,
+        sub
+      );
+    } catch (err) {
+      // Lookup already succeeded; honor its decision. Lost record means
+      // future posts won't dedupe against THIS post, but won't false-positive.
+      console.warn(
+        '[cm/rules/imageRepost] recordHash threw — trigger decision still honored from lookup:',
+        item.id,
+        err
+      );
+    }
+  } finally {
+    if (release) await release();
   }
 
   if (match) {
