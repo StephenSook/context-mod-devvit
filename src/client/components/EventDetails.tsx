@@ -106,8 +106,14 @@ export function EventDetails({ event }: { event: EventRecord }) {
  * are too dev-flavored for moderator UX. Map known patterns to plain English;
  * fall back to a short truncation of the raw message for anything else.
  */
-function friendlyExplainError(raw: string): string {
+export function friendlyExplainError(raw: string): string {
   const lower = raw.toLowerCase();
+  // Polish #18: 503 transient mod-check failure — check BEFORE the
+  // mod-auth branch (otherwise "mod check" would not match 'mod auth'
+  // and we'd fall through to raw, but be explicit + future-proof).
+  if (lower.includes('mod check transient') || lower.includes('transient failure')) {
+    return "Reddit's mod API is briefly unavailable. Try again in ~30s.";
+  }
   if (lower.includes('mod auth') || lower.includes('moderator') || lower.includes('401') || lower.includes('403')) {
     return 'Sign in as a moderator of this sub to use AI explanations.';
   }

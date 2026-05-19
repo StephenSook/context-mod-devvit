@@ -10,6 +10,18 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Fixed — UX honesty
 
+- **AE Polish #19: client `friendlyExplainError` 503-aware** —
+  paired w/ Polish #18 on the server side. When `/api/explain-event`
+  returns 503 (transient mod-check failure), the response body is
+  `{ ok: false, error: "mod check transient failure (retry in ~30s):
+  ..." }`. The client's `friendlyExplainError()` mapper didn't
+  recognize this pattern, so it fell through to raw-truncate and
+  surfaced the dev-flavored string verbatim. Added a 503-specific
+  branch placed BEFORE the 401/403 'mod auth' check, returning
+  `"Reddit's mod API is briefly unavailable. Try again in ~30s."`
+  +11 unit tests on `friendlyExplainError()` (function exported for
+  test access; was private). 613 tests green (was 602).
+
 - **AE Polish #18: `forms.ts` auth-fail toast 503-aware** — all 4 form
   submit handlers (`/test-rules-submit`, `/simulate-rule-submit`,
   `/explain-rule-submit`, `/set-openai-key-submit`) previously surfaced
