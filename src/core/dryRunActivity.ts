@@ -18,6 +18,7 @@ import type { Item, Author, Action } from '../shared/types';
 import * as configStore from '../state/configStore';
 import { runRun } from './runRun';
 import { runAction } from './runAction';
+import { runWithTimeout, RunTimeoutError } from '../lib/timeout';
 
 export interface DryRunActionResult {
   kind: string;
@@ -49,7 +50,31 @@ export async function dryRunActivity(
 
   const runs: DryRunRunResult[] = [];
   for (const run of current.config.runs) {
-    const result = await runRun(run, item, author, subredditName);
+    // AE Polish #48: parity with handleActivity per-run try/catch + timeout.
+    // Pre-fix: a hung runRun (e.g. imageRepost rule fetch that never returns)
+    // inside a mod's "Test rules on this item" form submit would stall the
+    // form indefinitely until Devvit's request timeout fired — UX impact
+    // is the form just fails silently. Same hang vector handleActivity
+    // closed via Polish #42; same shared withTimeout primitive used here.
+    let result: Awaited<ReturnType<typeof runRun>>;
+    try {
+      result = await runWithTimeout(runRun(run, item, author, subredditName), run.name);
+    } catch (err) {
+      const isTimeout = err instanceof RunTimeoutError;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(
+        `[cm/dryRunActivity] runRun ${isTimeout ? 'timed out' : 'threw'} — recording run as failed + continuing:`,
+        run.name,
+        err
+      );
+      runs.push({
+        runName: run.name,
+        triggered: false,
+        checkName: isTimeout ? '(run-timeout)' : '(run-error)',
+        actions: [{ kind: isTimeout ? 'run-timeout' : 'run-error', wouldHaveCalled: msg.slice(0, 200) }],
+      });
+      continue;
+    }
     if (!result.triggered) {
       runs.push({ runName: run.name, triggered: false, actions: [] });
       continue;

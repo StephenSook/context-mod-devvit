@@ -20,71 +20,12 @@ import type { ConfigSnapshot } from '../state/configStore';
 import { runRun } from './runRun';
 import { runAction } from './runAction';
 import { recordEvent } from '../state/recentEvents';
-
-/**
- * AE Polish #42 — per-run TIMEOUT cap. Polish #41 added a try/catch
- * around `await runRun(...)` which guards throws but NOT a hung Promise
- * (Redis socket stall, ungated fetch in image-repost, await on a
- * never-resolving cache prime). Without a timeout race, a single hung
- * run would silently stall the entire for-loop until the Devvit trigger
- * handler hits the platform request timeout — no log line, no recorded
- * event, runs N+1 never evaluate.
- *
- * 10 seconds is generous: the only Phase-4 rule that does a network
- * call is imageRepost (8s fetch timeout inside fetchAndDecode + 6MB
- * cap), and history/attribution/recentActivity all read pre-cached
- * data with fail-OPEN. 10s gives 2s headroom on the slowest legit path.
- *
- * AE Polish #47 — per-ACTION timeout cap. Polish #42 only wrapped runRun
- * (the rule-eval phase). The action-dispatch loop (`for action ... await
- * runAction(...)`) ran UNGUARDED — exactly the hang vector Polish #42
- * was supposed to close, just one level deeper. Each runAction makes
- * Reddit API calls (remove, ban, comment, etc.) which on Devvit platform
- * hiccup could hang. 8s per action is generous (Reddit's documented
- * SLA is sub-second on mod actions).
- */
-const PER_RUN_TIMEOUT_MS = 10_000;
-const PER_ACTION_TIMEOUT_MS = 8_000;
-
-class RunTimeoutError extends Error {
-  constructor(runName: string) {
-    super(`run "${runName}" exceeded ${PER_RUN_TIMEOUT_MS}ms wall clock`);
-    this.name = 'RunTimeoutError';
-  }
-}
-
-class ActionTimeoutError extends Error {
-  constructor(actionKind: string) {
-    super(`action "${actionKind}" exceeded ${PER_ACTION_TIMEOUT_MS}ms wall clock`);
-    this.name = 'ActionTimeoutError';
-  }
-}
-
-async function withTimeout<T>(
-  p: Promise<T>,
-  ms: number,
-  errFactory: () => Error
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race<T>([
-      p,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(errFactory()), ms);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
-async function runWithTimeout<T>(p: Promise<T>, runName: string): Promise<T> {
-  return withTimeout(p, PER_RUN_TIMEOUT_MS, () => new RunTimeoutError(runName));
-}
-
-async function actionWithTimeout<T>(p: Promise<T>, kind: string): Promise<T> {
-  return withTimeout(p, PER_ACTION_TIMEOUT_MS, () => new ActionTimeoutError(kind));
-}
+import {
+  runWithTimeout,
+  actionWithTimeout,
+  RunTimeoutError,
+  ActionTimeoutError,
+} from '../lib/timeout';
 
 export async function handleActivity(
   item: Item,

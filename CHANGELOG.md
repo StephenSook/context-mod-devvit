@@ -55,6 +55,26 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
   the Polish #6 corrupt-snapshot delete pattern. +1 test pinning that
   the snapshot key is GONE after a shape-stale fall-through.
 
+### Fixed — sibling-orchestrator parity
+
+- **AE Polish #48: `dryRunActivity` per-run isolation + timeout +
+  shared `withTimeout` primitive** — `dryRunActivity` is the
+  non-contract sibling that powers the mod-menu "Test rules on this
+  item" form. Pre-fix it had the same hang vectors handleActivity
+  had before Polish #41/#42: a runRun that throws or hangs would
+  stall the form submit until Devvit's request timeout silently
+  failed it. Mod gets a confusing "form failed" toast with no
+  diagnosis. Fix: extracted `withTimeout` / `runWithTimeout` /
+  `actionWithTimeout` / `RunTimeoutError` / `ActionTimeoutError`
+  from `handleActivity.ts` into new shared module `src/lib/
+  timeout.ts`. Both orchestrators now import from one source.
+  `dryRunActivity` per-run loop now has try/catch + 10s timeout
+  matching handleActivity. On timeout/throw, records a `run-timeout`
+  / `run-error` entry in the DryRunResult so the toast surfaces what
+  failed instead of just dropping the run silently. +3 tests
+  (throw isolation, timeout fires + next run evaluates, configPresent
+  short-circuit). 735 tests green (was 732).
+
 ### Fixed — orchestrator hang defense (pass 2)
 
 - **AE Polish #47: per-ACTION timeout cap** — second-pass code-reviewer
