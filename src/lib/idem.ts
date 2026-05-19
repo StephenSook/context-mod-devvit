@@ -149,16 +149,24 @@ export async function commitAction(actionId: string, token: string, sub?: string
   const pendingKey = K.actionPending(actionId, sub);
   const doneExpiration = new Date(Date.now() + DONE_TTL_SEC * 1000);
 
-  const backoffsMs = [100, 300, 1000];
+  // AE Polish #54: was `[100, 300, 1000]` but the loop only consumes
+  // backoffsMs[attempt] when `attempt < backoffsMs.length - 1` (i.e. for
+  // attempts 0 and 1). So the 1000ms entry was dead code — never reached
+  // because attempt=2 is the last iteration + skips the wait, then exits.
+  // 3 attempts + 2 backoffs is correct; the array length should match the
+  // wait count, not the attempt count. Cleanup makes future maintainers
+  // less likely to be confused by the apparent off-by-one.
+  const backoffsMs = [100, 300];
+  const MAX_ATTEMPTS = backoffsMs.length + 1; // 3 attempts total
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt < backoffsMs.length; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       await redis.set(doneKey, '1', { expiration: doneExpiration });
       lastErr = null;
       break;
     } catch (err) {
       lastErr = err;
-      if (attempt < backoffsMs.length - 1) {
+      if (attempt < backoffsMs.length) {
         await new Promise((resolve) => setTimeout(resolve, backoffsMs[attempt]!));
       }
     }
