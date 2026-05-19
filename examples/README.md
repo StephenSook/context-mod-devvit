@@ -15,6 +15,7 @@ Eleven working JSON5 configs that match the shipped Phase 1+2+3+4 AJV schema. Re
 | [`history-fresh-low-karma.json5`](./history-fresh-low-karma.json5) | **Phase 4** — fresh+burner profile gating | `history` rule w/ flat OR-of-thresholds (postCountLt + commentKarmaLt + linkKarmaLt) + regex spam-words combination |
 | [`attribution-drive-by-self-promo.json5`](./attribution-drive-by-self-promo.json5) | **Phase 4** — drive-by self-promo detection | `attribution` rule (domains list + domainPercent + minPosts floor) reading from 1h author-history cache |
 | [`recent-activity-cross-sub.json5`](./recent-activity-cross-sub.json5) | **Phase 4** — cross-sub spam-signal correlation | `recentActivity` rule (subreddits list + post/commentCountGt independent triggers) reading from 1h author-history cache |
+| [`repost-image-watch.json5`](./repost-image-watch.json5) | **Phase 4.7** — perceptual-blockhash image-repost detection | `imageRepost` rule (hammingThreshold + windowDays) using pure-JS pipeline (upng-js + jpeg-js + blockhash-core) on preview.redd.it variants; ships behind `dryRun: true` |
 
 ## How to use
 
@@ -66,8 +67,6 @@ Available in any `comment` action's `template`:
 
 ## What this doesn't show
 
-The Phase 4 stretch rules (`history`, `attribution`, `recentActivity`) aren't in these examples — they're in active development. Once shipped, they slot into the same `rules` arrays as `regex` / `author` / `ruleset` / `named`. Image-hash repost (Phase 4.7) is deferred post-hackathon.
-
-URL-dedupe repost rule (`{kind: 'repost', windowDays: 30}`) IS shipped in v0.2.0 (promoted from Phase 4 to Phase 2.5.1 — atomic SET NX, fail-OPEN on Redis outage, sub-scoped, FNV-1a64 hash). Not in the 3 example configs above but valid to add: `rules: [{kind: 'repost', name: 'url-30d', windowDays: 30}], actions: [{kind: 'remove', dryRun: true}]` is a good starting recipe.
+All Phase 4 rules (`history`, `attribution`, `recentActivity`) are SHIPPED + live-verified as of v0.5.x — see the 3 dedicated example configs in the table above (`history-fresh-low-karma.json5`, `attribution-drive-by-self-promo.json5`, `recent-activity-cross-sub.json5`). They slot into `rules` arrays alongside `regex` / `author` / `ruleset` / `named`. URL-dedupe repost (`{kind: 'repost'}`) shipped early in Phase 2.5.1; image-hash repost (`{kind: 'imageRepost'}`) shipped in v0.6.0 — see `repost-image-watch.json5`.
 
 `mhs` (ModerateHateSpeech) rule is **cut** from the Devvit port per Reddit PR #96 (HTTP fetch policy AI-provider allowlist restricted to OpenAI + Gemini only); subs that need hate-speech filtering keep running upstream PRAW ContextMod.
