@@ -99,7 +99,7 @@ developers.reddit.com/apps/cm-devvit
 
 ## Production notes
 
-- **v0.6.6 features to MAYBE squeeze in if pacing allows** (or use for the 90-sec alt cut):
+- **v0.6.7 features to MAYBE squeeze in if pacing allows** (or use for the 90-sec alt cut):
   - S9 config rev diff viewer (`h` shortcut) — show side-by-side LCS diff between rev N and rev N-1
   - S11 per-rule statistics table — "fired count" breakdown below event stream
   - S3 mod activity attribution feed — "u/X ran reload-config 5m ago" provenance signal
