@@ -20,6 +20,8 @@ import { muteRule, unmuteRule, listMutedRules } from '../state/muteSet';
 import { logModActivity } from '../state/modActivity';
 import { explainEvent, validateEventSummary } from '../core/explainEvent';
 import { settings, redis } from '@devvit/web/server';
+import { K } from '../state/keys';
+import { fnv1a64 } from '../lib/idem';
 import { getOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
@@ -264,6 +266,24 @@ api.post('/explain-event', async (c) => {
       429
     );
   }
+  // AE Tier 1 #151 — response cache lookup BEFORE the cost-bearing OpenAI
+  // call. Hash the event-summary shape (FNV-1a64 over the same fields
+  // explainEvent sees) so two clicks on the same event return instantly +
+  // cost $0. Cache is per-sub for tenant isolation + 24h TTL because
+  // event-meaning doesn't change meaningfully within a day. Fail-OPEN on
+  // Redis blip — we just lose the cache hit, the OpenAI call still works.
+  const cacheKeyHash = fnv1a64(JSON.stringify(validated.value));
+  const cacheKey = K.explainCache(cacheKeyHash, auth.sub);
+  try {
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      log.info('cm/api/explain-event', 'cache hit', { sub: auth.sub, cacheKey });
+      return c.json({ ok: true, explanation: cached, cached: true });
+    }
+  } catch (err) {
+    log.warn('cm/api/explain-event', 'cache read failed (fail-open, will call OpenAI)', { err });
+  }
+
   // AD CRITICAL #1: previously `getOpenaiKey` + `settings.get` lived
   // outside the try block, so a Redis or Devvit-settings throw would
   // 500 the route w/ NO log.error, NO breaker classification, NO json
@@ -297,6 +317,18 @@ api.post('/explain-event', async (c) => {
       return c.json({ ok: false, error: result.error }, 500);
     }
     await recordSuccess(cbBucket);
+    // AE Tier 1 #151 — write-through to the response cache so the next
+    // click on this event returns instantly. Fail-OPEN: a Redis blip
+    // means the next click pays for the OpenAI round-trip again (annoying
+    // but not broken). 24h TTL aligns w/ "explanations don't change
+    // meaningfully within a day."
+    try {
+      await redis.set(cacheKey, result.value, {
+        expiration: new Date(Date.now() + 24 * 3600 * 1000),
+      });
+    } catch (err) {
+      log.warn('cm/api/explain-event', 'cache write failed (fail-open)', { err });
+    }
     // AD Phase 4: internal Result<string> exposes the text at `.value`; the
     // wire envelope keeps the `explanation` key for client backward-compat.
     return c.json({ ok: true, explanation: result.value });

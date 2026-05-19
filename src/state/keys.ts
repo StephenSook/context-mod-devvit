@@ -54,6 +54,16 @@ export const K = {
   // Stats rollup (Phase 4).
   statsRollup: (sub: string = SUB_DEFAULT) => `cm:${sub}:stats:rollup:7d`,
 
+  // AE Tier 1 #151 — AI explainer response cache. Per-event hash so the
+  // same event clicked twice returns instantly + costs $0. Key includes
+  // sub for tenant isolation + the event-summary hash (FNV-1a64 over
+  // {runName, checkName, matchedRule, matchedSubstring, actions[]})
+  // so the cache invalidates automatically when the underlying event
+  // shape changes (different rule fired, different action). 24h TTL —
+  // explanations don't change meaningfully within a day.
+  explainCache: (eventHash: string, sub: string = SUB_DEFAULT) =>
+    `cm:${sub}:explain:cache:${eventHash}`,
+
   // Schema version (used by Step 3.6 app-upgrade migrations).
   schemaVersion: () => `cm:schema-version`,
 
