@@ -1,4 +1,18 @@
-export type ActionKind = 'remove' | 'approve' | 'lock' | 'comment' | 'report' | 'ban' | 'userFlair';
+// AE Polish #53: `distinguish` was added server-side by Pull-Forward #2
+// (upstream FoxxMD parity) but never reflected in the client ActionKind
+// union. Result: when an event with `kind: 'distinguish'` reached the
+// dashboard, EventRow's KIND_ICON lookup returned `undefined` + fell
+// back to AlertTriangle, KIND_COLOR returned bone.300 gray fallback.
+// Mods saw a generic warning icon for a deliberate moderator action.
+export type ActionKind =
+  | 'remove'
+  | 'approve'
+  | 'lock'
+  | 'comment'
+  | 'report'
+  | 'ban'
+  | 'userFlair'
+  | 'distinguish';
 
 export type EventRecord = {
   ts: number;

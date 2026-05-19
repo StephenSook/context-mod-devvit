@@ -24,6 +24,9 @@ const KIND_COLOR: Record<ActionKind, string> = {
   report: SIGNAL.warn,
   ban: SIGNAL.err,
   userFlair: SIGNAL.author,
+  // AE Polish #53: distinguish action color must match the EventRow KIND_COLOR
+  // entry — green like approve (positive mod-trust signal).
+  distinguish: SIGNAL.ok,
 };
 
 export type ActionStatus = 'ok' | 'dry-run' | 'error' | 'skipped-locked';

@@ -7,6 +7,7 @@ import {
   Flag,
   Ban,
   Tag,
+  ShieldCheck,
   AlertTriangle,
   ChevronRight,
   type LucideIcon,
@@ -24,6 +25,9 @@ const KIND_ICON: Record<ActionKind, LucideIcon> = {
   report: Flag,
   ban: Ban,
   userFlair: Tag,
+  // AE Polish #53: distinguish action (Pull-Forward #2) — green shield
+  // matches Reddit's [M] mod-distinguished pill convention.
+  distinguish: ShieldCheck,
 };
 
 // First-action icon color uses kind color for ok results; chip variant
@@ -36,6 +40,9 @@ const KIND_COLOR: Record<ActionKind, string> = {
   report: SIGNAL.warn,
   ban: SIGNAL.err,
   userFlair: SIGNAL.author,
+  // AE Polish #53: distinguish uses the ok-green so it reads as a
+  // positive mod-trust signal (vs warn/err shading).
+  distinguish: SIGNAL.ok,
 };
 
 function relTime(ts: number): string {
