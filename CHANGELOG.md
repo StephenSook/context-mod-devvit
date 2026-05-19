@@ -10,11 +10,50 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 47 atomic polishes (#18-#75) shipped across
+AE Polish wave continued — 52 atomic polishes (#18-#80) shipped across
 this session covering 5 adversarial-review rounds (silent-failure-
 hunter, code-reviewer, gemini-agent (×2), codex-rescue, vercel:
 performance-optimizer, type-design-analyzer) plus brain-dump audit
 work.
+
+### Fixed — Polish #76-#80 batch (gemini brutal-audit P0/P1 integration)
+
+- **AE Polish #80: drop "co-pilot" AI-tone trigger** — gemini P1-11.
+  README hero + 2 social-card meta descriptions used "rule-engine
+  moderation co-pilot." Marketing-AI tone that misrepresents the bot
+  (it's a deterministic rule engine; the AI explainer is a bolt-on).
+  Replaced with "bot" across 3 surfaces.
+
+- **AE Polish #79: writeup Simulate + AI Explain flow ordering** —
+  gemini P1-10. Bullets at writeup-draft.md:21-22 described flow as
+  paste-first then menu. Actual click path is menu-first: open mod
+  menu → click action → form modal opens → paste JSON5 → submit.
+  Judges who watch the demo (uses correct order) and then read the
+  writeup would see the script doesn't match. Reordered both bullets.
+
+- **AE Polish #78: shape-validate cached Redis blobs in modActivity +
+  authorHistory** — gemini P1-8. Both state-layer reads cast
+  JSON.parse output to ModActivity / AuthorHistory unchecked. Poisoned
+  blobs (Redis FLUSHDB during deploy, schema drift, partial write)
+  would propagate to dashboard rendering or rule iteration. Added
+  isValidModActivity + isValidAuthorHistory validators mirroring the
+  recentEvents.isValidRecentEventShape (Polish #5) + imageHashStore.
+  isValidImageHashEntry (Polish #64) pattern. authorHistory cache
+  also self-heals via redis.del on parse-fail or shape-mismatch. 6
+  regression tests added.
+
+- **AE Polish #77: per-author lock in authorHistory** — gemini P1-7.
+  Cache-miss thundering herd: N concurrent events on the same hot
+  poster all hit Reddit getPostsByUser+getCommentsByUser, burning the
+  ~600 req/min Devvit rate-limit cap. Wrap fetchAndCache in
+  acquireLock(`authorhist:${name}`, sub) with fail-OPEN on lock-acquire
+  failure. 2 regression tests added (success + fail-open paths).
+
+- **AE Polish #76: backfill CHANGELOG #58-#61 + #72-#75 entries** —
+  gemini P1-4. Gap between the documented #18-#54 batch and the
+  documented #62-#71 batch — the post-v0.6.7-bump pre-Gemini polishes
+  + the current Gemini-wave fixes were missing their narratives. Now
+  documented inline.
 
 ### Fixed — Polish #72-#75 batch (gemini brutal-audit continuation)
 
