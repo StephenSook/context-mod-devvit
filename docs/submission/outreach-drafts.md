@@ -117,7 +117,7 @@ Notable paraphrase deltas:
 
 **Context:** Nice-to-have, not blocking. Bot username + WAU eligibility are confirmed; submission can ship without a personal quote. But a one-sentence FoxxMD endorsement in the Project Impact section helps Pillar 1.
 
-**Send:** May 20, 2026 only IF Stephen has already moved technical discussion to GitHub issues for at least a week (so it doesn't read as a marketing ask). Otherwise skip.
+**Send:** May 25-27, 2026 only IF Stephen has already moved technical discussion to GitHub issues for at least a week (so it doesn't read as a marketing ask). Otherwise skip.
 
 ```
 hey, one more thing — totally fine to say no. when i write up the project impact section for devpost, would you be cool if i pulled a one or two sentence quote from this thread (or wrote one and got your sign-off)? something like "i've been running CM since 2019, this port unblocks the 15+ operators stuck on dying infra" — your framing, your call. zero pressure if you'd rather i just describe the technical port and skip the quote.
@@ -171,7 +171,7 @@ not asking for a review, just a heads-up that this is happening before submissio
 
 **Context:** Once Stephen hits submit on Devpost, share the public devpost project page in r/Devvit + Discord. Keep it short — community is fatigued with AI-marketed submissions during hackathon week.
 
-**Send:** Same day Stephen actually hits Submit on Devpost. Target = May 20, 2026 per `submission-day-runbook.md`; hard-deadline fallback = May 27. Don't pre-post — community treats "we just submitted" with more weight than "we'll submit soon."
+**Send:** Same day Stephen actually hits Submit on Devpost. Target = **May 27, 2026** (hard deadline). Don't pre-post — community treats "we just submitted" with more weight than "we'll submit soon."
 
 ```
 title: ContextMod Devvit Web port — submitted to mod tools hackathon
@@ -198,7 +198,7 @@ thanks to:
 
 **Context:** Now that v0.2.0 is in Reddit App Directory review + Phase 1+2+3 shipped, post to r/Devvit before submission day to (a) get eyes on the build w/ time to iterate on feedback, (b) plant a "this is a real port" signal vs the eventual AI-marketing wave that hits r/Devvit during hackathon week, (c) recruit playtesters from the active sub before May 27. Different post from §3 (early "is this the right path" check) and §5 (post-submission announcement).
 
-**Send:** May 17–20 window (T-10 to T-7). After is too late to iterate; before is too early (we didn't have v0.2.0 in review then). Skip if r/Devvit moderator policy disallows project posts.
+**Send:** May 22–26 window (T-5 to T-1). After is too late for community feedback to iterate on; before is too early. Skip if r/Devvit moderator policy disallows project posts. (Original draft window was 5/17-20 against the May 20 target; refreshed for May 27 hard deadline.)
 
 **Pre-paraphrase draft (~500 words; Stephen cuts ~50% per outreach paraphrase pattern):**
 

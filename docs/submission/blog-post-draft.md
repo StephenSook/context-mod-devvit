@@ -4,10 +4,10 @@
 
 ## TL;DR
 
-I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. v0.2.0 is in Reddit App Directory review. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
+I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.4 ships the full Phase 1+2+3+4 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 is already approved unlisted; final v0.6.x source re-uploads pre-submission. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
 
 App Directory: https://developers.reddit.com/apps/cm-devvit
-Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 256+ tests, CI green)
+Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 594 tests, CI green)
 Permission: https://github.com/FoxxMD/context-mod/issues/152
 
 ## The hook
@@ -45,23 +45,25 @@ The concept model is preserved:
 
 If your wiki config worked under PRAW CM, it copies over with a handful of one-time renames (`condition:` → `combinator:` on runs/checks/ruleSets, `criteria:` → `filter:` on author rules, `body:` → `template:` on comment actions, `testOn:` → `target:` + `patterns:[]` → `pattern:""` on regex rules, top-level `named_rules` → `namedRules` camelCase, wiki path renamed to `botconfig/contextmod` to keep the wiki namespace clean against other Devvit apps). The full diff is documented in `docs/migration-compatibility.md`.
 
-## What ships in v0.2.0
+## What ships in v0.6.4
 
-- **Phase 1**: rule engine — regex / author / ruleSet rules + named rules + filters + Mustache + run state machine with a 100-iter safety break against circular goto.
-- **Phase 2**: 7 MVP actions + handleActivity orchestrator + URL-dedupe `repost` rule (promoted up from Phase 4 because the atomic SET NX cleanup made it dead-simple to ship).
+- **Phase 1**: rule engine — regex / author / ruleSet rules + named rules + filters + Mustache + run state machine with a 100-iter safety break against circular goto. NOT combinator added in Wave AE for upstream parity.
+- **Phase 2**: 7 MVP actions + handleActivity orchestrator + URL-dedupe `repost` rule (promoted up from Phase 4 because the atomic SET NX cleanup made it dead-simple to ship). 8th action `distinguish` added in Wave AE for upstream parity (bot comments get the [M] tag + optional sticky).
 - **Phase 3**: wiki config loader cron + reload-config mod menu + onAppInstall default-config seed + onAppUpgrade migrations + live `/api/recent` ZRANGE reads.
 - **Step 3.6**: dry-run rule tester — right-click any post or comment, "Test rules on this item", get a toast with the would-have-fired list. Zero Reddit side-effects.
-- **Codex hardening**: 2 CRITICAL + 12 HIGH safety findings closed. Atomic INCR-allocated config revision pointer. Lease owner tokens on per-action idempotency. CSV export formula-injection neutralization with Unicode bidi/control bypass coverage (yes, an `=HYPERLINK(...)` in a username would have fired in Excel — neutralized now).
-- **Observatory dashboard**: React + Vite + Tailwind custom-post webview. Stat cards. 24h sparkline. Event stream with status-aware chips (`ok / dry-run / error / skipped-locked`). Header live-tick with glow-pulse on data arrival. Filter chips. Keyboard shortcuts (press `?`). Onboarding tour on first visit. Per-event click-to-expand drill-down.
+- **Phase 4 stretch rules** (`history`, `attribution`, `recentActivity`): **shipped + live-verified on `r/contextmod_vinh_dev` 2026-05-18**. Author-history cache substrate (1h Redis cache around getPostsByUser / getCommentsByUser, FETCH_LIMIT=100, sub-scoped, fail-OPEN on Reddit-API errors w/ degraded flag to prevent mass false-positive moderation during a Reddit outage). 3 dedicated example configs in `examples/`. `windowSec` param per rule for "last N seconds" gating.
+- **Phase 4.7 image-hash repost**: Vinh's perceptual-blockhash spike landed clean GO (commits `00feca5` + `19e94f0`). Pure-JS pipeline (upng-js + jpeg-js + blockhash-core) decodes preview.redd.it variants in <1s + <5MB peak RAM + 0-2/256 bit fidelity vs full-res. Shipped behind `dryRun: true` per RepostRule precedent.
+- **Migration tool**: `scripts/migrate-upstream-config.mjs` — operators paste their PRAW YAML, get a Devvit-ready JSON5 + a `// CUT:` header naming everything dropped. The 15+ FoxxMD operators no longer face "translate by hand" as the porting tax.
+- **Multi-wave hardening** (13 waves S through AE): 70+ findings closed across Codex + Gemini + silent-failure-hunter + type-design-analyzer + comment-analyzer + pr-test-analyzer + 6 parallel sub-agent rotations. Examples: hard-mute wired into runCheck (mute button finally stops the bot — was false-advertised since v0.3.0), authorHistory 429-distinguish (prevents mass false-positive mod during Reddit rate-limit), configStore.publish() PublishError class (prevents rev-leak that would break moderation forever), dryRun idempotency marker (prevents post-toggle double-fire), OpenAI classifier word-boundary regex (was matching "JSON5" as 5xx), safe-regex catastrophic-backtracking guard, per-user rate limit on /explain-event.
+- **Observatory dashboard**: React + Vite + Tailwind custom-post webview. Stat cards. 24h sparkline. Event stream with status-aware chips (`ok / dry-run / error / skipped-locked`). Header live-tick with glow-pulse on data arrival. Filter chips. Keyboard shortcuts (press `?`). Onboarding tour on first visit (gated on initialLoad so it doesn't open on top of skeleton chrome). Per-event click-to-expand drill-down. **AI explanation** of any event via OpenAI gpt-4o-mini ("Explain with AI" button), w/ animated 3-dot loading + friendly error mapping. Light-mode toggle. Mobile-responsive. axe-core integrated for both modes.
 
 ## What's deferred or cut
 
 Honest list:
 
-- **Phase 4 stretch rules** (`history`, `attribution`, `recentActivity`) — caches author submission counts + karma + activity windows. Author cache substrate is queued. Vinh's lane.
-- **Image-hash repost detection** — perceptual blockhash + LSH. The Day-0 spike never ran pre-hackathon; the GO/NO-GO call is post-hackathon work.
 - **MHS toxicity rule** — Reddit PR #96 (2026-05-08) restricted HTTP fetch to OpenAI + Gemini AI-provider allowlist. ModerateHateSpeech sits outside. If you need it, keep running upstream PRAW CM in parallel. (We've raised this with the Devvit team; a moderation-classifier allowlist carve-out would unblock it.)
 - **Cross-sub federation** — out of scope for per-install isolation by design.
+- **DispatchAction, SentimentRule, full RepostRule w/ YouTube, RepeatActivityRule** — cut from MVP scope per the migration doc + ROADMAP.
 
 ## Three commands to try it locally
 
@@ -85,10 +87,10 @@ Quick notes that might save you time:
 
 ## What's next
 
-- Reddit App Directory v0.2.0 review approval (1-7 day SLA, submitted 2026-05-16).
-- Phase 4 rule ladder shipping pre-deadline if Vinh's bandwidth holds.
-- Reaching the 15+ original CM operators with a migration path.
+- Re-upload v0.6.x source to Reddit App Directory at T-2 (May 25) — review SLA 1-7 days fits inside the 5/27 deadline.
+- Reach the 15+ original CM operators with the migration tool now that the porting tax is `node scripts/migrate.mjs your-config.yaml`.
 - Hackathon judging period after May 27 18:00 PT deadline.
+- Post-submission: LSH multi-index on top of the v1 image-hash store (currently O(N) Hamming scan at 500 entries — measured ~30-50ms per query in Vinh's spike).
 
 If you mod a sub + want to playtest before submission, dm me on Reddit (u/CowSufficient3840) or open a discussion on the GitHub repo. If your sub used original ContextMod and you want help porting your wiki config over, same.
 

@@ -4,10 +4,10 @@
 
 > **CRITICAL DEPENDENCY:** demo recording is gated on **Vinh's Phase 1+2+3 backend** being live enough to demo a real trigger end-to-end. Per `PLAN.md` the work splits across phases: Phase 1 (engine — `handleActivity`, `runRun`, `runCheck`, `runRule`, filters, templates, config store), Phase 2 (action handlers + onPostSubmit/onCommentSubmit trigger wire-up), Phase 3 (`events:recent` ZSET push + dashboard live data). All three must execute on a real `r/cm_devvit_test` post submission, with the new event chip surfacing on the Observatory dashboard in real time. The shorthand "Phase 1" used in earlier sections of this doc is imprecise — the live demo path needs Phase 1+2+3.
 >
-> If Phase 1+2+3 isn't live by **May 17, 2026** (T-3 days per `submission-day-runbook.md`, May 20 target / May 27 hard), execute the fallback in [Fallback section](#fallback-if-phase-1-slips). The fallback heading still says "Phase 1 slips" for backward-compat with existing cross-refs, but the trigger condition is "any of Phase 1, 2, or 3 not done."
+> **Phase 1+2+3+4 ALL SHIPPED + live-verified on `r/contextmod_vinh_dev` 2026-05-18** (Vinh commit `0bd59aa`). The "fallback" sections below are preserved as historical reference but are no longer the intended path — live-demo recording on Vinh's verified install is the strongest demo story.
 >
-> **Realistic 3-day recording window:** May 17 — May 19, 2026 (matches the T-3 → T-1 sequence in submission-day-runbook).
-> **Target submission:** May 20, 2026. **Hard cutoff for upload + paste into Devpost:** May 27, 2026 at 6pm PT.
+> **Recording window:** **May 24 — May 26, 2026** (T-3 → T-1 from the May 27 deadline).
+> **Hard cutoff for upload + paste into Devpost:** May 27, 2026 at 6pm PT.
 
 ## Tooling (all macOS)
 
