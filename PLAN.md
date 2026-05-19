@@ -72,7 +72,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 ### Phase 4 + 4.7 — ALL SHIPPED 2026-05-18
 
-> **Status (2026-05-19 — T-8 from deadline):** Phase 4 (history/attribution/recentActivity) shipped Wave S v0.5.x. Phase 4.7 (imageRepost — pure-JS perceptual blockhash) shipped v0.6.0 2026-05-18 per Stephen's 5/18 GO. AE Critical wave + 35 polishes (Polish #1–#35) closed Tier-1/2/3/4 punch list. 758 tests green. 12 example configs in `examples/` (3 starter / 5 intermediate / 4 advanced). v0.6.7 published; awaiting Devvit App Directory review.
+> **Status (2026-05-19 — T-8 from deadline):** Phase 4 (history/attribution/recentActivity) shipped Wave S v0.5.x. Phase 4.7 (imageRepost — pure-JS perceptual blockhash) shipped v0.6.0 2026-05-18 per Stephen's 5/18 GO. AE Critical wave + 86 polishes (Polish #1–#86) closed Tier-1/2/3/4 punch list + 5 adversarial-review rounds (silent-failure-hunter, code-reviewer, gemini-agent ×2, codex-rescue, vercel:performance-optimizer, type-design-analyzer, repo-sentinel). **777 tests green.** Lighthouse CLI v13.3.0: Performance 84, Accessibility 100, Best Practices 100, CLS 0.04 (good). 12 example configs in `examples/`. v0.6.7 published; awaiting Devvit App Directory review. Production npm-audit: 0 vulnerabilities (verified 2026-05-19; full audit shows 36 transitive vulns through `@devvit/*` toolchain — not shipped).
 >
 > **Remaining for Stephen** (T-2 / T-3 / T-0):
 > - T-2 (2026-05-25): final `npm run launch` to push v0.6.x to Reddit
