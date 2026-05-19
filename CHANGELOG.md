@@ -10,10 +10,44 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 43 atomic polishes (#18-#71) shipped across
-this session covering 4 adversarial-review rounds (silent-failure-
-hunter, code-reviewer, gemini-agent, codex-rescue, vercel:performance-
-optimizer, type-design-analyzer) plus brain-dump audit work.
+AE Polish wave continued — 47 atomic polishes (#18-#75) shipped across
+this session covering 5 adversarial-review rounds (silent-failure-
+hunter, code-reviewer, gemini-agent (×2), codex-rescue, vercel:
+performance-optimizer, type-design-analyzer) plus brain-dump audit
+work.
+
+### Fixed — Polish #72-#75 batch (gemini brutal-audit continuation)
+
+- **AE Polish #75: drop payout math from 60-sec demo voiceover** —
+  gemini-agent brutal-audit P1-1. The Beat-5 voiceover quoted the
+  full $19.5K-$25K direct-cash envelope math. Real math (derived
+  from Reddit program terms) but training the wrong narrative for a
+  public submission demo whose pitch is community continuity. Moved
+  payout math to the written writeup where program context lives.
+
+- **AE Polish #74: stale v0.6.6 / 712-test refs across docs/submission/**
+  — gemini-agent brutal-audit P0-2 + P1-2 + P1-3. 8 files cited the
+  prior version + test count. Bulk sed: v0.6.6 → v0.6.7, 712/656 tests
+  → 758 tests. Verified 0 hits remaining.
+
+- **AE Polish #73: delete invented $62.4M TAM figure** —
+  gemini-agent brutal-audit P0-1. pillar-5-numbers.md:199 fabricated
+  "60K mods × 52 weeks × 1 hr × $20/hr = $62.4M/year." The 1-hr/week
+  assumption has no citation; the doc's own line 248 explicit rule
+  says "DO NOT INVENT specific time-savings figures." Self-violation.
+  Replaced w/ honest framing citing only measured Li 2022 baseline +
+  §B scaling.
+
+- **AE Polish #72: regex `g`-flag lastIndex bug** — gemini-agent
+  brutal-audit P1-5 (real shipped code bug). RegexRule.flags allows
+  any string including `"g"`. Compile cache returned the same RegExp
+  instance across evaluations; RegExp.test() on a stateful regex
+  advances lastIndex on match → second .test() against same instance
+  starts mid-search → false-negative for any mod using `g` flag.
+  Fix: strip `g`/`y` at compile in getCompiledRegex (lossless for
+  .test() since `g`/`y` only matter for .exec/.matchAll/.replace)
+  + defensive `re.lastIndex = 0` in safeTest. 4 regression tests
+  added.
 
 ### Fixed — Polish #62-#71 batch (post-CLS-audit continuation)
 
@@ -101,6 +135,47 @@ optimizer, type-design-analyzer) plus brain-dump audit work.
   instead of 19). Polish #43's boundary test had the same race.
   Fix: vi.useFakeTimers + vi.setSystemTime around both, try/finally
   restores real timers.
+
+### Fixed — Polish #58-#61 batch (post-v0.6.7-bump pre-Gemini wave)
+
+- **AE Polish #61: per-sub lock around findSimilar+recordHash RMW** —
+  codex-rescue 4th-pass adversarial review caught a read-modify-write
+  race in imageRepost.ts. Two simultaneous duplicate-image posts both
+  ran findSimilar against the pre-write list → both missed → both
+  recordHash GET-SET the entire JSON list, losing one entry.
+  Concurrent distinct posts could also drop a hash. Fix: wrap
+  findSimilar+recordHash in `acquireLock('imghash:${sub}')` (60s TTL,
+  released in finally). Fail-OPEN on lock acquisition failure (Redis
+  blip) — matches the surrounding rule's fail-open posture. Worst-case
+  tail-latency = 50s if rule hangs after acquireLock (Polish #42 caps
+  the entire run at 10s, so worst case the lock self-expires 50s after
+  we'd naturally release).
+
+- **AE Polish #60: inline npm_package_version at build time** —
+  Devvit's serverless runtime doesn't populate `process.env.npm_package_version`
+  the way Node does. Server logs showed `version: "unknown"` for every
+  request. Fix: vite.config.ts adds `define: { 'process.env.npm_package_version':
+  JSON.stringify(pkg.version) }` so vite replaces the token at build
+  time + both client + server see the same literal.
+
+- **AE Polish #59: full ActionKind coverage on FilterChips** —
+  silent-failure-hunter follow-up. The chip strip had
+  remove/comment/approve/lock/report but skipped ban/userFlair/distinguish
+  even though events with those kinds still rendered in the stream w/
+  the correct icon (post-Polish-#53). Mods who wanted to filter by
+  "show me only the bans this week" had to use the search input. Adding
+  chips closed the gap; the strip wraps naturally on mobile. Polish #62
+  later wrapped these in an initialLoad-aware placeholder gate so the
+  added chips don't contribute to CLS.
+
+- **AE Polish #58: share extractServerError across ConfigDiffViewer +
+  ModActivityFeed** — both components had their own ad-hoc
+  `HTTP ${res.status}` error path. Polish #21 had introduced
+  extractServerError for /api/explain-event in EventDetails.tsx but
+  left it as a local function. Centralized in src/client/lib/api.ts
+  + exported so all three callers reuse the same body-extraction
+  logic (graceful fallback to "HTTP N" when the body isn't JSON).
+  Set up Polish #69 which made EventDetails use it too.
 
 ### Pre-existing Polish #18-#54 batch
 
