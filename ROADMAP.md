@@ -21,10 +21,6 @@ Where this project goes after the Reddit Mod Tools Hackathon submission. Organiz
 - [ ] **`/api/stats` rollup widening** — beyond 50-event ring buffer (7-day rolling counts written by stats-rollup cron into a dedicated ZSET)
 - [ ] **GitHub Discussions threads seeded** for top 5 migration questions
 
-## Installed but not wired (deferred to scale-trigger)
-
-- **react-window** — installed in v0.5.1 dev deps. Ring buffer caps at 50 events; drill-down requires variable row heights (FixedSizeList won't fit). When events:recent grows past ~100 OR a future product change adds a "show all history" view, wire as VariableSizeList w/ ResizeObserver-based row heights.
-
 ## Later — V1 maturity (T+30d to T+90d)
 
 - [ ] **Lua/CAS replacement** — when/if Devvit Redis gains script support, replace the read-then-write monotonic pointer guard (W4) w/ a true atomic CAS — closes the residual TOCTOU window
