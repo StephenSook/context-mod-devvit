@@ -193,13 +193,11 @@ Two stacked claims, separated so judges can attack the assumption-laden one with
 
 **B — Linear scaling to Reddit's stated ~60K active mods.** $3.4M × (60K / 21.5K) = **~$9.5M/year volunteer-labor-equivalent value** across Reddit's full mod base. Honestly flag this as scaling math, not measured.
 
-**Incremental capture available to ContextMod-class tools.** AutoMod is regex-with-light-filters — it handles the majority of automated review per Wright 2022 + Jhaver 2019, mostly anti-spam pattern-matching. The *context-gathering* tier (5–10 minutes of manual user-history check per ambiguous post, multi-attribute author criteria, composable rules) is what humans currently do and what CM-class bots automate. If a CM-class bot offloads **1 additional hour per mod per week** beyond AutoMod's reach, that's:
+**Incremental capture available to ContextMod-class tools.** AutoMod is regex-with-light-filters — it handles the majority of automated review per Wright 2022 + Jhaver 2019, mostly anti-spam pattern-matching. The *context-gathering* tier (5–10 minutes of manual user-history check per ambiguous post, multi-attribute author criteria, composable rules) is what humans currently do and what CM-class bots automate.
 
-```
-60,000 mods × 52 weeks × 1 hr × $20/hr = $62.4M/year
-```
+**No published study measures the per-mod-per-week labor offloaded by ContextMod-class tools.** Per the §14 + Open Verification Flags discipline (line 248 — "DO NOT INVENT specific time-savings figures"), this doc cites only the measured Li 2022 baseline ($3.4M/yr unpaid volunteer effort across 21.5K mods) and the §B scaled-to-population estimate ($9.5M/yr at Reddit's stated ~60K mod base). Any larger figure would require either Reddit-published per-mod automation metrics (not currently disclosed) or a longitudinal study of mods before+after ContextMod adoption (not available).
 
-in labor-equivalent value offloadable. Even at a conservative **10% capture rate**, that's **$6M+/year of mod-labor value offloaded** — multiples larger than the entire Developer Funds program budget per app.
+**Defensible framing for Devpost / judge Q&A:** ContextMod targets the slice of moderation labor that AutoMod misses — multi-rule composition, repost detection, author-history filters, image-hash dedupe — none of which AutoMod's regex-only engine can express. The measured value of that slice is unknown; what's known is the *measured volunteer-labor floor* ($3.4M – $9.5M/yr per Li 2022 / §B scaling) and the *qualitative gap* (Wright 2022 + Jhaver 2019).
 
 ## 12. Realistic direct-cash envelope (program-window scoped)
 
