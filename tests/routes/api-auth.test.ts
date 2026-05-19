@@ -27,9 +27,16 @@ const getOpenaiKey = vi.fn();
 const settingsGet = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
 
+const redisGet = vi.fn();
+const redisSet = vi.fn();
+
 vi.mock('@devvit/web/server', () => ({
   reddit: { getCurrentSubreddit: () => getCurrentSubreddit() },
   settings: { get: (k: string) => settingsGet(k) },
+  redis: {
+    get: (k: string) => redisGet(k),
+    set: (k: string, v: string, opts?: unknown) => redisSet(k, v, opts),
+  },
 }));
 vi.mock('../../src/lib/requireModerator', () => ({
   requireModerator: () => requireModeratorMock(),
@@ -89,6 +96,11 @@ beforeEach(() => {
   checkCircuit.mockResolvedValue({ state: 'closed' });
   recordFailure.mockResolvedValue(undefined);
   recordSuccess.mockResolvedValue(undefined);
+  // AE Tier 1 #151: default redis.get → null (cache miss) so existing
+  // tests fall through to the OpenAI call path; cache-specific tests
+  // override per-case.
+  redisGet.mockResolvedValue(null);
+  redisSet.mockResolvedValue('OK');
 });
 
 async function postJson(path: string, body: unknown): Promise<Response> {
@@ -222,6 +234,49 @@ describe('POST /api/explain-event (W8)', () => {
     await postJson('/explain-event', { event: { kind: 'remove' } });
     expect(recordFailure).toHaveBeenCalledWith('openai:r_test');
     expect(recordSuccess).not.toHaveBeenCalled();
+  });
+
+  it('AE Tier 1 #151: cache HIT returns instantly + skips OpenAI call + skips rate-limit consumption', async () => {
+    // Cache returns a previously-stored explanation → response is cached:true,
+    // explainEvent is NEVER called, rate-limit counter is NEVER bumped
+    // (cache hit returns before the per-user gate).
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValueOnce('this is the cached explanation');
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; explanation: string; cached: boolean };
+    expect(body.ok).toBe(true);
+    expect(body.explanation).toBe('this is the cached explanation');
+    expect(body.cached).toBe(true);
+    expect(explainEvent).not.toHaveBeenCalled();
+    expect(getOpenaiKey).not.toHaveBeenCalled();
+  });
+
+  it('AE Tier 1 #151: cache MISS proceeds to OpenAI call + writes through on success', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValue(null); // miss
+    getOpenaiKey.mockResolvedValue('sk-x');
+    explainEvent.mockResolvedValue({ ok: true, value: 'fresh explanation' });
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(res.status).toBe(200);
+    expect(explainEvent).toHaveBeenCalled();
+    // Write-through: redis.set called w/ the explanation + a 24h TTL expiration option.
+    expect(redisSet).toHaveBeenCalled();
+    const setArgs = redisSet.mock.calls[0]!;
+    expect(setArgs[1]).toBe('fresh explanation');
+    expect(setArgs[2]).toMatchObject({ expiration: expect.any(Date) });
+  });
+
+  it('AE Tier 1 #151: cache READ failure is fail-OPEN — proceeds to OpenAI call', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockRejectedValueOnce(new Error('redis blip'));
+    getOpenaiKey.mockResolvedValue('sk-x');
+    explainEvent.mockResolvedValue({ ok: true, value: 'fallback explanation' });
+    const res = await postJson('/explain-event', { event: { kind: 'remove' } });
+    expect(res.status).toBe(200);
+    // OpenAI still called despite Redis read failure — fail-OPEN means
+    // user doesn't see a degraded experience when Redis is the blip.
+    expect(explainEvent).toHaveBeenCalled();
   });
 
   it('prefers Redis key over Devvit setting when both present', async () => {

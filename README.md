@@ -6,7 +6,7 @@
 > Write your moderation rules once in JSON5. The rule engine, action handlers, atomic config publish, dry-run rule tester, AI rule explainer, AI event summary, mod activity feed, config-diff viewer, mute/unmute MVP, full mod-auth gating + rate-limiting + circuit-breaker on AI calls, light-mode toggle, and Observatory dashboard all ship live in v0.5.4. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-516%20passing-brightgreen.svg)](./tests)
+[![Tests](https://img.shields.io/badge/tests-597%20passing-brightgreen.svg)](./tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
@@ -101,7 +101,7 @@ For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.
 | Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
 | MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
 
-**516 tests passing** (Phase 1+2+3 + Stephen 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Wave W/X/Y/Z/AA/AB/AC/AD/AD-review hardening + Vinh Phase 4: history/attribution/recentActivity + author cache + AD CRITICAL OpenAI classifier regression suite). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 8 jobs (validate Node 20/22/24 + ai-tone + e2e Playwright (chromium+firefox+webkit) + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter).
+**597 tests passing** (Phase 1+2+3 + Step 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Waves W/X/Y/Z/AA/AB/AC/AD/AD-review/AE hardening + Vinh Phase 4: history/attribution/recentActivity + author cache + Phase 4.7 image-repost via blockhash + 8th action (distinguish) + NOT combinator + migration tool + AE 39/39 audit findings closed). `tsc --build` clean. `npm run lint` clean. `npm audit` 0 vulnerabilities. CI all-green across 8 jobs (validate Node 20/22/24 + ai-tone + e2e Playwright (chromium+firefox+webkit) + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter).
 
 See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
 
