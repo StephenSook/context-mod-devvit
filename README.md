@@ -353,16 +353,17 @@ Per [Devvit Rules](https://developers.reddit.com/docs/policies/devvit-rules), ev
 
 | Domain | Status | Why we need it | What data we send | What data we store |
 |---|---|---|---|---|
-| `i.redd.it` | global allowlist (no approval needed) | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 64-bit blockhash + post ID. Never the image bytes. |
+| `i.redd.it` | global allowlist (no approval needed) | Fetch Reddit-hosted image to compute perceptual hash for repost detection. | None (anonymous GET). | 256-bit blockhash (64 hex chars) + post ID. Never the image bytes. |
 | `preview.redd.it` | global allowlist | Same as above for preview-sized Reddit images. | None. | Same. |
 | `external-preview.redd.it` | global allowlist | Same for cross-posted previews. | None. | Same. |
 | `external-i.redd.it` | global allowlist | Same for cross-posted full-size images. | None. | Same. |
+| `api.openai.com` | AI-provider allowlist (Reddit PR #96 2026-05-08) | OpenAI gpt-4o-mini for the AI rule explainer (S5) + AI event summary (V7) mod-menu features. Each install supplies its own API key via the Set-OpenAI-key mod menu (key stored encrypted in per-install Redis). | Sanitized rule JSON5 OR event summary (no usernames, no IPs, no Reddit IDs). Subject to OpenAI's [API data-use policy](https://openai.com/policies/api-data-usage-policies) — Reddit data not used for OpenAI training per their published terms. | OpenAI response cached 24h at `cm:ai:cache:{hash}` per (sub, prompt-digest) — no per-user keys. |
 
 **Privacy commitments:**
 - No PII ever transmitted. No usernames, no IPs, no profile data.
 - No data sold, shared, or used for training (per our [Privacy Policy](./policies/privacy.md)).
-- Image bytes are decoded → hashed → discarded in-process. Only the 64-bit hash is persisted.
-- All cached data is per-installation isolated (Devvit Redis) and TTL'd: hashes auto-expire after 30 days, author profile cache 1h, idempotency keys 24h.
+- Image bytes are decoded → hashed → discarded in-process. Only the 256-bit hash (64 hex chars) is persisted.
+- All cached data is per-installation isolated (Devvit Redis) and TTL'd: image hashes auto-expire after 30 days, author profile cache 1h, idempotency keys 24h, AI-response cache 24h.
 
 ## Migration guide for existing ContextMod operators
 
