@@ -154,7 +154,15 @@ export default function App() {
           <ErrorBanner message={apiError} onDismiss={() => setApiError(null)} />
         )}
 
-        {stats && <StatsRow stats={stats} />}
+        {/* AE Polish #62: CLS fix — Lighthouse CLI v13.3.0 measured CLS=0.328
+            (POOR; >0.25 = poor per Google), with 0.322 attributed to the
+            RECENT actions container shifting downward when StatsRow +
+            Sparkline + FilterChips + EventSearchInput all appeared between
+            FCP and LCP. Polish #1 reserved space for RuleStatsTable +
+            RuleCountChips + ModActivityFeed but missed these four. Fix:
+            render StatsRow + Sparkline area unconditionally with ZERO_STATS
+            fallback so they occupy their final layout from first paint. */}
+        <StatsRow stats={stats ?? ZERO_STATS} />
 
         <div className="cm-fade-up px-5 pt-3.5 pb-1" style={{ animationDelay: '0.35s' }}>
           <div className="flex items-baseline justify-between mb-1">
@@ -171,19 +179,29 @@ export default function App() {
               </span>
             )}
           </div>
-          {stats &&
-            (stats.hourlyActions24h.length >= 2 ? (
-              <Sparkline data={stats.hourlyActions24h} />
+          {/* Reserve sparkline height (36px matches Sparkline default) so the
+              transition from "not enough data" text → drawn line never shifts
+              the recent-actions container below. ZERO_STATS hourlyActions24h
+              is length 24 so the >=2 branch always renders the SVG (flat line
+              of zeros initially, then animates on data update). */}
+          <div style={{ minHeight: 36 }}>
+            {(stats ?? ZERO_STATS).hourlyActions24h.length >= 2 ? (
+              <Sparkline data={(stats ?? ZERO_STATS).hourlyActions24h} />
             ) : (
               <div className="telemetry text-[10px] text-bone-300/60 px-5 pb-2">
                 not enough data yet — the sparkline needs at least 2 hours of activity
               </div>
-            ))}
+            )}
+          </div>
         </div>
 
         <RuleStatsTable events={events} />
 
-        <div className="flex-1 min-h-0 mt-2 flex flex-col">
+        {/* AE Polish #62 part-4: `contain: layout` isolates layout effects
+            inside this subtree so any residual reflow (e.g. event-row swap
+            from skeleton → real) doesn't bubble up to CLS attribution at the
+            document root. Vercel perf-optimizer review recommendation. */}
+        <div className="flex-1 min-h-0 mt-2 flex flex-col" style={{ contain: 'layout' }}>
           <div className="flex items-baseline justify-between px-5 pb-2">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
               recent{' '}
@@ -197,8 +215,22 @@ export default function App() {
             </span>
           </div>
           <RuleCountChips events={events} />
-          {events.length > 0 && <FilterChips filter={filter} onChange={setFilter} />}
-          {events.length > 0 && <EventSearchInput query={searchQuery} onChange={setSearchQuery} />}
+          {/* AE Polish #62 part-3: keep FilterChips + EventSearchInput mounted
+              during initialLoad too, so their height is reserved at first
+              paint. When events.length === 0 (skeleton phase), the wrapper
+              is `invisible` (CSS visibility:hidden) — still occupies its
+              final layout, just not paint-visible. When events arrive,
+              wrapper becomes visible without remounting → no
+              cm-fade-up re-trigger, no layout shift. */}
+          {(events.length > 0 || initialLoad) && (
+            <div
+              className={events.length === 0 ? 'invisible pointer-events-none' : ''}
+              aria-hidden={events.length === 0}
+            >
+              <FilterChips filter={filter} onChange={setFilter} />
+              <EventSearchInput query={searchQuery} onChange={setSearchQuery} />
+            </div>
+          )}
 
           <div
             className="flex-1 min-h-0 overflow-y-auto border-t border-line"
