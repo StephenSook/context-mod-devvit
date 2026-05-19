@@ -3,7 +3,7 @@ name: ContextMod Devvit
 description: Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot
 spec: design-md/v1
 audience: AI agents (Claude Code, Gemini, Codex) + future maintainers + asset generators
-last-updated: 2026-05-18
+last-updated: 2026-05-19
 related:
   - tailwind.config.ts (canonical token source)
   - src/client/index.html (font loading)

@@ -6,7 +6,26 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.7] — 2026-05-19
+
+AE Polish wave continued — 33 atomic polishes (#18-#54) shipped across
+this session covering 3 adversarial-review rounds (silent-failure-
+hunter, code-reviewer, gemini-agent) plus brain-dump audit work.
+Real bugs caught + fixed: stats wire-shape mismatch (Polish #38 —
+dashboard never showed real stats in production), bucket-boundary
+off-by-one (Polish #43), shape-stale snapshot poll-spam (Polish #44),
+per-run hang vector (Polish #42), per-action hang vector (Polish #47),
+imageRepost fail-OPEN gap (Polish #26), filter regex ReDoS hole
+(Polish #35), `distinguish` action server/client type drift (Polish
+#53), LCS browser-hang on large configs (Polish #52), README hero
+showed v0.5.x state (Polish #51). Plus shared `withTimeout` primitive
+extraction + dryRunActivity isolation parity (Polish #48), Polish #50
+sibling tests for the shared primitive, Polish #49 ARCHITECTURE.md
+section 8.5 documents the new orchestrator invariants. 749 tests
+green (was 633 at session start). tsc + lint clean. Zero production
+npm-audit vulnerabilities. CI all-green across 8 jobs.
 
 ### Fixed — UX honesty
 
