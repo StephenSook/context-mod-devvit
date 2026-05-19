@@ -5,8 +5,8 @@
 > Each scenario = trigger → expected outcome → verification → screenshot target.
 
 **Demo sub:** `r/cm_devvit_test` (Stephen's playtest sub where live captures G/F/H were taken 2026-05-16). Vinh's parallel dev sub `r/contextmod_vinh_dev` runs the package-renamed `contextmod-vinh` build for backend iteration.
-**App version:** v0.2.0 (`cm-devvit@0.2.0`, submitted to Reddit App Directory review 2026-05-16).
-**Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G; first install auto-seeds via `onAppInstall` per Phase 3).
+**App version:** v0.6.6 (`cm-devvit@0.6.6`, in Reddit App Directory review; published 2026-05-18). Phase 1 + 2 + 3 + 4 + 4.7 ALL SHIPPED. 656 tests green.
+**Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G; first install auto-seeds via `onAppInstall` per Phase 3, now safely behind `dryRun: true` per Polish #28).
 
 ---
 
@@ -220,17 +220,67 @@
 
 ---
 
+## Scenario I — Image-repost (Phase 4.7, v0.6.0)
+
+**Trigger:** mod-test user submits two posts containing the SAME image (or perceptually-identical resizes) within 30d window. First post seeds the hash; second post triggers.
+
+**Config:**
+```json5
+{
+  dryRun: true, // safety — flip after watching for ~1 day
+  runs: [{
+    name: 'image-repost-watch',
+    checks: [{
+      name: 'duplicate-image',
+      combinator: 'OR',
+      rules: [{ kind: 'imageRepost', name: 'blockhash', hammingThreshold: 8, windowDays: 30 }],
+      actions: [{ kind: 'report', reason: 'possible image repost' }],
+    }],
+  }],
+}
+```
+
+**Expected outcome:**
+- First post: NO trigger (no prior hash). Hash recorded.
+- Second post (same image OR a resize / re-encode): triggers — report fires (dry-run shows in dashboard with "would have reported" badge).
+
+**Verification:**
+- Observatory dashboard shows `image-repost-watch / duplicate-image → report` row on second submission.
+- Pure-JS pipeline (upng-js + jpeg-js + blockhash-core) decodes preview.redd.it variants (320–640px) for ~5MB peak RAM instead of 180MB for full-res 4K.
+
+**Screenshot target:** `docs/screenshots/scenario-i-image-repost.png`
+
+---
+
+## Scenario J — AI rule explainer (Wave V Phase V7)
+
+**Trigger:** mod opens any triggered-event row in the Observatory dashboard + clicks "Explain with AI" button.
+
+**Expected outcome:**
+- Loading skeleton + animated 3-dot pulse for ~2–8s while OpenAI gpt-4o-mini responds
+- Plain-English 2-sentence explanation renders inline (what triggered + what action fired)
+- Second click on the SAME event returns instantly (24h Redis response cache per Tier 1 #151)
+
+**Verification:**
+- Click → loading state visible → explanation text appears → role="status" live-region announces for screen readers
+- Per-sub rate limit: 30 calls/hr; per-user 10/hr — Pull-Forward #7 closes the "one bad-actor mod burns whole sub's quota" hole
+- requireModerator gate: a non-mod hitting `/api/explain-event` directly gets 403 + zero OpenAI cost
+
+**Screenshot target:** `docs/screenshots/scenario-j-ai-explainer.png`
+
+---
+
 ## Scenarios cut from MVP
 
-- **Image-repost** (was 4.7): 0.10 spike never run, effectively NO-GO. Post-hackathon.
-- **History-based rules** (was 4.3–4.6): Vinh's queue capacity-permitting; may ship pre-deadline.
-- **MHSRule toxicity** (was 4.2): cut per Reddit PR #96 (HTTP fetch allowlist excludes ModerateHateSpeech).
+- **MHSRule toxicity** (was 4.2): cut per Reddit PR #96 (HTTP fetch allowlist excludes ModerateHateSpeech). Subs needing hate-speech filtering stay on upstream PRAW.
+
+*(Previously listed as cut but SHIPPED:* image-repost shipped 2026-05-18 as Phase 4.7 v0.6.0 — see Scenario I above. History-based rules shipped in Phase 4 v0.5.x — see `examples/history-fresh-low-karma.json5`, `attribution-drive-by-self-promo.json5`, `recent-activity-cross-sub.json5`.*)*
 
 ---
 
 ## Capture order for demo video (5.5)
 
-Capture A → G → F → H for the 60s cut. B/C/D/E are screenshots for the README + Devpost writeup.
+Capture A → G → F → H for the 60s cut. B/C/D/E are screenshots for the README + Devpost writeup. I + J are 90s alt-cut bonus material (Phase 4.7 + AI explainer money shots).
 
 ---
 

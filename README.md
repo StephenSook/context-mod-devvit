@@ -145,6 +145,9 @@ flowchart TB
 
   subgraph External["External HTTP (allowlist)"]
     RIMG{{"i.redd.it · preview.redd.it<br/>· external-{preview,i}.redd.it<br/>✓ global allowlist (no approval needed)"}}
+    IMG_DECODE["fetchAndDecode<br/>(upng-js + jpeg-js)<br/>8s timeout · 6MB cap<br/>Content-Length pre-check (Polish #23)"]
+    BHASH["computeBlockhash<br/>(blockhash-core)<br/>256-bit perceptual"]
+    IMGSTORE[("cm:img:hash:recent:{sub}<br/>500-entry ring · 30d TTL<br/>fail-OPEN on Redis err")]
   end
 
   TRIG ==>|"POST /internal/triggers/*"| HA
@@ -166,7 +169,9 @@ flowchart TB
   CFG <-.->|"SET cfg:rev:n"| REDIS
   STATS <-.->|"ZADD events:recent50"| REDIS
   DASH -->|"GET /api/recent · /api/stats · /api/health"| HA
-  PIPE -.->|"fetch (image hash, deferred)"| RIMG
+  PIPE -->|"imageRepost: preview.redd.it<br/>variant select"| IMG_DECODE
+  IMG_DECODE --> BHASH
+  BHASH -.->|"findSimilar (Hamming ≤8)<br/>+ recordHash post-lookup"| IMGSTORE
 
   classDef platform fill:#FF4500,stroke:#CC3700,color:#fff
   classDef server fill:#0079D3,stroke:#005FA3,color:#fff
@@ -177,7 +182,7 @@ flowchart TB
   class HA,REVCNT,CFG,PIPE,IDEM,ACT,STATS server
   class DRY sibling
   class DASH client
-  class RIMG external
+  class RIMG,IMG_DECODE,BHASH,IMGSTORE external
 ```
 
 **Storage:** Redis only (Devvit-native, per-install isolation, 500MB cap). No external DB. Strings + hashes + sorted sets only — no Lists, no Sets, per Devvit constraints.
@@ -221,9 +226,9 @@ sequenceDiagram
   end
 ```
 
-### AI explain-event security chain (Wave X)
+### AI explain-event security chain (Wave X + post-AE)
 
-Defense-in-depth on the `/api/explain-event` cost-bearing endpoint. Five gates in sequence before any byte touches OpenAI:
+Defense-in-depth on the `/api/explain-event` cost-bearing endpoint. **Seven gates** in sequence before any byte touches OpenAI (added per-user rate limit + 24h response cache after AE wave):
 
 ```mermaid
 sequenceDiagram
@@ -235,7 +240,8 @@ sequenceDiagram
   participant Auth as requireModerator
   participant V as validateEventSummary
   participant CB as circuitBreaker
-  participant RL as rateLimit
+  participant RL as rateLimit (per-sub + per-user)
+  participant Cache as explainCache (24h)
   participant K as apiKeyStore
   participant AI as OpenAI gpt-4o-mini
 
@@ -244,7 +250,7 @@ sequenceDiagram
   alt non-mod
     Auth-->>H: 403
     H-->>D: 403 not a moderator
-  else mod
+  else mod (or 503 if Reddit RPC transient — Polish #10)
     H->>V: caps + delimiter check
     alt invalid payload
       V-->>H: 400
@@ -255,22 +261,39 @@ sequenceDiagram
         CB-->>H: 503
         H-->>D: 503 retry in Ns
       else CLOSED / HALF_OPEN
-        H->>RL: checkRateLimit('explain', sub, 30, 3600)
-        alt limit hit
-          RL-->>H: 429
+        H->>RL: checkRateLimit('explain', sub, 30/hr)
+        alt limit hit OR Redis-degraded (fail-CLOSED)
+          RL-->>H: 429 / 503
           H-->>D: 429 try again in M min
-        else allowed
-          H->>K: getOpenaiKey(sub) ?? settings.get
-          K-->>H: sk-...
-          H->>AI: chat/completions (30s AbortController)<br/>SYSTEM_PROMPT + delimiter-wrapped USER_DATA
-          alt OpenAI ok
-            AI-->>H: completion
-            H->>CB: recordSuccess
-            H-->>D: 200 + explanation
-          else transient 5xx/timeout
-            AI-->>H: err
-            H->>CB: recordFailure (only on transient)
-            H-->>D: 500 + actionable hint
+        else per-sub allowed
+          H->>RL: checkRateLimit('explain', sub:user, 10/hr) (Pull-Forward #7)
+          alt per-user limit hit
+            RL-->>H: 429
+            H-->>D: 429 your personal limit (other mods can still use)
+          else per-user allowed
+            H->>Cache: GET explainCache:fnv1a64(event):sub (Tier 1 #151)
+            alt cache HIT (skip OpenAI cost)
+              Cache-->>H: cached explanation
+              H-->>D: 200 + explanation (cached:true)
+            else cache MISS
+              H->>K: getOpenaiKey(sub) ?? settings.get
+              alt key resolve throws (Redis down)
+                K-->>H: 503 Could not read API key (Polish #20 catches)
+                H-->>D: 503 Backend storage degraded
+              else key ok
+                H->>AI: chat/completions (30s AbortController, Polish #25)<br/>SYSTEM_PROMPT + delimiter-wrapped USER_DATA
+                alt OpenAI ok
+                  AI-->>H: completion
+                  H->>Cache: SET explainCache value (24h TTL, fail-OPEN)
+                  H->>CB: recordSuccess
+                  H-->>D: 200 + explanation
+                else transient 5xx/timeout
+                  AI-->>H: err
+                  H->>CB: recordFailure (only on transient)
+                  H-->>D: 500 + actionable hint
+                end
+              end
+            end
           end
         end
       end

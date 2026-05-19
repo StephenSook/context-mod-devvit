@@ -8,6 +8,55 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — dev-UX + documentation drift
+
+- **AE Polish #29: `dev:web` mock-server route gaps (47 console 404s)**
+  — caught during the fresh Lighthouse audit (Tier 3 #156). The
+  dev-only `scripts/dev/mock-server.cjs` had stubs for `/api/recent` +
+  `/api/stats` + `/api/health` but the dashboard client polls THREE
+  additional endpoints added since the mock was written:
+  `/api/mod-activity` (ModActivityFeed, every 8s), `/api/config-history`
+  (ConfigDiffViewer), `/api/muted-rules` (RuleStatsTable, every 8s).
+  Every poll missed the mock → 47 errors in a 60s browser session. Now
+  every endpoint the client touches has a stub returning the expected
+  JSON shape (`{activity:[]}` / `{revs:[]}` / `{muted:[]}`). Also added
+  POST stubs for mute-rule, unmute-rule, explain-event so click-through
+  testing in `dev:web` doesn't blow up. Production unaffected — Hono
+  routes already handled these correctly. Caught + fixed during the
+  audit itself.
+
+- **AE Tier 3 #156: Lighthouse + a11y audit refresh
+  (`docs/screenshots/lighthouse-2026-05-19.md`)** — fresh Playwright MCP
+  capture vs the v0.6.6+AE-polish build:
+  - FCP **1136ms → 176ms** (-85%) — Polish #1-3 reserve-space + initial-
+    Load gating means chrome + content paint together
+  - DCL **168ms → 98ms** (-42%); Load **172ms → 102ms** (-41%)
+  - Transfer grew +22% (217KB) — expected, justified by 3 new
+    components + Phase 4.7 image-repost client wiring
+  - A11y still 0 errors / 1 documented warning (intentional h2-first)
+  - Console: 0 errors / 0 warnings (after Polish #29 mock fix)
+  - Conclusion: better-than-prior performance, same-or-better a11y.
+
+- **AE Tier 3 #159: ARCHITECTURE diagram refresh (post-Phase 4+4.7)** —
+  README Mermaid diagrams updated:
+  - Architecture overview: added Phase 4.7 image pipeline subgraph
+    (fetchAndDecode → computeBlockhash → imgHashStore, with Polish #23
+    Content-Length pre-check noted)
+  - AI explain-event security chain: expanded from 5 to 7 gates —
+    added per-user rate limit (Pull-Forward #7) + 24h response cache
+    lookup (Tier 1 #151), called out Polish #10 / #18 / #20 / #25
+    503-aware error paths
+
+- **AE Tier 3 #158: `demo-video-script.md` + `e2e-scenarios.md` refresh
+  for v0.6.6** — submission docs were anchored at v0.2.0 / v0.3.0
+  references with "image-repost cut for post-hackathon" + "history rules
+  may ship." Both ROW LIES NOW — image-repost shipped 2026-05-18,
+  history rules shipped in Phase 4 v0.5.x. Refreshed to v0.6.6 / 656
+  tests + added Scenario I (image-repost) + Scenario J (AI explainer)
+  for the 90s alt-cut bonus material. Production notes updated to
+  call out Phase 4.7 as the strongest "we shipped something genuinely
+  new" demo beat.
+
 ### Fixed — first-install safety + onboarding
 
 - **AE Polish #28: fresh-install defaults seed `dryRun: true` + EmptyState

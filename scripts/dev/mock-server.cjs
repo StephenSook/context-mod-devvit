@@ -79,12 +79,36 @@ function sendFile(res, filePath) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${HOST}`);
 
-  // API shims — both routes return empty so the client DEMO_ENABLED
+  // API shims — return empty/safe responses so the client DEMO_ENABLED
   // fallback engages when ?demo=1 is in the dashboard URL.
+  //
+  // AE Polish #29: the mock server previously stubbed only /api/recent,
+  // /api/stats, /api/health — but the client polls /api/mod-activity
+  // (ModActivityFeed, every 8s) + /api/config-history (ConfigDiffViewer,
+  // user-triggered) + /api/muted-rules (RuleStatsTable, every 8s).
+  // Every poll missed the mock + spammed the browser console w/ 404s
+  // (47 errors in a 60s session). Now every endpoint the dashboard
+  // client touches has a mock that returns the expected JSON shape.
   if (url.pathname.startsWith('/api/recent')) return sendJson(res, 200, { events: [] });
   if (url.pathname.startsWith('/api/stats')) return sendJson(res, 200, { counters: {} });
+  if (url.pathname.startsWith('/api/mod-activity')) return sendJson(res, 200, { activity: [] });
+  if (url.pathname.startsWith('/api/config-history')) return sendJson(res, 200, { revs: [] });
+  if (url.pathname.startsWith('/api/muted-rules')) return sendJson(res, 200, { muted: [] });
   if (url.pathname.startsWith('/api/health'))
     return sendJson(res, 200, { ok: true, name: 'cm-devvit-mock', ts: Date.now() });
+  // Mutation endpoints — mock returns ok so click-to-mute / explain
+  // buttons don't blow up in dev. POSTs aren't polled so no console spam,
+  // but stubbing keeps the dashboard usable for click-through testing.
+  if (req.method === 'POST' && url.pathname.startsWith('/api/mute-rule'))
+    return sendJson(res, 200, { ok: true });
+  if (req.method === 'POST' && url.pathname.startsWith('/api/unmute-rule'))
+    return sendJson(res, 200, { ok: true });
+  if (req.method === 'POST' && url.pathname.startsWith('/api/explain-event'))
+    return sendJson(res, 200, {
+      ok: true,
+      explanation:
+        'Mock explanation — dev:web mock-server returns a stub here. In production this is OpenAI gpt-4o-mini via /api/explain-event.',
+    });
 
   // Unknown /api/* paths return JSON 404 — not HTML — so the client
   // gets a parseable error instead of crashing on "Unexpected token <".
