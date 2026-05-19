@@ -59,6 +59,19 @@ The wiki page renamed: `r/<sub>/wiki/contextmod` (upstream) → **`r/<sub>/wiki/
 
 ## Step 3 — Apply the one-time schema renames
 
+### One-shot migration script (recommended — 30 seconds total)
+
+```bash
+# Clone the repo (or use the npm install if/when we publish)
+git clone https://github.com/StephenSook/context-mod-devvit
+cd context-mod-devvit
+node scripts/migrate-upstream-config.mjs your-upstream-config.yaml > devvit-config.json5
+```
+
+The script applies every rename in the table below, drops the rule + action kinds Devvit doesn't support (per Step 4), and emits a `// CUT:` header naming everything that was dropped so you can verify nothing important got silently removed. Exit code `0` = clean migration, `2` = cuts happened (operator should review the header).
+
+### Manual reference (if you want to translate by hand)
+
 The Devvit port's AJV schema tightened a few field names to match TypeScript convention. Run these find-replace passes against your config text BEFORE you save the wiki page:
 
 | Upstream PRAW CM | Devvit port |
