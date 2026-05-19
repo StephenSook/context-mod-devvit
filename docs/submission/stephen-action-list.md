@@ -1,19 +1,21 @@
-# Stephen Action List — T-9 → T-0
+# Stephen Action List — T-8 → T-0
 
 > Companion to [`submission-day-runbook.md`](./submission-day-runbook.md). The runbook is the full sequence; this file is the **subset Claude can't do for you** — surfaces that require Stephen's authenticated session, voice, or judgment.
 
-## ⚠️ Status update 2026-05-18 (T-9)
+## ⚠️ Status update 2026-05-19 (T-8)
 
-The original ladder below was anchored to a May 20 target. Deadline is now **May 27, 2026 18:00 PT** (T-9 from today). Most early-T action items already done. Current focus:
+Deadline: **May 27, 2026 18:00 PT** (T-8 from today). Most early-T action items already done. Current focus:
 
-- ✅ Phase 1+2+3 shipped (Vinh + Stephen, v0.2-0.3)
+- ✅ Phase 1+2+3+4 shipped (Vinh + Stephen, v0.2 → v0.5.x)
 - ✅ Phase 4 SHIPPED + live-verified on `r/contextmod_vinh_dev` (Vinh, 2026-05-18, commit `0bd59aa`)
-- ✅ v0.5.5 tagged + pushed (538 tests, all CI green)
+- ✅ **Phase 4.7 image-repost SHIPPED** v0.6.0 (2026-05-18, Stephen GO 5/18) — pure-JS blockhash pipeline
+- ✅ **AE wave: 35 polishes shipped** (Polish #1–#35) — auth-fail toast 503-aware, default-config dryRun:true safety, EmptyState snippet schema fix, image decode Content-Length pre-check, shared regex cache + safe-regex on filters, scheduler tests, App.tsx tests, mod-activity tests, demo-fixtures tests, migrations tests, configSource tests, etc.
+- ✅ v0.6.6 tagged + pushed (712 tests, all CI green)
 - ✅ Reddit cm-devvit@0.2.4 approved unlisted (re-upload latest source at T-2)
-- ⛔ Phase 0.10 image-blockhash spike — Vinh GO/NO-GO call pending; can be cut from demo per ROADMAP §4.7
-- ⏳ Devpost form submit — final action at T-0
+- ⏳ **Stephen: `npm run launch` at T-2 (May 25)** — push v0.6.x to Reddit App Directory
 - ⏳ Demo video recording — Stephen's hands (T-3 to T-1 window)
-- ⏳ FoxxMD operator outreach — Discord DMs to 15 operators
+- ⏳ Devpost form submit — final action at T-0
+- ⏳ FoxxMD operator outreach — Discord DMs to 15 operators (template + migration tool ready)
 
 ## Labeling note (cross-ref with `submission-day-runbook.md`)
 
