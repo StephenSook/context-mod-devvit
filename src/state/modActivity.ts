@@ -29,6 +29,36 @@ export interface ModActivity {
 
 const RING_SIZE = 50;
 
+// AE Polish #78: gemini brutal-audit P1-8. The previous read path cast
+// JSON.parse output to `ModActivity` unchecked. A poisoned blob (Redis
+// FLUSHDB during a deploy, version-drift across a schema migration, or
+// a partial write from a crashed worker) would propagate silently —
+// the dashboard would later access `.actor` / `.kind` / `.ts` and
+// either render `undefined` or throw at a render site far from the
+// source. Mirror the isValidRecentEventShape (Polish #5) and
+// isValidImageHashEntry (Polish #64) discipline: validate each field
+// before trust. Self-heals: caller drops bad entries; the ZSET trim on
+// the next write evicts them.
+function isValidModActivity(o: unknown): o is ModActivity {
+  if (!o || typeof o !== 'object') return false;
+  const m = o as Record<string, unknown>;
+  if (typeof m.ts !== 'number' || !Number.isFinite(m.ts)) return false;
+  if (typeof m.actor !== 'string' || m.actor.length === 0) return false;
+  if (typeof m.kind !== 'string') return false;
+  const valid: ModActivityKind[] = [
+    'reload-config',
+    'recent-actions',
+    'test-rules',
+    'simulate-rule',
+    'explain-rule',
+    'mute-rule',
+    'unmute-rule',
+  ];
+  if (!valid.includes(m.kind as ModActivityKind)) return false;
+  if (m.detail !== undefined && typeof m.detail !== 'string') return false;
+  return true;
+}
+
 export async function logModActivity(sub: string | undefined, entry: ModActivity): Promise<void> {
   if (!sub) return;
   try {
@@ -56,20 +86,29 @@ export async function readModActivity(sub: string | undefined): Promise<ModActiv
       reverse: true,
     });
     let parseFails = 0;
+    let shapeFails = 0;
     const parsed = entries
       .map((e) => {
+        let raw: unknown;
         try {
-          return JSON.parse(e.member) as ModActivity;
+          raw = JSON.parse(e.member);
         } catch {
           parseFails++;
           return null;
         }
+        // Polish #78: shape-validate before trusting the cast.
+        if (!isValidModActivity(raw)) {
+          shapeFails++;
+          return null;
+        }
+        return raw;
       })
       .filter((x): x is ModActivity => x !== null);
-    if (parseFails > 0) {
-      console.warn('[cm/modActivity] dropped corrupt members:', {
+    if (parseFails > 0 || shapeFails > 0) {
+      console.warn('[cm/modActivity] dropped corrupt/invalid members:', {
         sub,
         parseFails,
+        shapeFails,
         totalEntries: entries.length,
       });
     }

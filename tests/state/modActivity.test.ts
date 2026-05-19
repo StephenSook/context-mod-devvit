@@ -145,4 +145,38 @@ describe('readModActivity (Polish #30)', () => {
     const result = await readModActivity('r_test');
     expect(result).toEqual([]);
   });
+
+  // AE Polish #78: gemini brutal-audit P1-8. Cast-without-validation was
+  // letting poisoned blobs through to dashboard rendering. New
+  // isValidModActivity validator filters bad shapes on read.
+  it('Polish #78: shape-mismatch member (missing actor) dropped + counted', async () => {
+    const valid = { ts: 10, actor: 'good_mod', kind: 'reload-config' };
+    const missingActor = { ts: 5, kind: 'reload-config' }; // poisoned: no actor
+    redisZRange.mockResolvedValueOnce([
+      { score: 10, member: JSON.stringify(valid) },
+      { score: 5, member: JSON.stringify(missingActor) },
+    ]);
+    const result = await readModActivity('r_test');
+    expect(result).toHaveLength(1);
+    expect(result[0]?.actor).toBe('good_mod');
+  });
+
+  it('Polish #78: unknown kind (schema drift) dropped — does not propagate to render', async () => {
+    const ancient = { ts: 1, actor: 'a', kind: 'remove-old-action' }; // pre-Wave-S kind
+    redisZRange.mockResolvedValueOnce([{ score: 1, member: JSON.stringify(ancient) }]);
+    const result = await readModActivity('r_test');
+    expect(result).toEqual([]);
+  });
+
+  it('Polish #78: non-string detail field dropped', async () => {
+    const poisoned = {
+      ts: 1,
+      actor: 'a',
+      kind: 'reload-config',
+      detail: { not: 'a string' }, // poisoned: detail must be string | undefined
+    };
+    redisZRange.mockResolvedValueOnce([{ score: 1, member: JSON.stringify(poisoned) }]);
+    const result = await readModActivity('r_test');
+    expect(result).toEqual([]);
+  });
 });

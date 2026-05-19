@@ -74,6 +74,24 @@ const EMPTY_HISTORY = (username: string): AuthorHistory => ({
   degraded: false,
 });
 
+// AE Polish #78: gemini brutal-audit P1-8. Previous cache-read path
+// did a partial guard (`parsed.username === name`) but trusted `posts`,
+// `comments`, `fetchedAtMs`, and `degraded` unchecked after the JSON
+// parse. A poisoned blob (Redis FLUSHDB during a deploy, schema drift,
+// partial write) with `posts: "not-an-array"` would propagate; downstream
+// rules iterate posts/comments and throw on `.length` or `.filter`.
+// Mirror the recentEvents/imageHashStore/modActivity validator pattern.
+function isValidAuthorHistory(o: unknown, expectedName: string): o is AuthorHistory {
+  if (!o || typeof o !== 'object') return false;
+  const a = o as Record<string, unknown>;
+  if (typeof a.username !== 'string' || a.username !== expectedName) return false;
+  if (typeof a.fetchedAtMs !== 'number' || !Number.isFinite(a.fetchedAtMs)) return false;
+  if (typeof a.degraded !== 'boolean') return false;
+  if (!Array.isArray(a.posts)) return false;
+  if (!Array.isArray(a.comments)) return false;
+  return true;
+}
+
 /**
  * Best-effort extraction of the host portion of a URL. Returns '' on parse
  * failure so the AttributionRule can still match against the empty string
@@ -139,12 +157,39 @@ async function readCacheSafe(key: string, name: string): Promise<AuthorHistory |
   try {
     const cached = await redis.get(key);
     if (!cached) return null;
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(cached) as AuthorHistory;
-      if (parsed && parsed.username === name) return parsed;
+      parsed = JSON.parse(cached);
     } catch {
-      // Corrupt cache entry — caller falls through to refetch.
+      // Corrupt JSON — caller falls through to refetch (cache slot
+      // will be overwritten on the next cache write).
+      console.warn('[cm/authorHistory] cache JSON.parse failed — refetching:', name);
+      // Polish #78: self-heal by deleting the bad slot so the next
+      // read after refetch starts clean. Best-effort; failure here is
+      // logged but doesn't change the rule path.
+      try {
+        await redis.del(key);
+      } catch (delErr) {
+        console.warn('[cm/authorHistory] cache del after parse-fail also failed:', name, delErr);
+      }
+      return null;
     }
+    if (!isValidAuthorHistory(parsed, name)) {
+      // Polish #78: shape mismatch (poisoned blob, schema drift,
+      // partial write). Drop + log + self-heal.
+      console.warn('[cm/authorHistory] cache shape mismatch — refetching:', name);
+      try {
+        await redis.del(key);
+      } catch (delErr) {
+        console.warn(
+          '[cm/authorHistory] cache del after shape-mismatch also failed:',
+          name,
+          delErr
+        );
+      }
+      return null;
+    }
+    return parsed;
   } catch (err) {
     console.warn('[cm/authorHistory] redis get failed — fetching fresh:', name, err);
   }

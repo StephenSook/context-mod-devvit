@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const redisGet = vi.fn();
 const redisSet = vi.fn().mockResolvedValue('OK');
+const redisDel = vi.fn().mockResolvedValue(1);
 const getPostsByUser = vi.fn();
 const getCommentsByUser = vi.fn();
 
@@ -20,6 +21,7 @@ vi.mock('@devvit/web/server', () => ({
   redis: {
     get: (...a: unknown[]) => redisGet(...a),
     set: (...a: unknown[]) => redisSet(...a),
+    del: (...a: unknown[]) => redisDel(...a),
   },
   reddit: {
     getPostsByUser: (...a: unknown[]) => getPostsByUser(...a),
@@ -59,6 +61,8 @@ beforeEach(() => {
   redisGet.mockReset();
   redisSet.mockClear();
   redisSet.mockResolvedValue('OK');
+  redisDel.mockClear();
+  redisDel.mockResolvedValue(1);
   getPostsByUser.mockReset();
   getCommentsByUser.mockReset();
   // Default: lock acquires successfully + release is a no-op. Tests can
@@ -95,6 +99,10 @@ describe('getAuthorHistory', () => {
   });
 
   it('on cache hit, returns parsed value without calling Reddit', async () => {
+    // Polish #78: cache fixture must include `degraded: false` to pass
+    // the new isValidAuthorHistory shape validator — pre-fix the AE
+    // CRITICAL #5 `degraded` field had been added but the old read
+    // path only checked `parsed.username === name`.
     const cached = {
       username: 'alice',
       fetchedAtMs: Date.now() - 1000,
@@ -108,6 +116,7 @@ describe('getAuthorHistory', () => {
         },
       ],
       comments: [],
+      degraded: false,
     };
     redisGet.mockResolvedValueOnce(JSON.stringify(cached));
 
@@ -261,5 +270,60 @@ describe('getAuthorHistory', () => {
     expect(acquireLockMock).toHaveBeenCalledWith('authorhist:alice', 'sub_test');
     expect(getPostsByUser).toHaveBeenCalledTimes(1);
     expect(redisSet).toHaveBeenCalledTimes(1);
+  });
+
+  // AE Polish #78: gemini brutal-audit P1-8. Cache blob shape validation
+  // — poisoned blobs (Redis FLUSHDB during a deploy, version-drift,
+  // partial write) used to propagate via the unchecked `as AuthorHistory`
+  // cast. Now isValidAuthorHistory rejects + the bad slot is del'd so
+  // subsequent reads start clean.
+  it('Polish #78: shape-mismatch cache blob (missing degraded field) is treated as miss + slot del', async () => {
+    // Pre-Polish-#78 / pre-AE-CRITICAL-#5 cache shape — lacks `degraded`.
+    const cached = {
+      username: 'alice',
+      fetchedAtMs: Date.now() - 1000,
+      posts: [],
+      comments: [],
+      // degraded: false  ← MISSING (stale shape from before AE CRITICAL #5)
+    };
+    redisGet.mockResolvedValueOnce(JSON.stringify(cached));
+    getPostsByUser.mockReturnValueOnce(stubListing([]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    await getAuthorHistory('alice', 'sub1');
+
+    // del() must have been called on the stale slot — self-heal.
+    expect(redisDel).toHaveBeenCalledWith('cm:sub1:author:hist:alice');
+    // Reddit was hit because shape-validation rejected the cache.
+    expect(getPostsByUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('Polish #78: poisoned non-array `posts` field is rejected (does not propagate)', async () => {
+    const poisoned = {
+      username: 'alice',
+      fetchedAtMs: Date.now(),
+      posts: 'not-an-array', // poisoned field type
+      comments: [],
+      degraded: false,
+    };
+    redisGet.mockResolvedValueOnce(JSON.stringify(poisoned));
+    getPostsByUser.mockReturnValueOnce(stubListing([]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    const h = await getAuthorHistory('alice', 'sub1');
+
+    expect(Array.isArray(h.posts)).toBe(true);
+    expect(h.posts).toHaveLength(0);
+    expect(redisDel).toHaveBeenCalled();
+  });
+
+  it('Polish #78: corrupt JSON triggers del + refetch (self-heal on parse-fail)', async () => {
+    redisGet.mockResolvedValueOnce('this is not json{{{');
+    getPostsByUser.mockReturnValueOnce(stubListing([]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    await getAuthorHistory('alice', 'sub1');
+
+    expect(redisDel).toHaveBeenCalledWith('cm:sub1:author:hist:alice');
   });
 });
