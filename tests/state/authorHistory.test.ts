@@ -27,6 +27,15 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
+// AE Polish #77: mock acquireLock so existing redis.set/get assertions
+// only count cache-related calls (not the lock NX-set + release del-
+// verify pair). Default: always-succeed lock + no-op release. Individual
+// tests can override per-case.
+const acquireLockMock = vi.fn();
+vi.mock('../../src/lib/idem', () => ({
+  acquireLock: (...a: unknown[]) => acquireLockMock(...a),
+}));
+
 import { getAuthorHistory } from '../../src/state/authorHistory';
 
 const stubListing = <T>(items: T[]) => ({ all: () => Promise.resolve(items) });
@@ -52,6 +61,11 @@ beforeEach(() => {
   redisSet.mockResolvedValue('OK');
   getPostsByUser.mockReset();
   getCommentsByUser.mockReset();
+  // Default: lock acquires successfully + release is a no-op. Tests can
+  // override (e.g. mockResolvedValueOnce(null)) to assert fail-open
+  // behavior when lock acquisition fails.
+  acquireLockMock.mockReset();
+  acquireLockMock.mockResolvedValue(async () => {});
 });
 
 describe('getAuthorHistory', () => {
@@ -207,5 +221,45 @@ describe('getAuthorHistory', () => {
     expect(h.posts).toEqual([]);
     expect(getPostsByUser).not.toHaveBeenCalled();
     expect(redisSet).not.toHaveBeenCalled();
+  });
+
+  // AE Polish #77: gemini brutal-audit P1-7. The fail-open path must
+  // never block the rule eval when lock acquisition fails — otherwise
+  // a Redis blip during lock-NX would silently degrade authorHistory to
+  // returning EMPTY_HISTORY for every event, false-positive-ing
+  // commentCountLt rules.
+  it('Polish #77: falls back to direct fetch when acquireLock returns null', async () => {
+    redisGet.mockResolvedValueOnce(null); // cache miss
+    acquireLockMock.mockResolvedValueOnce(null); // lock acquire failed (Redis blip OR contention)
+    getPostsByUser.mockReturnValueOnce(
+      stubListing([post({ id: 't3_p1' })])
+    );
+    getCommentsByUser.mockReturnValueOnce(stubListing([comment({ id: 't1_c1' })]));
+
+    const h = await getAuthorHistory('alice', 'sub_test');
+
+    // Direct fetch still ran + result returned (no degraded flag).
+    expect(h.username).toBe('alice');
+    expect(h.posts).toHaveLength(1);
+    expect(h.comments).toHaveLength(1);
+    expect(h.degraded).toBe(false);
+    // Cache write still attempted on fail-open path so subsequent
+    // events benefit from the cache even if their lock acquire also
+    // fails (self-healing once the Redis blip resolves).
+    expect(redisSet).toHaveBeenCalledTimes(1);
+  });
+
+  it('Polish #77: under successful lock, fetches Reddit once + caches once (thundering-herd suppression intent)', async () => {
+    redisGet.mockResolvedValueOnce(null); // cache miss
+    // acquireLockMock default mockResolvedValue: success
+    getPostsByUser.mockReturnValueOnce(stubListing([post({ id: 't3_p1' })]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    await getAuthorHistory('alice', 'sub_test');
+
+    expect(acquireLockMock).toHaveBeenCalledTimes(1);
+    expect(acquireLockMock).toHaveBeenCalledWith('authorhist:alice', 'sub_test');
+    expect(getPostsByUser).toHaveBeenCalledTimes(1);
+    expect(redisSet).toHaveBeenCalledTimes(1);
   });
 });

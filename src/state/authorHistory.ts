@@ -29,6 +29,7 @@
 
 import { redis, reddit } from '@devvit/web/server';
 import { K } from './keys';
+import { acquireLock } from '../lib/idem';
 
 const TTL_SECONDS = 60 * 60; // 1 hour
 const FETCH_LIMIT = 100; // page once, no pagination loop
@@ -100,20 +101,57 @@ export async function getAuthorHistory(
   if (!name) return EMPTY_HISTORY('');
   const key = K.authorHist(name, sub);
 
+  // Cache check #1 (pre-lock).
+  const cachedHit = await readCacheSafe(key, name);
+  if (cachedHit) return cachedHit;
+
+  // AE Polish #77: gemini brutal-audit P1-7 — per-author lock to prevent
+  // cache-miss thundering herd. Without this, N concurrent events on the
+  // same hot poster all miss cache, all hit Reddit's getPostsByUser +
+  // getCommentsByUser endpoints, burning rate-limit budget. Reddit's
+  // Devvit rate-limit cap is ~600 req/min per app — a viral 50-event
+  // burst on one author could exhaust it. With the lock, the first event
+  // fetches + caches; subsequent events in the same burst either see
+  // the cache hit (when they arrive after the leader writes) or fall
+  // through to a direct fetch (fail-open per the rule subsystem's posture).
+  //
+  // Lock scope: per (sub, author). Cross-sub queries on the same user
+  // don't share the lock (their cache slots are isolated via K.authorHist).
+  // TTL: acquireLock default 60s — comfortably longer than Reddit's
+  // typical 500ms-2s fetch latency. Fail-OPEN on lock-acquire failure
+  // (Redis blip OR another caller holds the lock — acquireLock returns
+  // null in both cases). Direct fetch is the same as pre-fix behavior;
+  // no regression for the lock-failed path.
+  const release = await acquireLock(`authorhist:${name}`, sub);
+  if (release) {
+    try {
+      return await fetchAndCache(name, key);
+    } finally {
+      await release();
+    }
+  }
+  return await fetchAndCache(name, key);
+}
+
+// Polish #77 helper: extracted cache-read + cache-write paths so the
+// double-checked-locking path doesn't duplicate the try/catch trees.
+async function readCacheSafe(key: string, name: string): Promise<AuthorHistory | null> {
   try {
     const cached = await redis.get(key);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached) as AuthorHistory;
-        if (parsed && parsed.username === name) return parsed;
-      } catch {
-        // Corrupt cache entry — fall through to refetch.
-      }
+    if (!cached) return null;
+    try {
+      const parsed = JSON.parse(cached) as AuthorHistory;
+      if (parsed && parsed.username === name) return parsed;
+    } catch {
+      // Corrupt cache entry — caller falls through to refetch.
     }
   } catch (err) {
     console.warn('[cm/authorHistory] redis get failed — fetching fresh:', name, err);
   }
+  return null;
+}
 
+async function fetchAndCache(name: string, key: string): Promise<AuthorHistory> {
   const fresh = await fetchFromReddit(name);
 
   // AE CRITICAL #5: NEVER cache a degraded response. The next event must
