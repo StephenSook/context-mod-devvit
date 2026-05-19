@@ -6,7 +6,7 @@
 > Write your moderation rules once in JSON5. The rule engine (8 rule kinds incl. Phase 4.7 perceptual-blockhash image-repost), 8 action handlers (remove · approve · lock · comment · report · ban · userFlair · distinguish), atomic config publish, dry-run rule tester, AI rule explainer, AI event summary w/ 24h response cache, mod activity feed, config-diff viewer, mute/unmute, full mod-auth gating + per-sub + per-user rate-limiting + circuit-breaker on AI calls, per-event run isolation + wall-clock timeouts, light-mode toggle, and Observatory dashboard all ship live in v0.6.7. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-766%20passing-brightgreen.svg)](./tests)
+[![Tests](https://img.shields.io/badge/tests-777%20passing-brightgreen.svg)](./tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
@@ -54,56 +54,17 @@ The `dev:web` script chains `vite build` → `node scripts/dev/mock-server.cjs`.
 
 To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
-## Status at a glance
+## Status
 
-| Phase | State | Notes |
-|-------|-------|-------|
-| **Phase 0** — Scaffold | ✅ Shipped | `devvit.json` + routes + idempotency primitives + Observatory dashboard chrome |
-| **Phase 1** — Rule engine | ✅ Shipped | regex + author + ruleSet + named rules + Mustache + filters + run state machine |
-| **Phase 2** — Actions + handleActivity | ✅ Shipped | 7 MVP actions + handleActivity orchestrator + URL-dedupe repost rule (promoted from Phase 4) |
-| **Phase 3** — Config UX + live dashboard | ✅ Shipped | wiki loader cron + reload-config menu + onAppInstall seed + onAppUpgrade migrations + live `/api/recent` ZRANGE |
-| **Step 3.6** — Dry-run rule tester | ✅ Shipped | mod menu → form → toast bullets; non-contract `dryRunActivity` sibling preserves read-once config invariant |
-| **Codex hardening** (initial) | ✅ Shipped | 2 CRITICAL + 10 HIGH safety findings closed (idempotency double-action, dry-run authority, repost `SET NX`, atomic INCR config publish, read-once invariant, Mustache markdown injection, filter regex try/catch, parsed-config invariant) |
-| **Wave S + T mod UX** | ✅ Shipped (v0.3.0) | filter chips · mobile responsive · keyboard shortcuts (`?`/`r`/`h`/`a`/`esc`) · per-event drill-down click-to-expand · onboarding tour · per-rule stats table · mod activity attribution feed · config rev diff viewer modal |
-| **S1 Rule simulation against history** | ✅ Shipped (v0.3.0) | **demo money shot** — mod pastes rule JSON5 → fires "would have fired N/25 (X%)" against last 25 posts. Demo gold. |
-| **S5 AI rule explainer** | ✅ Shipped (v0.3.0) | OpenAI gpt-4o-mini via Devvit HTTP allowlist (PR #96 AI-provider scope). Mod pastes JSON5 → plain-English explanation. |
-| **S10 Mute/unmute rule MVP** | ✅ Shipped (v0.3.0) | Redis hash store + 3 API endpoints w/ mod-auth gate. v0 soft-mute; Vinh wires hard-mute against this storage shape in Phase 4. |
-| **V7 AI summary per event** | ✅ Shipped (v0.3.0) | drill-down panel "Explain with AI" button — OpenAI summarizes why this event fired in 2 sentences. |
-| **S12 E2E Playwright CI** | ✅ Shipped (v0.3.0) | 7 dashboard scenarios in headless chromium via GitHub Actions. Trace + artifact upload on failure. |
-| **Wave U code review hardening** | ✅ Shipped (v0.3.0) | 5 BLOCKERs + 1 CRITICAL + 11 WARNs closed from parallel adversarial review by 5 agents (Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer). |
-| **Wave W + X — deep review + production hardening** | ✅ Shipped (v0.3.1) | 30+ atomic commits. requireModerator on every mutation/cost endpoint; rate-limit + circuit-breaker on OpenAI calls; configStore parse-fail surfacing; wiki not-found/unreachable split; structured JSON logger; deep-health probe; THREAT-MODEL.md + API.md + PRIVACY.md + data-retention.md; ErrorBoundary; CodeQL workflow; FUNDING + Discussions; .devcontainer + VSCode workspace. |
-| **v0.3.1** | ✅ Tagged + released | GitHub release auto-generated from CHANGELOG via X72 workflow. |
-| **Phase 4** — `history` / `attribution` / `recentActivity` rules | ✅ Shipped (2026-05-18) | Vinh's author-history cache + 3 stretch rules. 179 tests. Authorized 2026-05-17 Wave S16; shipped ahead of 2026-05-25 target. |
-| **Phase 4.7** — Image-mode `repost` (perceptual blockhash) | ⏸ Deferred | Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission |
-| **MHS** (ModerateHateSpeech HTTP fetch) | ✂️ Cut | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech |
+**Phase 0–4 + 4.7 all shipped.** Rule engine, 8 action handlers (remove / approve / lock / comment / report / ban / userFlair / distinguish), atomic wiki-config publish, dry-run rule tester, AI explainer + event summary, hard-mute, config-diff viewer, mod activity feed, mobile-responsive Observatory dashboard, Phase 4 history-aware rules (history / attribution / recentActivity), Phase 4.7 perceptual-blockhash image-repost.
 
-For per-component detail see the Status table further down + [`PLAN.md`](./PLAN.md) + [`CHANGELOG.md`](./CHANGELOG.md).
+**Production health (verified 2026-05-19):** 777 tests passing · `tsc --build` clean · `npm run lint` clean · production `npm audit` 0 vulnerabilities · CI green across 8 jobs (validate Node 20/22/24 + ai-tone + Playwright chromium/firefox/webkit + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter). Lighthouse CLI v13.3.0: Performance 84 · Accessibility 100 · Best Practices 100 · CLS 0.04 (good) · TBT 0 ms.
 
-## Status — what's production vs scaffolded vs Phase-N pending
+**Cut + deferred:** MHS (ModerateHateSpeech HTTP fetch) cut per Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. Subs using upstream CM for hate-speech filtering keep running the original PRAW build.
 
-**Hackathon-era MVP.** Active development; expect rough edges. Architecture diagram below shows the *complete request lifecycle*; the Status table below shows the per-component ship state. Phase 1+2+3 complete; Phase 4 stretch rules in progress.
-
-| Component | State today | Notes |
-|-----------|-------------|-------|
-| Observatory dashboard (React + Vite + Tailwind, 24h sparkline + event stream + dry-run mod menu) | **Production** | Renders against live `/api/recent` ZSET + falls back to `?demo=1` synthetic for screenshots. Wave A–F shipped. |
-| Rule engine — `handleActivity` → `runRun` → `runCheck` → `runRule` (regex / author / ruleSet) | **Production** | Vinh's Phase 1 — 11 steps, 93 tests. Filters (authorIs + itemIs), Mustache templates, named-rule expansion, AND/OR combinators, postBehavior state machine w/ 100-iter safety. |
-| Action handlers (`remove` / `approve` / `lock` / `comment` / `report` / `ban` / `userFlair`) | **Production** | Vinh's Phase 2 — 7 MVP actions, Reddit-API signatures verified live. Markdown sanitizer (u/r-ping defang + link-injection guard) for `comment` action. |
-| `handleActivity` orchestrator + `runAction` w/ idempotency wrap | **Production** | Vinh's Phase 2.3 — reads config rev once at event start (D5), aggregates ActionResult into events:recent ZSET. Codex-hardened (CRITICAL+HIGH fixes shipped 2026-05-16). |
-| Idempotency primitives (`src/lib/idem.ts` — FNV-1a + BigInt + lease owner tokens + 3-stage Redis keys + 60s cron lock) | **Production** | 13 unit tests. Codex-hardened: commitAction retries done-write 3x and never releases pending on failure (prevents double-action); lease owner-token compare-and-delete (prevents third-execution race on slow worker). |
-| Dry-run rule tester (mod menu "Test rules on this item" → form → toast) | **Production** | Stephen's Step 3.6 — non-contract `dryRunActivity` sibling. Mod right-clicks any post/comment, gets eval trace + would-have-called list, zero Reddit side-effects. |
-| URL-dedupe repost rule (`cm:{sub}:repost:url:{hash}`, 30d TTL) | **Production** | Vinh's Phase 2.5.1 (promoted from Phase 4). FNV-1a hash, race-safe `SET NX` (Codex hardened), fail-OPEN on Redis outage. |
-| Config UX — wiki loader cron + reload-config menu + onAppInstall default-config seed + onAppUpgrade migrations | **Production** | Vinh's Phase 3 — `loadFromWiki()` cron polls every 5 min, no-op on unchanged wiki revisionId, atomic config publish via rev pointer. |
-| `routes/api.ts` `/api/recent` + `/api/stats` | **Production for `/api/recent`** (live ZRANGE wired Phase 3.4) · **Scaffolded for `/api/stats`** (Phase 4 stretch) | Versioned events drop corrupt/future members loudly. |
-| `routes/scheduler.ts` cron (`refresh-config`, `stats-rollup`, `image-hash-worker`) | **Production for `refresh-config`** · **Scaffolded** for `stats-rollup` + `image-hash-worker` | Stats rollup Phase 4; image-hash-worker gated on 0.10 spike (not run yet — likely NO-GO). |
-| Devvit configuration (`devvit.json`, fetch allowlist, post entry, scheduler tasks, menu items, forms) | **Production** | All 3 menu items + dry-run form declared. |
-| Hono server routing (`src/index.ts`, `/api/*`, `/internal/*`) | **Production** | |
-| Phase 4 stretch rules (`history`, `attribution`, `recentActivity`) | **Pending** | Vinh's queue. May ship pre-deadline or defer post-hackathon depending on capacity. |
-| Phase 4 image-hash + LSH | **Deferred** | 0.10 spike gate not run; effectively NO-GO for hackathon. Post-hackathon. |
-| MHSRule (toxicity HTTP fetch) | **Cut** | Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. |
-
-**766 tests passing** (Phase 1+2+3 + Step 3.6 + Codex regression suite + Wave S+T 15 features + Wave U code-review + V7 AI event summary + Waves W/X/Y/Z/AA/AB/AC/AD/AD-review/AE hardening + Vinh Phase 4: history/attribution/recentActivity + author cache + Phase 4.7 image-repost via blockhash + 8th action (distinguish) + NOT combinator + migration tool + AE 70+/70+ audit findings closed — Polish #1-#80 incl. 5 adversarial-review rounds: silent-failure-hunter, code-reviewer, gemini-agent (×2), codex-rescue, vercel:performance-optimizer, type-design-analyzer). Lighthouse CLI v13.3.0: Performance 84, Accessibility 100, Best Practices 100, CLS 0.04 (good), TBT 0ms. Production npm-audit: 0 vulns. `tsc --build` clean. `npm run lint` clean. CI all-green across 8 jobs (validate Node 20/22/24 + ai-tone + e2e Playwright (chromium+firefox+webkit) + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter).
-
-See [implementation plan](./docs/superpowers/plans/2026-05-12-contextmod-devvit-port.md) + [`PLAN.md`](./PLAN.md) team-coordination doc for full per-phase scope.
+For phase-by-phase ship state, per-component readiness, hardening-wave detail, and the full
+cut + deferred list, see [`docs/STATUS.md`](./docs/STATUS.md). For the team-coordination plan
++ Stephen+Vinh split, see [`PLAN.md`](./PLAN.md). For the changelog, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ### Observatory dashboard preview
 
