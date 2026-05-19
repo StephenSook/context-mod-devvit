@@ -131,6 +131,48 @@ const AUTHOR_DEFAULTS: Omit<Author, 'name' | 'id'> = {
   shadowBanned: false,
 };
 
+/**
+ * AE Polish #11 (Agent B #9): Devvit getUserByUsername returns an untyped
+ * shape. Previously each field was `(user as { isModerator?: boolean }).isModerator ?? false`
+ * which silently defaults to false when the field is missing or renamed.
+ * If a future Devvit minor release renames `isModerator → isMod` (or
+ * similar), every author silently becomes `isMod:false` + mod-bypass
+ * filters stop matching — bot starts removing mods' own posts.
+ *
+ * extractTypedField() reads the value + logs (warn level, once per
+ * enrichment) when the expected field is missing entirely. Same nullable
+ * default as before for fail-OPEN behavior, but the log line means ops
+ * sees the shape drift before mass mis-moderation lands.
+ */
+function extractTypedField<T>(
+  obj: Record<string, unknown>,
+  fieldName: string,
+  typeCheck: (v: unknown) => v is T,
+  fallback: T,
+  missingFields: string[]
+): T {
+  const v = obj[fieldName];
+  if (v === undefined) {
+    missingFields.push(fieldName);
+    return fallback;
+  }
+  if (typeCheck(v)) return v;
+  // Type mismatch (e.g. string where boolean expected) — log + default.
+  missingFields.push(`${fieldName}:wrong-type`);
+  return fallback;
+}
+
+const isString = (v: unknown): v is string => typeof v === 'string';
+const isNumber = (v: unknown): v is number => typeof v === 'number';
+const isBoolean = (v: unknown): v is boolean => typeof v === 'boolean';
+const isDateLike = (v: unknown): v is Date | number | string =>
+  v instanceof Date || typeof v === 'number' || typeof v === 'string';
+
+/** Coerce a Date | number | string to the number | string shape ageSeconds expects. */
+function coerceDateLike(v: Date | number | string): number | string {
+  return v instanceof Date ? v.getTime() : v;
+}
+
 async function enrichAuthor(name: string, id: string, needsEnrichment: boolean): Promise<Author> {
   if (!needsEnrichment || !name) {
     return { ...AUTHOR_DEFAULTS, name, id };
@@ -141,20 +183,31 @@ async function enrichAuthor(name: string, id: string, needsEnrichment: boolean):
       // Deleted / suspended.
       return { ...AUTHOR_DEFAULTS, name, id, shadowBanned: true };
     }
-    return {
+    const obj = user as unknown as Record<string, unknown>;
+    const missing: string[] = [];
+    const enriched: Author = {
       name,
-      id: id || (user as { id?: string }).id || '',
-      age: ageSeconds(
-        (user as { createdAt?: Date | number | string }).createdAt as number | string | undefined
-      ),
-      linkKarma: (user as { linkKarma?: number }).linkKarma ?? 0,
-      commentKarma: (user as { commentKarma?: number }).commentKarma ?? 0,
+      id: id || extractTypedField(obj, 'id', isString, '', missing),
+      age: ageSeconds(coerceDateLike(extractTypedField(obj, 'createdAt', isDateLike, 0, missing))),
+      linkKarma: extractTypedField(obj, 'linkKarma', isNumber, 0, missing),
+      commentKarma: extractTypedField(obj, 'commentKarma', isNumber, 0, missing),
       flairText: null,
-      isMod: (user as { isModerator?: boolean }).isModerator ?? false,
+      isMod: extractTypedField(obj, 'isModerator', isBoolean, false, missing),
       isContributor: false,
-      verified: (user as { isAdmin?: boolean }).isAdmin ?? false,
+      verified: extractTypedField(obj, 'isAdmin', isBoolean, false, missing),
       shadowBanned: false,
     };
+    if (missing.length > 0) {
+      // AE Polish #11: log Devvit RPC shape drift. If 'isModerator' goes
+      // missing, mods stop matching their own bypass filters — surface this
+      // to ops BEFORE the bot starts removing mod posts.
+      console.warn(
+        '[cm/normalize] getUserByUsername returned w/ missing/wrong-type fields:',
+        name,
+        missing
+      );
+    }
+    return enriched;
   } catch (err) {
     console.warn(
       '[cm/normalize] getUserByUsername failed — defaulting author + tagging enrichmentFailed:',
