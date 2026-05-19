@@ -80,12 +80,19 @@ export async function computeStats(sub: string): Promise<StatsRollup> {
     .slice(0, 5);
 
   // AE Polish #38: build the 24-hour bucket histogram. Each bucket is one
-  // wall-clock hour. Index 0 = (now - 24h, now - 23h); index 23 = (now - 1h, now).
-  // Events outside the 24h window contribute nothing.
+  // wall-clock hour. Window semantics [dayStart, now]: bucket k covers
+  // [dayStart + k*1h, dayStart + (k+1)*1h). Index 0 = oldest hour;
+  // index 23 = most-recent hour. Events outside [dayStart, now] skip.
+  //
+  // AE Polish #43: boundary off-by-one fix. Previously `e.ts <= dayStart`
+  // EXCLUDED events at exactly dayStart but Math.floor((0)/3_600_000) === 0
+  // would have assigned the dayStart-exact event to bucket 0. Bounds check
+  // + bucket assignment disagreed at the lower edge. Fixed to `e.ts <
+  // dayStart` so the boundary matches the documented [dayStart, now] window.
   const hourlyActions24h = new Array<number>(24).fill(0);
   const dayStart = now - 24 * 3_600_000;
   for (const e of events) {
-    if (e.ts <= dayStart || e.ts > now) continue;
+    if (e.ts < dayStart || e.ts > now) continue;
     const bucket = Math.min(23, Math.floor((e.ts - dayStart) / 3_600_000));
     hourlyActions24h[bucket]! += 1;
   }

@@ -140,6 +140,28 @@ describe('computeStats (Y1-X7)', () => {
     expect(stats.hourlyActions24h[23]).toBe(1);
     expect(stats.hourlyActions24h[0]).toBe(0);
   });
+
+  it('Polish #43: event at exactly dayStart (24h ago) lands in bucket 0 (boundary fix)', async () => {
+    // silent-failure-hunter Finding 2: pre-fix used `e.ts <= dayStart` which
+    // EXCLUDED an event at exactly dayStart, but the bucket formula
+    // Math.floor((0)/3600000) = 0 would have assigned it to bucket 0.
+    // Bounds + assignment disagreed on the boundary. Fixed to `< dayStart`.
+    const now = Date.now();
+    const dayStart = now - 24 * 3_600_000;
+    readRecentMock.mockResolvedValue([event(dayStart, 'r', 'c', 'remove')]);
+    const stats = await computeStats('r_test');
+    expect(stats.hourlyActions24h[0]).toBe(1);
+    expect(stats.hourlyActions24h.reduce((a, b) => a + b, 0)).toBe(1);
+  });
+
+  it('Polish #43: event at exactly now lands in last bucket (23) — upper edge inclusive', async () => {
+    // Symmetry: the upper bound check is `> now`, so ts === now passes.
+    // Math.floor((24h)/3_600_000) = 24, clamped to 23 via Math.min.
+    const now = Date.now();
+    readRecentMock.mockResolvedValue([event(now, 'r', 'c', 'remove')]);
+    const stats = await computeStats('r_test');
+    expect(stats.hourlyActions24h[23]).toBe(1);
+  });
 });
 
 describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
