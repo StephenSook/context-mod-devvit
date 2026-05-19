@@ -79,7 +79,9 @@
 **Visual:** Title card "Migration ready" — text only, dark background.
 
 **Caption / VO:**
-> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them. Eligible for Reddit's $1,000 Migration Bounty plus the Developer Funds program plus this hackathon's $10K Best Ported App prize — realistic 12-month direct-cash envelope is $19.5K–$25K (bounty + hackathon + Install-side cap + DQE Tier 3–4). The $75K figure is the Developer Funds Tier-8 DQE ceiling, not expected capture."
+> "FoxxMD's instance and 15+ other ContextMod operators are stuck on dying PRAW infrastructure. This port unblocks them — same wiki schema, no central server, one-click install. Community value first; the monetization math lives in the writeup."
+
+> AE Polish #75 (gemini brutal-audit P1-1) — the original voiceover quoted the $19.5K–$25K direct-cash envelope. That math is real (see [`pillar-5-numbers.md`](./pillar-5-numbers.md) §12), but reading it aloud over a public 60-second demo trains the wrong narrative: judges + mods watching will hear "they're in it for the cash" before they hear "they're in it for the operators." The payout math stays in the written writeup where context (Developer Funds program, Migration Bounty terms, eligibility) lives — the video keeps the community-value pitch only.
 
 ---
 
