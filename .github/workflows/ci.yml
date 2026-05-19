@@ -62,10 +62,33 @@ jobs:
           retention-days: 7
       - name: Build
         run: npm run build
+      - name: Bundle size budget
+        # Polish #36: hard-gate to catch accidental bloat. Current:
+        # client ~192KB / server ~2.4MB (post-Phase-4.7). Budget gives
+        # ~30% headroom for client growth and ~25% for server. A regression
+        # past the budget needs an explicit bump here + a real reason.
+        # Devvit webview budget is generous but worth catching pre-launch.
+        if: matrix.node-version == '22'
+        run: |
+          client_kb=$(du -k dist/client/default.js | cut -f1)
+          server_kb=$(du -k dist/server/index.cjs | cut -f1)
+          echo "client: ${client_kb}KB / server: ${server_kb}KB"
+          # 260KB client budget, 3000KB server budget
+          if [ "$client_kb" -gt 260 ]; then
+            echo "::error::client bundle ${client_kb}KB exceeds 260KB budget"
+            exit 1
+          fi
+          if [ "$server_kb" -gt 3000 ]; then
+            echo "::error::server bundle ${server_kb}KB exceeds 3000KB budget"
+            exit 1
+          fi
       - name: Dependency layer-rule check
+        # Polish #36: was continue-on-error:true (informational only) but
+        # the rule set is clean (0 violations across 107 modules / 234
+        # deps as of 2026-05-19). Hard-gate now so a future cross-layer
+        # import breaks CI instead of silently landing.
         if: matrix.node-version == '22'
         run: npx depcruise src --config .dependency-cruiser.cjs --output-type err
-        continue-on-error: true
 
   ai-tone:
     runs-on: ubuntu-latest

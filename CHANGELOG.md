@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### CI hardening + repo hygiene
+
+- **AE Polish #36: bundle-size CI gate + depcruise hard-gate +
+  SECURITY supported versions refresh**:
+  1. New CI step — bundle-size budget: 260KB client, 3000KB server.
+     Current actuals: 192KB / 2.4MB. ~30% / 25% headroom. Past budget
+     fails the build w/ ::error message naming actual size + budget.
+  2. Depcruise step flipped from `continue-on-error:true` to hard-gate.
+     Baseline 0 violations across 107 modules / 234 deps (verified
+     2026-05-19). A future cross-layer import would break CI instead
+     of silently landing as a warning.
+  3. SECURITY.md supported-versions matrix: 0.5.x/0.4.x → 0.6.x/0.5.x.
+     `<0.5` marked unsupported (was `<0.4`).
+  4. `npm audit` baseline: PRODUCTION deps = 0 vulns. DevDeps = 36 vulns
+     (3 low / 7 mod / 25 high / 1 critical), all upstream of
+     `@devvit/start` → `@devvit/protos` → `protobufjs`. Out of our
+     control; pinned by Devvit's SDK. Runtime unaffected — Devvit dev
+     CLI doesn't ship to production. No fix required.
+
 ### Security — defense-in-depth
 
 - **AE Polish #35: filter regex now uses shared safe-regex cache** —
