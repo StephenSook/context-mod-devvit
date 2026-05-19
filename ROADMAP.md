@@ -29,7 +29,7 @@ Where this project goes after the Reddit Mod Tools Hackathon submission. Organiz
 
 ## Shipped during the hackathon run (formerly Next / Later items)
 
-- ✅ **Devvit App Directory review** — v0.5.5 approved 2026-05-17; v0.6.7 (Phase 4.7 + AE polish + 12 examples) currently under review
+- ✅ **Devvit App Directory review** — v0.5.5 approved 2026-05-17; v0.6.7 (Phase 4.7 + AE polish #1–#88 + 12 examples + 777 tests) currently under review
 - ✅ **Phase 4.7 image-mode repost** — shipped v0.6.0 (2026-05-18) — pure-JS blockhash pipeline (upng-js + jpeg-js + blockhash-core) w/ Content-Length pre-check (Polish #23)
 - ✅ **Hard-mute integration** — wired `isRuleMuted` into `runCheck` (Polish #4 in AE Critical wave, also closes muteSet sentinel-vs-real check)
 - ✅ **Per-user rate limit on /explain-event** — `cm:rl:explain:{sub}:{user}` 10/hr on top of per-sub 30/hr (Pull-Forward #7)

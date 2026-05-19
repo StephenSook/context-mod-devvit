@@ -92,7 +92,7 @@ W3 added NX-set retries (3 attempts, 100ms+300ms backoff) for transient Redis bl
 
 **Decision.** JSON5 parse first (`json5` package, ~2KB), then AJV strict against [`src/schema/app.schema.json`](./src/schema/app.schema.json). After validation, `expandNamedRules` walks the config graph and flattens every `{kind: 'named', name: 'foo'}` reference into the actual rule body so the runtime dispatcher (`runRule`) only ever sees concrete rule types. Cycles in named-rule references short-circuit to an empty AND-ruleset (fail-safe — broken graph means no rules match, not a runtime crash).
 
-**Alternatives.** YAML (matches upstream CM but harder to embed in a Reddit wiki — wiki strips significant whitespace in some cases). TOML (no schema-validation ecosystem). Custom DSL (high invention cost, low value).
+**Alternatives.** YAML (matches upstream CM but harder to embed in a Reddit wiki — wiki strips significant whitespace in some cases). TOML (no mature schema-validation tooling). Custom DSL (high invention cost, low value).
 
 **Consequences.** Mods can comment their configs + use trailing commas. AJV errors are surfaced to the wiki-reload toast w/ specific paths ("/runs/0/checks/2/rules/1/pattern is required"). Named-rule expansion is one-pass at publish time — no runtime overhead.
 

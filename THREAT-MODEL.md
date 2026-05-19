@@ -142,5 +142,5 @@ External actors reaching us:
 ## Process
 
 - Pre-submit audit pattern: `repo-sentinel` skill + 5-agent parallel adversarial review (Codex + silent-failure-hunter + comment-analyzer + pr-test-analyzer + Explore). Documented in CHANGELOG Wave W + Wave X entries.
-- Dependency hygiene: `npm audit` clean as of v0.3.1 release. Dependabot enabled.
+- Dependency hygiene: production `npm audit` clean as of v0.6.7 release (verified 2026-05-19; full audit shows 36 transitive vulns through `@devvit/*` SDK toolchain — devDependencies only, not shipped). Dependabot enabled.
 - Coordinated disclosure: see `SECURITY.md`.
