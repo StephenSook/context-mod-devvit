@@ -134,4 +134,58 @@ describe('imageHashStore.recordHash', () => {
     await recordHash({ postId: 't3_a', hash: '', ts: 100 }, 30 * 86400, 'test_sub');
     expect(store.get(KEY)).toBeUndefined();
   });
+
+  // AE Polish #64: silent-failure-hunter HIGH regression. Previously a
+  // corrupt entry like `{postId: 123, hash: "...", ts: "yesterday"}`
+  // passed findSimilar's `hash.length` guard and propagated. The new
+  // isValidImageHashEntry validator filters bad entries on BOTH read
+  // paths and self-heals the store on write.
+  it('Polish #64: findSimilar skips entries with non-string postId', async () => {
+    store.set(
+      KEY,
+      JSON.stringify([
+        // Corrupt: postId is a number.
+        { postId: 999 as unknown as string, hash: '0'.repeat(64), ts: Date.now() },
+        // Good entry below.
+        { postId: 't3_good', hash: 'f'.repeat(64), ts: Date.now() },
+      ])
+    );
+    const r = await findSimilar('f'.repeat(64), 8, 'test_sub');
+    expect(r?.entry.postId).toBe('t3_good');
+  });
+
+  it('Polish #64: findSimilar skips entries with non-number ts', async () => {
+    store.set(
+      KEY,
+      JSON.stringify([
+        // Corrupt: ts is a string.
+        { postId: 't3_corrupt', hash: '0'.repeat(64), ts: 'yesterday' as unknown as number },
+      ])
+    );
+    const r = await findSimilar('0'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
+
+  it('Polish #64: recordHash self-heals — drops corrupt entries on next write', async () => {
+    // Seed store with one corrupt + one good entry.
+    store.set(
+      KEY,
+      JSON.stringify([
+        { postId: 999 as unknown as string, hash: '0'.repeat(64), ts: Date.now() },
+        { postId: 't3_keep', hash: '1'.repeat(64), ts: Date.now() },
+      ])
+    );
+    // Write a new entry — should drop the corrupt one from the persisted array.
+    await recordHash(
+      { postId: 't3_new', hash: '2'.repeat(64), ts: Date.now() },
+      30 * 86400,
+      'test_sub'
+    );
+    const parsed = JSON.parse(store.get(KEY)!);
+    expect(parsed).toHaveLength(2);
+    expect(parsed.map((e: { postId: string }) => e.postId).sort()).toEqual([
+      't3_keep',
+      't3_new',
+    ]);
+  });
 });

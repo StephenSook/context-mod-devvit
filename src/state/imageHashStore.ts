@@ -39,6 +39,23 @@ export interface SimilarMatch {
   distance: number;
 }
 
+// AE Polish #64: silent-failure-hunter HIGH finding — JSON.parse results
+// in findSimilar + recordHash were cast to ImageHashEntry[] and then the
+// `hash`/`postId`/`ts` fields were trusted unchecked. A corrupt member
+// like `{postId: 123, hash: "...", ts: "yesterday"}` passed the existing
+// `hash.length` guard at line 69 and propagated into match results and
+// re-writes. Mirror the recentEvents.ts isValidRecentEventShape pattern:
+// validate every field before trust. Bad entries are dropped silently;
+// the store self-heals on next write.
+function isValidImageHashEntry(e: unknown): e is ImageHashEntry {
+  if (!e || typeof e !== 'object') return false;
+  const o = e as Record<string, unknown>;
+  if (typeof o.postId !== 'string' || o.postId.length === 0) return false;
+  if (typeof o.hash !== 'string') return false;
+  if (typeof o.ts !== 'number' || !Number.isFinite(o.ts)) return false;
+  return true;
+}
+
 /**
  * Look up the closest hash in the store within `threshold` Hamming bits.
  * Returns null when nothing matches OR when the store is empty OR on
@@ -66,9 +83,10 @@ export async function findSimilar(
   }
 
   for (const entry of entries) {
-    if (!entry || typeof entry.hash !== 'string' || entry.hash.length !== candidateHash.length) {
-      continue;
-    }
+    // Polish #64: full shape validation instead of just `hash.length`.
+    // Filters out corrupt members so callers see only well-formed entries.
+    if (!isValidImageHashEntry(entry)) continue;
+    if (entry.hash.length !== candidateHash.length) continue;
     const distance = hammingDistance(candidateHash, entry.hash);
     if (distance <= threshold) {
       return { entry, distance };
@@ -95,14 +113,17 @@ export async function recordHash(
     let existing: ImageHashEntry[] = [];
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as ImageHashEntry[];
-        if (Array.isArray(parsed)) existing = parsed;
+        const parsed = JSON.parse(raw) as unknown;
+        // Polish #64: drop corrupt entries on every write so the store
+        // self-heals — without this a poisoned entry persists forever
+        // (write paths preserved the array via `.slice(0, MAX_ENTRIES)`).
+        if (Array.isArray(parsed)) existing = parsed.filter(isValidImageHashEntry);
       } catch {
         // Corrupt JSON — start fresh.
       }
     }
     // Dedupe by postId so a re-trigger of the same post doesn't bloat the list.
-    const filtered = existing.filter((e) => e?.postId !== entry.postId);
+    const filtered = existing.filter((e) => e.postId !== entry.postId);
     const next = [entry, ...filtered].slice(0, MAX_ENTRIES);
     await redis.set(K.imgHashRecent(sub), JSON.stringify(next), {
       expiration: new Date(Date.now() + ttlSec * 1000),
