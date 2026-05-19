@@ -157,6 +157,13 @@ describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
       failedActions: 0,
       topRules: [{ ruleKey: 'a/b', count: 3 }],
       computedAt: Date.now() - 60_000,
+      // AE Polish #40: must include client-shape fields or readStatsSnapshot
+      // detects shape-stale + falls through to recompute (auto-heal path).
+      actionsToday: 5,
+      timeSavedMin: 20,
+      activeRules: 1,
+      topRule: 'a/b',
+      hourlyActions24h: new Array(24).fill(0),
     };
     store.set('cm:stats:snapshot:r_test', JSON.stringify(fresh));
     readRecentMock.mockResolvedValue([]);
@@ -187,5 +194,56 @@ describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
     const stats = await readStatsSnapshot('r_test');
     expect(stats.total).toBe(1);
     expect(readRecentMock).toHaveBeenCalled();
+  });
+
+  it('Polish #40: pre-Polish-#38 snapshot (no hourlyActions24h) → falls through to recompute (auto-heal)', async () => {
+    // Simulate a snapshot written BEFORE Polish #38 — has the old server
+    // fields {total, lastHour, today, ...} but is missing the new
+    // client-shape fields. Without Polish #40 backwards-compat, this would
+    // happily return + the client would see hourlyActions24h:undefined
+    // → fall back to ZERO_STATS → dashboard flatline. With Polish #40,
+    // the shape check detects + falls through to a fresh compute that
+    // produces the client-shape fields.
+    const stale = {
+      total: 50,
+      lastHour: 5,
+      today: 10,
+      failedActions: 2,
+      topRules: [{ ruleKey: 'spam-removal / crypto', count: 5 }],
+      computedAt: Date.now(), // FRESH timestamp — would normally short-circuit
+      // NO hourlyActions24h / actionsToday / etc.
+    };
+    store.set('cm:stats:snapshot:r_test', JSON.stringify(stale));
+    readRecentMock.mockResolvedValue([
+      event(Date.now() - 1000, 'spam-removal', 'crypto', 'remove'),
+    ]);
+    const stats = await readStatsSnapshot('r_test');
+    // Recomputed — should now have the client-shape fields.
+    expect(Array.isArray(stats.hourlyActions24h)).toBe(true);
+    expect(stats.hourlyActions24h).toHaveLength(24);
+    expect(stats.actionsToday).toBe(1);
+    expect(readRecentMock).toHaveBeenCalled();
+  });
+
+  it('Polish #40: fresh-shape snapshot (has hourlyActions24h) is still returned within 1h window', async () => {
+    // Sanity: don't break the cache-hit path for post-Polish-#38 snapshots.
+    const fresh = {
+      total: 50,
+      lastHour: 5,
+      today: 10,
+      failedActions: 2,
+      topRules: [{ ruleKey: 'spam-removal / crypto', count: 5 }],
+      computedAt: Date.now(),
+      actionsToday: 10,
+      timeSavedMin: 40,
+      activeRules: 1,
+      topRule: 'spam-removal / crypto',
+      hourlyActions24h: new Array(24).fill(0),
+    };
+    store.set('cm:stats:snapshot:r_test', JSON.stringify(fresh));
+    readRecentMock.mockResolvedValue([]); // would compute to total:0 if mistakenly fell through
+    const stats = await readStatsSnapshot('r_test');
+    expect(stats.total).toBe(50); // cache hit, not recomputed
+    expect(readRecentMock).not.toHaveBeenCalled();
   });
 });

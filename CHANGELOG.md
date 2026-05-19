@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — backwards-compat
+
+- **AE Polish #40: `readStatsSnapshot` detects pre-Polish-#38 snapshot
+  shape + auto-heals** — Polish #38 added 5 client-shape fields to
+  `StatsRollup` but snapshots written BEFORE the Polish-#38 build
+  deploy lack them. The freshness gate `parsed.computedAt > now -
+  3_600_000` would happily return such snapshots, client would see
+  `hourlyActions24h === undefined`, dashboard would fall back to
+  ZERO_STATS — exactly the bug Polish #38 was supposed to fix —
+  for up to **1 hour after deploy** on every install w/ a pre-deploy
+  snapshot. Fix: detect `Array.isArray(parsed.hourlyActions24h)` as
+  a shape-fresh signal. Shape-stale snapshots fall through to
+  recompute on the next /api/stats poll. Auto-heals on first read
+  after deploy. +2 tests: pre-#38 snapshot triggers recompute,
+  post-#38 snapshot still cache-hits within 1h window. 720 tests
+  green (was 718).
+
 ### Fixed — React 18 hygiene
 
 - **AE Polish #39: setTimeout cleanup in `ActionBar` + `EmptyState`**

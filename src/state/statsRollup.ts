@@ -145,9 +145,21 @@ export async function readStatsSnapshot(sub: string): Promise<StatsRollup> {
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as StatsRollup;
-        if (parsed.computedAt > Date.now() - 3_600_000) {
+        // AE Polish #40 — backwards-compat for Polish #38: snapshots written
+        // BEFORE Polish #38 lack the client-shape fields (actionsToday,
+        // timeSavedMin, activeRules, topRule, hourlyActions24h). The
+        // computedAt-freshness check would happily return them, but the
+        // client then sees `hourlyActions24h === undefined` and falls back
+        // to ZERO_STATS — exactly the bug Polish #38 fixed. Detect missing
+        // hourlyActions24h as a "snapshot-shape stale" signal + fall
+        // through to recompute. Auto-heals on next read after a Polish-#38
+        // build deploys (no manual migration needed).
+        const hasClientShape = Array.isArray(parsed.hourlyActions24h);
+        if (hasClientShape && parsed.computedAt > Date.now() - 3_600_000) {
           return parsed;
         }
+        // Fall through to compute below — either snapshot is time-stale OR
+        // shape-stale (pre-Polish-#38 write).
       } catch (parseErr) {
         // AE Polish #6: nuke the corrupt key so subsequent reads don't
         // re-pay the GET + JSON.parse(invalid) overhead until the next
