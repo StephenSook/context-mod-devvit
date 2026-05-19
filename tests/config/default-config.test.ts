@@ -16,4 +16,16 @@ describe('DEFAULT_CONFIG_JSON5', () => {
     expect(result.config.runs.length).toBeGreaterThan(0);
     expect(result.config.runs[0]?.checks.length).toBeGreaterThan(0);
   });
+
+  it('Polish #28: seeds with dryRun:true (safety on fresh install)', () => {
+    // CRITICAL: a fresh install must NOT immediately auto-remove posts
+    // before the mod has had a chance to review the bot's judgment.
+    // dryRun:true makes actions simulated; the dashboard shows what
+    // would have happened. A future refactor that flips this to false
+    // would silently moderate every install — this test pins the safety.
+    const result = parseConfig(DEFAULT_CONFIG_JSON5);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.config.dryRun).toBe(true);
+  });
 });

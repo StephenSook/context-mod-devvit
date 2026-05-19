@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — first-install safety + onboarding
+
+- **AE Polish #28: fresh-install defaults seed `dryRun: true` + EmptyState
+  snippet matches live schema** — three coupled fixes around the
+  first-impression UX:
+
+  1. `src/config/default-config.ts` (seeded on install) previously had
+     `dryRun: false` — meaning a fresh install would *immediately*
+     auto-remove any post matching `scam|giveaway|free crypto`, including
+     legit giveaway threads on subs like r/HailCorporate. Wildly bad
+     first impression. Flipped to `dryRun: true` so the Observatory
+     dashboard shows would-have-happened simulations until the mod
+     explicitly trusts the regex.
+
+  2. `examples/starter-config.json5` now also ships behind
+     `dryRun: true` to match. Same safety posture as every other example
+     (12 configs total — all behind dryRun OR an authorIs mod-bypass).
+
+  3. `src/client/lib/starter-snippet.ts` (shown in EmptyState when the
+     dashboard is empty + the mod is told "paste this in your wiki")
+     had DRIFTED to use the legacy schema: `schema_version:1`,
+     `condition:'AND'`, `testOn:['title']`, `patterns:[...]`,
+     `threshold:1`, `reason:'spam'` on remove, `body:'...'` on comment.
+     None of those fields exist in the live AJV schema. Any mod who
+     copy-pasted the snippet would have hit `"Config parse failed —
+     check the wiki page for JSON5/schema errors"` on first publish
+     attempt and lost trust before the bot ever fired. Rewrote to the
+     live shape (`combinator` / `pattern` / `target` / `isSpam` /
+     `template`).
+
+  Plus `examples/README.md` count fix (`Eleven` → `Twelve`) and
+  reorganized the 12 configs into Starter / Intermediate / Advanced
+  difficulty tiers so a first-time mod has an obvious onramp. +4 tests
+  (default-config dryRun pin, starter-snippet schema-validate, dryRun
+  pin, legacy-field-name regression guard). 656 tests green (was 652).
+
+  Closes #157 + #160 + opens a new safety polish that wasn't on the
+  list — the snippet would have broken every new install's first
+  config save.
+
 ### Tested — endpoint happy-path coverage
 
 - **AE Tier 2 + Polish #27: e2e tests for endpoints previously only

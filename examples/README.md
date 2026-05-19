@@ -1,17 +1,31 @@
 # ContextMod Devvit — example configs
 
-Eleven working JSON5 configs that match the shipped Phase 1+2+3+4 AJV schema. Ready to paste into `r/<your-sub>/wiki/botconfig/contextmod` after install.
+Twelve working JSON5 configs that match the shipped Phase 1+2+3+4+4.7 AJV schema. Ready to paste into `r/<your-sub>/wiki/botconfig/contextmod` after install.
+
+## By difficulty tier
+
+**Starter** (one rule kind, one action, mod-friendly defaults — copy-edit-ship):
 
 | File | Use case | Demonstrates |
 |------|----------|--------------|
-| [`starter-config.json5`](./starter-config.json5) | Default config seeded on install | regex rule + remove + comment + Mustache `{{author.name}}` / `{{item.title}}` templating + `authorIs` filter for mod/contributor bypass |
-| [`spam-fresh-account.json5`](./spam-fresh-account.json5) | Catch spam from new low-karma accounts | `author` rule (account age in seconds + karma min/max + verified) AND `regex` rule combined via `combinator: 'AND'` |
-| [`approve-trusted-mod.json5`](./approve-trusted-mod.json5) | Auto-approve trusted contributors | `namedRules` declaration + reference via `{kind: 'named', name: '...'}` + `combinator: 'OR'` composition + `postBehavior: 'stop'` to halt the run |
+| [`starter-config.json5`](./starter-config.json5) | Default config seeded on install | regex rule + remove + comment + Mustache `{{author.name}}` / `{{item.title}}` templating + `authorIs` filter for mod/contributor bypass. **Ships behind `dryRun: true`** |
 | [`comment-mod-banned-phrase.json5`](./comment-mod-banned-phrase.json5) | Comment moderation with regex + parent lock | `target: 'body'` regex (vs `'title'`) + `lock` action + multi-action sequencing + check-level `filters: { authorIs }` mod bypass |
-| [`repost-watch-dryrun.json5`](./repost-watch-dryrun.json5) | URL-dedupe repost rule in DRY-RUN watch mode | `repost` rule (URL-mode) + per-action `dryRun: true` (elevate-only) + `report` action + 30-day window |
+| [`spam-fresh-account.json5`](./spam-fresh-account.json5) | Catch spam from new low-karma accounts | `author` rule (account age in seconds + karma min/max + verified) AND `regex` rule combined via `combinator: 'AND'` |
+
+**Intermediate** (two rule kinds, composability via combinator or namedRules):
+
+| File | Use case | Demonstrates |
+|------|----------|--------------|
+| [`approve-trusted-mod.json5`](./approve-trusted-mod.json5) | Auto-approve trusted contributors | `namedRules` declaration + reference via `{kind: 'named', name: '...'}` + `combinator: 'OR'` composition + `postBehavior: 'stop'` to halt the run |
 | [`low-karma-banned-list-comment.json5`](./low-karma-banned-list-comment.json5) | Low-karma + mod-curated banned-user list flag | `nameIn` AuthorFilter + two `author` rules combined via OR + `report` action with `reason` field |
 | [`named-rules-flair-gating.json5`](./named-rules-flair-gating.json5) | Sub-flair-based trust system (verified contributors) | `flairTextIn` AuthorFilter + namedRules block + `{kind: 'named'}` references + multi-criteria filter (age + karma + verified) |
 | [`nsfw-sub-strict.json5`](./nsfw-sub-strict.json5) | 18+ sub with strict verification requirements | `itemIs: { over18 }` filter + check-level filters object + multi-rule author check (unverified OR new OR low-karma) → remove + comment + report |
+| [`repost-watch-dryrun.json5`](./repost-watch-dryrun.json5) | URL-dedupe repost rule in DRY-RUN watch mode | `repost` rule (URL-mode) + per-action `dryRun: true` (elevate-only) + `report` action + 30-day window |
+
+**Advanced** (Phase 4+ rules requiring author-enrichment or image pipeline — start in dry-run):
+
+| File | Use case | Demonstrates |
+|------|----------|--------------|
 | [`history-fresh-low-karma.json5`](./history-fresh-low-karma.json5) | **Phase 4** — fresh+burner profile gating | `history` rule w/ flat OR-of-thresholds (postCountLt + commentKarmaLt + linkKarmaLt) + regex spam-words combination |
 | [`attribution-drive-by-self-promo.json5`](./attribution-drive-by-self-promo.json5) | **Phase 4** — drive-by self-promo detection | `attribution` rule (domains list + domainPercent + minPosts floor) reading from 1h author-history cache |
 | [`recent-activity-cross-sub.json5`](./recent-activity-cross-sub.json5) | **Phase 4** — cross-sub spam-signal correlation | `recentActivity` rule (subreddits list + post/commentCountGt independent triggers) reading from 1h author-history cache |
