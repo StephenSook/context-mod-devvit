@@ -8,6 +8,16 @@
 **App version:** v0.6.7 (`cm-devvit@0.6.7`, in Reddit App Directory review; published 2026-05-18). Phase 1 + 2 + 3 + 4 + 4.7 ALL SHIPPED. 758 tests green.
 **Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G; first install auto-seeds via `onAppInstall` per Phase 3, now safely behind `dryRun: true` per Polish #28).
 
+> **Note on Screenshot targets:** each scenario lists a `Screenshot target:` filename
+> referencing `docs/screenshots/scenario-<letter>-*.png`. These are *target paths* —
+> the file Stephen captures via OBS/Cmd-Shift-4 during demo recording (see
+> [`docs/screenshots/CAPTURE-CHECKLIST.md`](../screenshots/CAPTURE-CHECKLIST.md)).
+> As of 2026-05-19 the captured set is **B/F/G/H** (live on `r/cm_devvit_test`);
+> A/C/D/E/I/J are pending Stephen's recording-day pass. Gemini brutal-audit P2-3
+> flagged these as "broken cross-refs" but they are filename placeholders, not
+> inline image links — the doc is internally consistent, just incomplete at the
+> screenshot-set level. Polish #86 added this preamble for clarity.
+
 ---
 
 ## Scenario A — Regex spam removal (Mustache-templated comment)
