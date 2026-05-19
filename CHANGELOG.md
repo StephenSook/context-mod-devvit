@@ -6,7 +6,71 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.0): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.1): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.1] — 2026-05-18
+
+Wave AE Pull-Forward Tier — 6 items shipped between v0.6.0 (Phase 4.7)
+and this tag. All upstream-FoxxMD parity wins + a security gap closure.
+
+### Added — upstream FoxxMD parity
+
+- **`distinguish` action** — marks bot comments w/ the green moderator [M]
+  tag. Sticky variant for comments pins the bot's reply to the top of
+  the thread. Devvit API: `Post.distinguish()` (0 args) vs
+  `Comment.distinguish(makeSticky?: boolean)` — sticky is comment-only
+  per Reddit. Closes Agent A finding #4 ("bot comments look amateur").
+- **`NOT` combinator** — `RuleSetRule` + Check-level both accept
+  `combinator: 'NOT'` now. Triggers iff NONE of the nested rules trigger.
+  Short-circuits on first hit. Use case: "catch new accounts EXCEPT
+  trusted contributors" — wrap the trust check in NOT inside an outer
+  AND. Closes Agent A finding #6 (most common real-world mod pattern).
+
+### Fixed — silent bug
+
+- **`normalizeComment` populates parent post title** — title regex on
+  comment triggers used to never match (item.title was hardcoded ''). Now
+  fetches `reddit.getPostById(payload.post.id)` and surfaces `post.title`
+  on the Item shape. Mustache templates can use `{{item.title}}` on
+  comment triggers. Closes Agent A finding #5 ("bot looks broken when
+  judge writes title-regex on comment trigger").
+
+### Changed — security
+
+- **Per-user rate limit on `/api/explain-event`** — layered on top of
+  the per-sub 30/hr cap. Per-user 10/hr key `cm:rl:explain:{sub}:{username}`
+  closes the "malicious/runaway mod burns the sub's whole OpenAI quota"
+  hole. Denial message tells the mod other mods can still use Explain
+  so they don't think the bot is down. Closes Agent F finding #8.
+
+### Changed — perf
+
+- **RegExp compile cache** in `src/rules/regex.ts` — was compiling on
+  every runRegexRule call. Module-level Map keyed on `pattern\x00flags`
+  (NUL-separated to prevent `"a","b"` colliding with `"ab",""`). Invalid
+  patterns cache `null` so no re-throw + re-log on subsequent calls.
+  20-regex config = 20x compile elision per event. Closes Agent A
+  finding #3.
+
+### Fixed — schema
+
+- **History/recentActivity count fields capped at 100** — `FETCH_LIMIT=100`
+  was silently applied in authorHistory.ts but no schema validation. A
+  mod writing `postCountGt: 200` got a rule that could never trigger but
+  AJV passed it + dashboard showed no warning. AJV now rejects
+  unreachable thresholds at parse time. Closes Agent A finding #2.
+
+### Removed
+
+- **`react-window` + `@types/react-window`** uninstalled. Installed in
+  Wave AA (v0.5.1) as forward-looking for a scale-trigger that never
+  fired. Zero uses in src/. ROADMAP §"Installed but not wired" section
+  removed entirely. Re-install is a one-liner if the trigger ever fires.
+
+### Tests
+
+561 → 576 passing (+15 across regex cache, distinguish, NOT combinator
+at both RuleSet + Check levels).
 
 ## [0.6.0] — 2026-05-18
 
