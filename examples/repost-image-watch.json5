@@ -46,9 +46,11 @@
           actions: [
             {
               kind: 'comment',
-              template:
-                "Hey {{author.nameSafe}} 👋 — this image looks like a repost from the last 30 days. " +
-                'Mods reviewing this and removing if duplicate. Original poster context preserved in mod log.',
+              // Polish #90 (regression): JSON5 doesn't support JS string-
+              // concatenation w/ `+`. The whole template must be one literal.
+              // Reddit comment markdown handles long lines fine — line-wrap
+              // it in your editor instead of `"a" + "b"`.
+              template: "Hey {{author.nameSafe}} 👋 — this image looks like a repost from the last 30 days. Mods reviewing this and removing if duplicate. Original poster context preserved in mod log.",
               dryRun: true, // belt-and-suspenders per-action gate
             },
             {
