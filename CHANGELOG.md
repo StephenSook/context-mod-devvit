@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Security — defense-in-depth
+
+- **AE Polish #23: image decode Content-Length pre-check** — Phase 4.7's
+  `fetchAndDecode()` had a `MAX_BYTES = 6MB` cap but checked it AFTER
+  calling `res.arrayBuffer()`, which buffers the entire response body
+  into memory regardless of advertised size. A malicious server that
+  responded with `Content-Type: image/jpeg` + a 100MB body would cause
+  ContextMod to hold all 100MB before the post-read gate rejected it —
+  burning Devvit runtime memory + quota during the period. Added an
+  early check on the advertised `Content-Length` header that
+  short-circuits BEFORE the body is read. Truthful servers (including
+  Reddit's CDN) advertise `Content-Length` correctly. Lying servers
+  still get buffered up to the runtime's own response cap — defense in
+  depth, not absolute. +4 tests covering: oversized advertised length
+  rejected w/o calling arrayBuffer, normal-size advertised passes
+  through, missing Content-Length still gated by post-read MAX_BYTES,
+  non-numeric Content-Length falls through (defensive parse). 624 tests
+  green (was 620).
+
 ### Tested
 
 - **AE Polish #22: `migrate-upstream-config.mjs` failure-path coverage**

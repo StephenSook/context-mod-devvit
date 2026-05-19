@@ -67,6 +67,25 @@ export async function fetchAndDecode(url: string): Promise<DecodeResult> {
     };
   }
 
+  // Polish #23: Content-Length pre-check BEFORE buffering the full body.
+  // arrayBuffer() reads everything into memory regardless of advertised size,
+  // so without this check a malicious server could deliver a 100MB payload
+  // and we'd buffer all 100MB before the post-read MAX_BYTES gate rejected
+  // it. Truthful servers (Reddit's CDN among them) advertise Content-Length
+  // correctly and we cut the fetch short. Lying servers still get buffered
+  // up to the runtime's own response cap — defense in depth, not absolute.
+  const contentLengthRaw = res.headers.get('content-length');
+  if (contentLengthRaw !== null) {
+    const advertised = Number.parseInt(contentLengthRaw, 10);
+    if (Number.isFinite(advertised) && advertised > MAX_BYTES) {
+      return {
+        ok: false,
+        error: `Content-Length ${advertised} exceeds ${MAX_BYTES}-byte cap (advertised; body not read)`,
+        phase: 'too-large',
+      };
+    }
+  }
+
   const buf = await res.arrayBuffer();
   if (buf.byteLength > MAX_BYTES) {
     return {
