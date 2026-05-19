@@ -20,7 +20,7 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
-import { publish, getCurrentRev, PublishError } from '../../src/state/configStore';
+import { publish, getCurrentRev, PublishError, getRecentRevs } from '../../src/state/configStore';
 import type { AppConfig } from '../../src/shared/types';
 
 const cfgA: AppConfig = { runs: [{ name: 'a', checks: [] }] };
@@ -173,5 +173,42 @@ describe('configStore — AE CRITICAL #6 PublishError wrap', () => {
       expect(err).toBeInstanceOf(PublishError);
       expect((err as PublishError).cause).toBe(original);
     }
+  });
+});
+
+describe('configStore — AE Polish #65 getRecentRevs explicit Redis fail-safe', () => {
+  it('returns [] on Redis throw at cfgCurrentRev pointer read', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    const getSpy = vi
+      .spyOn(failingRedis.redis, 'get')
+      .mockRejectedValueOnce(new Error('redis blip on pointer'));
+    const out = await getRecentRevs(undefined, 10);
+    expect(out).toEqual([]);
+    getSpy.mockRestore();
+  });
+
+  it('skips per-rev Redis throw — older revs still returned', async () => {
+    // Seed three revs.
+    await publish(cfgA);
+    await publish(cfgB);
+    await publish(cfgA);
+    const failingRedis = await import('@devvit/web/server');
+    const realGet = failingRedis.redis.get;
+    let getCallCount = 0;
+    const getSpy = vi
+      .spyOn(failingRedis.redis, 'get')
+      .mockImplementation(async (k: string) => {
+        getCallCount += 1;
+        // First call = pointer fetch (succeed).
+        // Second call = newest rev payload (fail — simulating per-rev blip).
+        // Remaining calls = older rev payloads (succeed).
+        if (getCallCount === 2) throw new Error('per-rev blip');
+        return realGet(k);
+      });
+    const out = await getRecentRevs(undefined, 10);
+    getSpy.mockRestore();
+    // Newest rev (rev 2) was skipped but the older two are still returned.
+    expect(out.length).toBe(2);
+    expect(out.map((s) => s.rev).sort()).toEqual([0, 1]);
   });
 });

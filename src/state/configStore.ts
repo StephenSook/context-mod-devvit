@@ -148,7 +148,25 @@ export async function getRecentRevs(
   sub: string | undefined,
   limit = 10
 ): Promise<ConfigSnapshot[]> {
-  const ptr = await redis.get(K.cfgCurrentRev(sub));
+  // AE Polish #65: silent-failure-hunter HIGH finding — the bare
+  // `redis.get(K.cfgCurrentRev(sub))` + per-rev `redis.get(K.cfgRev(...))`
+  // calls had no try/catch. A Redis blip while a mod was opening the
+  // config-history modal propagated up to /api/config-history → Hono
+  // unhandled 500 → client extractServerError surfaced "HTTP 500" with
+  // no actionable detail. Compare getCurrentRev (line 122) which throws
+  // explicit Error messages — getRecentRevs has no equivalent.
+  //
+  // Fix: catch Redis throws, log to telemetry, return [] so the modal
+  // renders an empty-state ("no recent revs") instead of an error
+  // banner. Single-rev parse failures already use this same posture
+  // (logged + skipped at line 167-170).
+  let ptr: string | null | undefined;
+  try {
+    ptr = await redis.get(K.cfgCurrentRev(sub));
+  } catch (err) {
+    console.warn('[cm/configStore/getRecentRevs] cfg pointer redis err — returning empty:', err);
+    return [];
+  }
   if (ptr == null) return [];
   const currentRev = Number.parseInt(ptr, 10);
   if (!Number.isFinite(currentRev)) return [];
@@ -156,7 +174,15 @@ export async function getRecentRevs(
   for (let i = 0; i < limit; i++) {
     const rev = currentRev - i;
     if (rev < 0) break;
-    const payload = await redis.get(K.cfgRev(rev, sub));
+    let payload: string | null | undefined;
+    try {
+      payload = await redis.get(K.cfgRev(rev, sub));
+    } catch (err) {
+      // Per-rev Redis failure: log + skip + continue scanning older revs.
+      // Returning early would hide every older rev behind a transient blip.
+      console.warn('[cm/configStore/getRecentRevs] payload redis err at rev', rev, '— skipping:', err);
+      continue;
+    }
     // On missing payload mid-window, CONTINUE (rev might have been GC'd or
     // never published) instead of breaking — otherwise a gap at rev N would
     // hide every rev older than N from the history viewer.
