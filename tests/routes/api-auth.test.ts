@@ -258,6 +258,24 @@ describe('GET /api/mod-activity (W8 — W2 mod-data leak fix)', () => {
     expect(res.status).toBe(200);
     expect(requireModeratorMock).not.toHaveBeenCalled();
   });
+
+  it('AE Polish #9: demo fixture uses obvious-fake usernames (no real handles)', async () => {
+    // AD CRITICAL fix (f9c1bf4): demo previously seeded `CowSufficient3840`
+    // + `vinhbin` — real Reddit/GitHub identities baked into a shared
+    // fixture. Now `demo_mod_alice` + `demo_mod_bob` — obvious-synthetic.
+    // This test pins the obfuscation so a future "let's rebrand demo
+    // data" refactor (or accidental revert to real handles) fails CI
+    // loudly. Privacy-claim regression protection.
+    requireModeratorMock.mockResolvedValue(NON_MOD);
+    const res = await getJson('/mod-activity?demo=1');
+    const body = (await res.json()) as { activity: { actor: string }[] };
+    const actors = body.activity.map((a) => a.actor);
+    expect(actors).toContain('demo_mod_alice');
+    expect(actors).toContain('demo_mod_bob');
+    // Real handles MUST NOT appear in synthetic fixtures.
+    expect(actors).not.toContain('CowSufficient3840');
+    expect(actors).not.toContain('vinhbin');
+  });
 });
 
 describe('GET /api/config-history (W8 — W2 mod-data leak fix)', () => {
