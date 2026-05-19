@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — context-mod-devvit
 
-Start here for the technical reader. Ten load-bearing architectural decisions that have shaped the codebase across Phase 1 → Phase 4 + Wave W + Wave X. Each section: context → decision → alternatives → consequences → related files.
+Start here for the technical reader. Ten load-bearing architectural decisions that have shaped the codebase across Phase 1 → Phase 4 + Phase 4.7 image-repost + 13 hardening waves (S through AE). Each section: context → decision → alternatives → consequences → related files.
 
 For other entry points: [`README.md`](./README.md) (user-facing overview), [`DESIGN.md`](./DESIGN.md) (visual tokens + storage key list), [`THREAT-MODEL.md`](./THREAT-MODEL.md) (STRIDE security), [`API.md`](./API.md) (HTTP endpoints), [`PRIVACY.md`](./PRIVACY.md) + [`data-retention.md`](./data-retention.md) (compliance), [`CHANGELOG.md`](./CHANGELOG.md) (version history).
 
@@ -143,9 +143,9 @@ Every mutation endpoint, every form-submit, every mod-data GET, every cost-beari
 
 **Decision.** Two reusable primitives, applied to every external HTTP call:
 
-1. **`src/lib/ratelimit.ts`** — fixed-window Redis token bucket. Per-bucket-per-sub keys (`cm:rl:{bucket}:{sub}`). `INCR` + `EXPIRE` only (Devvit-compatible). `degraded: true` exposed on Redis-fail-open path so callers can apply soft caps.
+1. **`src/lib/ratelimit.ts`** — fixed-window Redis token bucket. Per-bucket-per-sub keys (`cm:rl:{bucket}:{sub}`). `INCR` + `EXPIRE` only (Devvit-compatible). `degraded: true` exposed on Redis-fail-open path so callers can apply soft caps. **Per-USER layer added in Wave AE Pull-Forward #7** (`cm:rl:{bucket}:{sub}:{username}`, 10/hr on /explain-event) closes the "malicious or runaway mod burns the sub's whole quota" hole.
 
-2. **`src/lib/circuitBreaker.ts`** — 3-state machine (CLOSED / OPEN / HALF_OPEN). Per-sub buckets (`openai:${sub}`, `wiki:${sub}`). Opens after 5 consecutive failures, 60s open window, then one half-open probe. Smart failure classification (`isTransientOpenaiError`) means auth errors (401, missing key, insufficient quota) bypass the breaker — they're user-config issues, not OpenAI being down.
+2. **`src/lib/circuitBreaker.ts`** — 3-state machine (CLOSED / OPEN / HALF_OPEN). Per-sub buckets (`openai:${sub}`, `wiki:${sub}`). Opens after 5 consecutive failures, 60s open window, then one half-open probe. Smart failure classification (`isTransientOpenaiError`, now in `src/lib/openaiErrors.ts` per AE CRITICAL #2) means auth errors (401, missing key, insufficient quota) bypass the breaker — they're user-config issues, not OpenAI being down. AE CRITICAL #2 + #3 closed two real misclassification bugs: `lower.includes('5')` matched "JSON5" (false-positive transient) + `'timeout'` didn't match `'timed out'` (real OpenAI timeouts never tripped). Both regression-pinned in `tests/lib/openaiErrors.test.ts`.
 
 Wired into `/api/explain-event` (X1+X37), `/explain-rule-submit` + `/simulate-rule-submit` (X44), and wiki loader (X46).
 
@@ -196,7 +196,7 @@ Wired into `/api/explain-event` (X1+X37), `/explain-rule-submit` + `/simulate-ru
 - External authn/authz layer (Devvit's mod-of-sub check is the source of truth).
 - Self-hosted persistence (Devvit Redis only — 500MB cap per install).
 - ModerateHateSpeech HTTP rule (cut 2026-05-13 per Reddit PR #96 AI-provider allowlist).
-- Phase 4.7 image-hash repost rule (deferred — gated on a 90-min spike that didn't run before Day-2).
+- Phase 4.7 image-hash repost rule (✅ SHIPPED 2026-05-18 — Vinh's 0.10 perceptual-blockhash spike landed clean GO, pure-JS pipeline upng-js + jpeg-js + blockhash-core decodes preview.redd.it variants in <1s + <5MB peak RAM + 0-2/256 bit fidelity).
 
 ## How to extend
 
