@@ -33,12 +33,17 @@ export async function runAttributionRule(
   // never false-positives. But the explicit skip keeps semantics
   // consistent across the three Phase 4 rules.
   if (hist.degraded) return { triggered: false };
-  const total = hist.posts.length;
+  // AE Pull-Forward #9 — optional windowSec gate (upstream parity).
+  const cutoffMs = rule.windowSec ? Date.now() - rule.windowSec * 1000 : 0;
+  const windowedPosts = cutoffMs
+    ? hist.posts.filter((p) => p.createdAtMs >= cutoffMs)
+    : hist.posts;
+  const total = windowedPosts.length;
   const minPosts = rule.minPosts ?? DEFAULT_MIN_POSTS;
   if (total < minPosts) return { triggered: false };
 
   const needles = rule.domains.map((d) => d.toLowerCase());
-  const matching = hist.posts.filter((p) => {
+  const matching = windowedPosts.filter((p) => {
     if (!p.domain) return false;
     const haystack = p.domain.toLowerCase();
     return needles.some((n) => haystack.includes(n));

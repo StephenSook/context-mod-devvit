@@ -171,6 +171,14 @@ export interface HistoryRule {
   linkKarmaGt?: number;
   commentKarmaLt?: number;
   commentKarmaGt?: number;
+  /**
+   * AE Pull-Forward #9 — upstream FoxxMD parity. Count only posts/comments
+   * within the last N seconds. Defaults to undefined = unlimited (use all
+   * cached entries up to FETCH_LIMIT=100). Useful for "fresh activity" rules
+   * like "5+ comments in the last hour" — without windowSec, the 1h
+   * authorHistory cache TTL is the only window control.
+   */
+  windowSec?: number;
 }
 
 /**
@@ -184,6 +192,8 @@ export interface AttributionRule {
   domains: string[]; // case-insensitive substring match against post.domain
   domainPercent: number; // 0..100 — trigger when matching% >= this
   minPosts?: number; // default 5 — don't trigger on tiny samples
+  /** AE Pull-Forward #9 — only count posts within the last N seconds. Defaults unlimited. */
+  windowSec?: number;
 }
 
 /**
@@ -197,6 +207,8 @@ export interface RecentActivityRule {
   subreddits: string[]; // case-insensitive
   postCountGt?: number;
   commentCountGt?: number;
+  /** AE Pull-Forward #9 — only count entries within the last N seconds. Defaults unlimited. */
+  windowSec?: number;
 }
 
 /**

@@ -141,7 +141,8 @@
         "linkKarmaLt":      { "type": "number" },
         "linkKarmaGt":      { "type": "number" },
         "commentKarmaLt":   { "type": "number" },
-        "commentKarmaGt":   { "type": "number" }
+        "commentKarmaGt":   { "type": "number" },
+        "windowSec":        { "type": "number", "minimum": 1 }
       }
     },
     "AttributionRule": {
@@ -153,7 +154,8 @@
         "name":          { "type": "string" },
         "domains":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
         "domainPercent": { "type": "number", "minimum": 0, "maximum": 100 },
-        "minPosts":      { "type": "number", "minimum": 1 }
+        "minPosts":      { "type": "number", "minimum": 1 },
+        "windowSec":     { "type": "number", "minimum": 1 }
       }
     },
     "RecentActivityRule": {
@@ -165,7 +167,8 @@
         "name":             { "type": "string" },
         "subreddits":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
         "postCountGt":      { "type": "number", "minimum": 0, "maximum": 100 },
-        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 }
+        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 },
+        "windowSec":        { "type": "number", "minimum": 1 }
       }
     },
     "ImageRepostRule": {

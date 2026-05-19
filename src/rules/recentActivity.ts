@@ -31,9 +31,15 @@ export async function runRecentActivityRule(
   // behavior. Also future-proofs against adding Lt predicates later.
   if (hist.degraded) return { triggered: false };
 
-  const postCount = hist.posts.filter((p) => targets.has(p.subredditName.toLowerCase())).length;
-  const commentCount = hist.comments.filter((c) =>
-    targets.has(c.subredditName.toLowerCase())
+  // AE Pull-Forward #9 — optional windowSec gate (upstream parity).
+  const cutoffMs = rule.windowSec ? Date.now() - rule.windowSec * 1000 : 0;
+  const postCount = hist.posts.filter(
+    (p) =>
+      targets.has(p.subredditName.toLowerCase()) && (cutoffMs === 0 || p.createdAtMs >= cutoffMs)
+  ).length;
+  const commentCount = hist.comments.filter(
+    (c) =>
+      targets.has(c.subredditName.toLowerCase()) && (cutoffMs === 0 || c.createdAtMs >= cutoffMs)
   ).length;
 
   if (rule.postCountGt != null && postCount > rule.postCountGt) return { triggered: true };

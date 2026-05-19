@@ -28,8 +28,17 @@ export async function runHistoryRule(
   // we silently caught. Evaluating `commentCountLt: 5` against a fake-
   // zero would mass-flag every user during a 429/5xx outage.
   if (hist.degraded) return { triggered: false };
-  const postCount = hist.posts.length;
-  const commentCount = hist.comments.length;
+  // AE Pull-Forward #9 — optional windowSec gate. Counts only entries whose
+  // createdAtMs is within the last N seconds. Without it, the rule sees
+  // the full 1h cache (up to FETCH_LIMIT=100 items). Upstream FoxxMD CM
+  // supports this as a `window` field per rule.
+  const cutoffMs = rule.windowSec ? Date.now() - rule.windowSec * 1000 : 0;
+  const postCount = cutoffMs
+    ? hist.posts.filter((p) => p.createdAtMs >= cutoffMs).length
+    : hist.posts.length;
+  const commentCount = cutoffMs
+    ? hist.comments.filter((c) => c.createdAtMs >= cutoffMs).length
+    : hist.comments.length;
 
   if (rule.postCountLt != null && postCount < rule.postCountLt) return { triggered: true };
   if (rule.postCountGt != null && postCount > rule.postCountGt) return { triggered: true };
