@@ -298,10 +298,32 @@ export async function normalizeComment(
   const a = payload.author ?? {};
   const authorName = a.name ?? '';
   const author = await enrichAuthor(authorName, a.id ?? '', config.needsAuthorEnrichment ?? false);
+
+  // AE Pull-Forward #6 — fetch parent post title so `{kind:'regex', target:
+  // 'title'}` rules can match against the post a comment is on. Without this
+  // a title regex on a comment trigger silently never fires (empty string
+  // never matches a content pattern) — bot looks broken. Best-effort fetch
+  // gated on the rule needing a title; on Reddit-API error fall back to
+  // empty string (existing behavior — fail-OPEN, soft signal).
+  let parentTitle = '';
+  const parentPostId = payload.post?.id;
+  if (parentPostId && /^t3_[a-z0-9]+$/i.test(parentPostId)) {
+    try {
+      const post = await reddit.getPostById(parentPostId as `t3_${string}`);
+      parentTitle = post.title ?? '';
+    } catch (err) {
+      console.warn(
+        '[cm/normalize] parent-post title fetch failed (title regex on comment trigger will miss):',
+        parentPostId,
+        err
+      );
+    }
+  }
+
   const item: Item = {
     ...ITEM_DEFAULTS,
     id: c.id ?? '',
-    title: '',
+    title: parentTitle,
     body: c.body ?? '',
     url: '',
     author: authorName,
@@ -313,7 +335,7 @@ export async function normalizeComment(
     author,
     safe: {
       authorName: escapeMarkdown(author.name),
-      itemTitle: '',
+      itemTitle: escapeMarkdown(parentTitle),
       itemBody: escapeMarkdown(item.body),
     },
   };
