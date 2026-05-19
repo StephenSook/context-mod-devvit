@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Tested — direct unit coverage
+
+- **AE Polish #30: `modActivity.ts` direct unit tests** — previously
+  uncovered storage module (relied on indirect API-route tests via
+  Polish #27 happy-path coverage). Added 10 direct unit tests pinning:
+  log/read shape, Redis fail-OPEN on both zAdd + zRemRangeByRank
+  throws (audit log is non-critical telemetry — must NOT bubble +
+  block mod action retry), 50-deep ring-buffer trim invariant
+  (zRemRangeByRank called w/ correct `0, -51` range), sub-undefined
+  defensive no-op, corrupt JSON member tolerance (mix of valid +
+  garbled members still returns the valid ones). 666 tests green
+  (was 656).
+
 ### Fixed — dev-UX + documentation drift
 
 - **AE Polish #29: `dev:web` mock-server route gaps (47 console 404s)**
