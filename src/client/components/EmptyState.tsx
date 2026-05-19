@@ -6,6 +6,13 @@ const COPY_RESET_MS = 2000;
 
 export function EmptyState({ subreddit }: { subreddit: string }) {
   const [copied, setCopied] = useState(false);
+  // AE Polish #84: gemini brutal-audit P2-5. Pre-Polish, clipboard
+  // failure was silently swallowed — mod clicks "copy", browser refuses
+  // (iframe perm-denied is common in Safari + Firefox strict-tracking
+  // modes), nothing happens, no UX feedback. Track explicit failure
+  // state so the button can flip to "copy unavailable" + the user
+  // knows to select-and-copy from the visible <pre> block manually.
+  const [copyFailed, setCopyFailed] = useState(false);
   // AE Polish #39: track the copy-reset timeout so a rapid second click
   // cancels the pending reset (cleaner UX) AND so an unmount during the
   // 2s window (which CAN happen — poll lands w/ new events → events.
@@ -22,14 +29,26 @@ export function EmptyState({ subreddit }: { subreddit: string }) {
     try {
       await navigator.clipboard.writeText(STARTER_CONFIG_SNIPPET);
       setCopied(true);
+      setCopyFailed(false);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = setTimeout(() => {
         setCopied(false);
         copyTimerRef.current = null;
       }, COPY_RESET_MS);
-    } catch {
-      // navigator.clipboard unavailable in this iframe context — silent. The
-      // user can still select-and-copy the visible <pre> block manually.
+    } catch (err) {
+      // AE Polish #84: explicit failure UX instead of silent swallow.
+      // Common cause: webview iframe lacks clipboard-write permission
+      // (Safari + Firefox enhanced tracking by default; some Reddit
+      // mobile webview configurations as well). Surface as "copy
+      // unavailable" + log so it's visible in dev tools.
+      console.warn('[cm/EmptyState] clipboard.writeText failed — manual select required:', err);
+      setCopied(false);
+      setCopyFailed(true);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopyFailed(false);
+        copyTimerRef.current = null;
+      }, COPY_RESET_MS);
     }
   };
 
@@ -54,6 +73,16 @@ export function EmptyState({ subreddit }: { subreddit: string }) {
             <>
               <Check size={10} strokeWidth={2} className="text-signal-ok" />
               <span className="text-signal-ok">copied</span>
+            </>
+          ) : copyFailed ? (
+            <>
+              {/* Polish #84: explicit failure UX. iframe clipboard
+                  perm-denied is the common path (Safari, Firefox
+                  enhanced tracking, some Reddit mobile webviews). The
+                  visible <pre> block above is still selectable so the
+                  mod can copy manually. */}
+              <Clipboard size={10} strokeWidth={1.8} className="text-signal-warn" />
+              <span className="text-signal-warn">select manually</span>
             </>
           ) : (
             <>
