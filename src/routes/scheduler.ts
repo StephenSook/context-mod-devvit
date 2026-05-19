@@ -16,6 +16,9 @@ import * as configStore from '../state/configStore';
 import { loadFromWiki } from '../core/configSource';
 import { writeStatsSnapshot } from '../state/statsRollup';
 import { log } from '../lib/log';
+import { fetchAndDecode } from '../image/decode';
+import { computeBlockhash } from '../image/hash';
+import { recordHash } from '../state/imageHashStore';
 
 export const scheduler = new Hono();
 
@@ -115,16 +118,48 @@ scheduler.post('/stats-rollup', async (c) => {
   return c.json<TaskResponse>({ status: 'success' }, 200);
 });
 
+/**
+ * Phase 4.7 image-hash worker (one-shot backfill path). Standard trigger
+ * flow already hashes-on-arrival via runImageRepostRule (which calls
+ * fetchAndDecode + computeBlockhash + recordHash inline). This worker is
+ * for the rare backfill case where a mod adds the imageRepost rule to a
+ * config AFTER posts have already been processed — it lets them seed the
+ * store w/ a known postId+imageUrl pair so subsequent reposts can match.
+ *
+ * Single-flight via acquireLock. Body: {postId, imageUrl}. Returns success
+ * for both decode-failure (fail-OPEN per the rule's posture) and success
+ * paths — the worker is best-effort backfill, not a safety gate.
+ */
 scheduler.post('/image-hash-worker', async (c) => {
   const release = await acquireLock('image-hash-worker');
   if (!release) return c.json<TaskResponse>({ status: 'ignored' }, 200);
   try {
-    const req = await c.req.json<TaskRequest<{ postId?: string; imageUrl?: string }>>();
-    log.info('cm/cron/image-hash-worker', 'received', { postId: req.data?.postId });
-    // TODO Phase 4 Task 36: fetch image, decode (pure JS), blockhash, store
-    //   - Cap: process up to 8 items per invocation
-    //   - Memory: bail if fetch body > 6MB
-    //   - Storage: multi-index LSH ZSETs (per Codex H5)
+    const req = await c.req.json<TaskRequest<{ postId?: string; imageUrl?: string; sub?: string }>>();
+    const { postId, imageUrl, sub } = req.data ?? {};
+    if (!postId || !imageUrl) {
+      log.warn('cm/cron/image-hash-worker', 'skipped — missing postId or imageUrl', {
+        postId,
+        hasImageUrl: !!imageUrl,
+      });
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
+    log.info('cm/cron/image-hash-worker', 'received', { postId, sub });
+    const decoded = await fetchAndDecode(imageUrl);
+    if (!decoded.ok) {
+      log.warn('cm/cron/image-hash-worker', 'decode failed (fail-open)', {
+        postId,
+        phase: decoded.phase,
+        err: decoded.error,
+      });
+      return c.json<TaskResponse>({ status: 'success' }, 200);
+    }
+    try {
+      const hash = computeBlockhash(decoded.frame);
+      await recordHash({ postId, hash, ts: Date.now() }, undefined, sub);
+      log.info('cm/cron/image-hash-worker', 'backfilled', { postId, sub });
+    } catch (err) {
+      log.warn('cm/cron/image-hash-worker', 'blockhash failed (fail-open)', { postId, err });
+    }
   } finally {
     await release();
   }
