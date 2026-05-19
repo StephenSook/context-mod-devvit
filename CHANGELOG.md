@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Tested
+
+- **AE Polish #22: `migrate-upstream-config.mjs` failure-path coverage**
+  — operator-facing migration script (run by 15+ FoxxMD operators per
+  the migration story doc) had tests pinning exit code 0 (clean) and
+  exit code 2 (cuts), but no tests for exit code 1 (read/parse/write
+  failure). Silent regression here would corrupt every operator's
+  migrated config OR fail without explaining why. Added 3 tests:
+  YAML parse failure → exit 1 + stderr `"YAML parse failed"`,
+  missing input file → exit 1 + stderr `"Failed to read <path>"`,
+  no args → exit 1 + stderr `"Usage:"`. 620 tests green (was 617).
+
 ### Fixed — UX honesty
 
 - **AE Polish #21: client surfaces server-supplied error body on non-200**

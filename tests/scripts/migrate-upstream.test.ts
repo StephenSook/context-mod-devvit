@@ -250,4 +250,47 @@ runs:
 `);
     expect(exitCode).toBe(0);
   });
+
+  it('Polish #22: exit code 1 on YAML parse failure + stderr explains why', () => {
+    const { exitCode, stderr } = migrate(`
+runs:
+  - name: r1
+    unclosed: "literally a [bracket without close
+    rules:
+      - kind: regex
+`);
+    expect(exitCode).toBe(1);
+    expect(stderr).toMatch(/YAML parse failed/i);
+  });
+
+  it('Polish #22: exit code 1 on missing file + stderr includes the path', () => {
+    // Bypass our helper — call the script directly with a non-existent path.
+    const missing = join(tmpdir(), 'cm-migrate-does-not-exist-' + Date.now() + '.yaml');
+    let exitCode = 0;
+    let stderr = '';
+    try {
+      execFileSync('node', [SCRIPT, missing], { encoding: 'utf8' });
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string };
+      exitCode = e.status ?? 1;
+      stderr = e.stderr ?? '';
+    }
+    expect(exitCode).toBe(1);
+    expect(stderr).toMatch(/Failed to read/i);
+    expect(stderr).toContain(missing);
+  });
+
+  it('Polish #22: exit code 1 + usage on missing args (no input path)', () => {
+    let exitCode = 0;
+    let stderr = '';
+    try {
+      execFileSync('node', [SCRIPT], { encoding: 'utf8' });
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string };
+      exitCode = e.status ?? 1;
+      stderr = e.stderr ?? '';
+    }
+    expect(exitCode).toBe(1);
+    expect(stderr).toMatch(/Usage:/);
+  });
 });
