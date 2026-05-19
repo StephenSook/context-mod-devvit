@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — orchestrator isolation
+
+- **AE Polish #41: `handleActivity` per-run try/catch** — caught
+  during deep audit (Stephen's "are you actually done" prompt). The
+  for-loop over `current.config.runs` called `runRun()` with no
+  per-iteration catch. If a rule throws (which it shouldn't, but
+  transient external API errors inside the new history / attribution
+  / recentActivity / imageRepost rules CAN bubble up through runRule
+  → runCheck → runRun, none of which have catches), the throw would
+  abort the for-loop and runs N+1, N+2, etc. for the SAME event
+  would never evaluate. Polish #26 already added fail-OPEN at the
+  imageRepost rule layer, but defense-in-depth at the orchestrator
+  closes the gap for ALL rule paths, not just one. Now each `runRun`
+  call is wrapped: throw → log + `recordEvent` w/ checkName
+  `(run-error)` + status `'error'` + truncated message + `continue`
+  to next run. +4 tests pinning the isolation (throw isolates, both
+  runs throw passes through, throw + normal-trigger lets actions
+  fire, error message 200-char truncation). 724 tests green (was
+  720).
+
 ### Fixed — backwards-compat
 
 - **AE Polish #40: `readStatsSnapshot` detects pre-Polish-#38 snapshot

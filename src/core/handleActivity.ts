@@ -63,7 +63,43 @@ export async function handleActivity(
   if (!current) return; // no config yet — fresh install — nothing to do
 
   for (const run of current.config.runs) {
-    const result = await runRun(run, item, author, subredditName);
+    // AE Polish #41: per-run try/catch — a rule throw inside ANY of
+    // {runRun → runCheck → runRule} (none of which have catches) would
+    // bubble all the way up here + abort the for-loop, so runs N+1, N+2
+    // etc. for the SAME EVENT would never evaluate. Per-run isolation
+    // means one badly-configured run (or one transient external API
+    // throw) only loses that run's evaluation, not the rest of the
+    // event's runs.
+    let result: Awaited<ReturnType<typeof runRun>>;
+    try {
+      result = await runRun(run, item, author, subredditName);
+    } catch (err) {
+      console.error(
+        '[cm/handleActivity] runRun threw — recording as run-error + continuing to next run:',
+        run.name,
+        err
+      );
+      const msg = err instanceof Error ? err.message : String(err);
+      await recordEvent(
+        {
+          ts: Date.now(),
+          activityId: item.id,
+          runName: run.name,
+          checkName: '(run-error)',
+          triggered: false,
+          actions: [
+            {
+              kind: 'run-error',
+              ok: false,
+              status: 'error',
+              wouldHaveCalled: msg.slice(0, 200),
+            },
+          ],
+        },
+        subredditName
+      );
+      continue;
+    }
     // X47: surface terminated runs (iteration-limit / goto-missing) to the
     // dashboard so mods see misconfigured postBehavior + circular gotos
     // without digging through server logs.
