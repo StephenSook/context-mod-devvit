@@ -6,7 +6,50 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.5): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.6] — 2026-05-18
+
+Post-AE wrap. v0.6.5 CI caught its own a11y regression (axe Polish #15
+test fired on the new role-less aria-label) — fixed in `56803bb`.
+Plus AI explainer response cache + DESIGN + ARCHITECTURE refresh.
+
+### Fixed — a11y
+
+- **`role="status"` on AI loading div** — axe-prohibited-attr fired
+  across Chromium + Firefox + WebKit on the v0.6.5 push because the
+  AE Polish #4 loading skeleton put `aria-label` on a plain `<div>`
+  (ARIA labels are prohibited on roleless elements per WCAG412).
+  Added `role="status"` (canonical for advisory live-region updates).
+  The AE Polish #15 axe scan caught the regression w/in 1 push
+  cycle — working as designed.
+
+### Added — performance / cost
+
+- **AI explainer response cache** (Tier 1 #151) — per-event 24h Redis
+  cache keyed on FNV-1a64 of the event-summary shape. First click pays
+  for OpenAI (~3-8s, ~$0.0001 w/ gpt-4o-mini); second+ click returns
+  in ~5ms at $0. Cache hit returns BEFORE the per-user rate-limit gate
+  so a cache hit doesn't burn rate quota either. Fail-OPEN on Redis
+  read OR write blip — we just re-pay for the call. Sub-scoped for
+  tenant isolation. Response envelope includes `cached: true` flag so
+  the client can show a "cached" indicator if it wants.
+
+### Changed — docs
+
+- **DESIGN.md** — last-updated 5/13 → 5/18. Added light-mode override
+  + empty-state placeholder + cm-ai-pulse keyframe documentation.
+  Storage key inventory updated for Phase 4 author cache + Phase 4.7
+  image-hash store + per-user rate-limit + Polish wave fixes.
+- **ARCHITECTURE.md** — header "Phase 1 → Phase 4 + Wave W + Wave X"
+  bumped to "Phase 1 → Phase 4 + Phase 4.7 + 13 hardening waves
+  (S through AE)". Section 9 (rate-limit + breaker) documents
+  per-user layer + openaiErrors.ts extraction. "What's deliberately
+  NOT here" Phase 4.7 line flipped from "deferred" to "SHIPPED 5/18".
+
+### Tests
+
+597 still passing (cache + a11y fix exercised by existing test paths).
 
 ## [0.6.5] — 2026-05-18
 
