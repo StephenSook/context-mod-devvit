@@ -6,7 +6,83 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
-Forward-looking (post-v0.6.2): see [`ROADMAP.md`](./ROADMAP.md).
+Forward-looking (post-v0.6.3): see [`ROADMAP.md`](./ROADMAP.md).
+
+## [0.6.3] — 2026-05-18
+
+Wave AE Polish Tier — first batch (10 items shipped). All Agent C
+(frontend judge-first-look) + Agent B (silent-failure) + Agent D
+(test-gap) findings closed.
+
+### Changed — frontend judge-UX
+
+- **Empty-component layout reservations** (Agent C #3): RuleStatsTable,
+  RuleCountChips, ModActivityFeed all returned null when empty. First
+  rule firing / first mod action popped each component into existence +
+  shifted every section below. All three now render heading + empty
+  placeholder of the same approximate height.
+- **ErrorBanner suppression during initialLoad** (Agent C #6): banner
+  used to render ABOVE shimmer-loading skeletons during the first 1-2s,
+  saying "Telemetry API unreachable" — contradictory + made the whole
+  bot look down on install. Gated on !initialLoad so the skeleton speaks
+  alone during load.
+- **OnboardingTour mount delay** (Agent C #7): modal opened at t=0 on
+  top of skeleton dashboard — tour was pointing at nothing. Now gated
+  on !initialLoad so the modal mounts only after real dashboard chrome
+  renders.
+- **AI explainer UX polish** (Agent C #5):
+  - 3-dot animated pulse + "thinking" word during the 2-8s OpenAI wait
+    (was static "thinking…" label)
+  - Skeleton placeholder for where the explanation will land — no more
+    layout pop when response arrives
+  - friendlyExplainError() maps known failure patterns (auth, rate
+    limit, breaker, missing key, Redis degraded, timeout) to mod-
+    friendly sentences instead of raw server-stack text
+  - aria-busy / aria-live polite on the loading state for screen-reader
+    accessibility
+  - Sparkle emoji wrapped in aria-hidden for screen-reader hygiene
+
+### Fixed — silent failures
+
+- **recentEvents shape validation** (Agent B #3): migrate() v:1 case
+  used to cast blindly. A poisoned member like
+  {v:1, actions:"not-array"} propagated to statsRollup.ts:51 + crashed
+  /api/stats. New isValidRecentEventShape() type-checks every required
+  field; bad members throw in migrate() + are logged + dropped.
+- **statsRollup corrupt-key cleanup** (Agent B #6): a malformed snapshot
+  used to be re-parsed on every dashboard poll (~30s). Now DEL'd on
+  parse failure so subsequent reads skip the wasted GET + parse.
+- **circuitBreaker fail-OPEN log upgrade** (Agent B #7): warn → error
+  + tagged `breaker_unavailable`. Combined w/ retryWithJitter a single
+  user click can hammer external services 3× during a Redis blip;
+  ops should see that billing surface.
+- **requireModerator narrow catch** (Agent B #5): catch-all 500 used to
+  cover transient Reddit-API blips. Now classifyTransient() distinguishes
+  network/timeout/429/5xx → 503 (retry hint implied) from programming
+  errors → 500.
+
+### Changed — CI
+
+- **e2e-cross-browser runs on PRs too** (Agent D #5): was gated push-to-
+  main-only — PRs got zero Firefox/WebKit signal, cross-engine regressions
+  only surfaced after merge + needed reverts. cancel-in-progress already
+  false so PR force-push won't pile up.
+
+### Added — test gap close
+
+- **demo_mod_alice/bob obfuscation pin** (Agent D #4): pins the AD
+  CRITICAL fix (f9c1bf4) — `/mod-activity?demo=1` MUST contain
+  demo_mod_alice + demo_mod_bob, MUST NOT contain real handles
+  (CowSufficient3840, vinhbin). Privacy-claim regression protection.
+- **recentEvents poisoned-member drop** (+2): inner-loop validation
+  pinned.
+- **requireModerator transient classification** (+3): 503 on 5xx,
+  ECONNRESET, 429.
+
+### Tests
+
+588 → 594 passing (+6 across recentEvents validation, requireModerator
+classifier, demo username pin).
 
 ## [0.6.2] — 2026-05-18
 
