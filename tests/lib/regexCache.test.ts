@@ -125,4 +125,45 @@ describe('safeTest — bounded input ReDoS defense (Polish #45)', () => {
     const beyond = 'x'.repeat(100_000) + 'target'; // total 100,006 chars
     expect(safeTest(re, beyond)).toBe(false);
   });
+
+  // AE Polish #72: gemini-agent P1-5 finding. Schema at
+  // src/shared/types.ts:104 allows RegexRule.flags to be any string,
+  // including `"g"`. Pre-fix path: compile w/ `g` flag → RegExp.test()
+  // advances lastIndex on match → second .test() against shorter or
+  // non-matching string starts mid-search → false negative.
+  it('Polish #72: getCompiledRegex strips `g` flag (no stateful regex)', () => {
+    const re = getCompiledRegex('abc', 'g')!;
+    expect(re).toBeInstanceOf(RegExp);
+    expect(re.flags).not.toContain('g');
+    // First test matches; lastIndex would have advanced w/o the strip.
+    expect(re.test('xxxabcxxx')).toBe(true);
+    // Second test against an even shorter string MUST still match —
+    // proves no statefulness leaked through.
+    expect(re.test('abc')).toBe(true);
+  });
+
+  it('Polish #72: getCompiledRegex strips `y` (sticky) flag', () => {
+    const re = getCompiledRegex('abc', 'y')!;
+    expect(re).toBeInstanceOf(RegExp);
+    expect(re.flags).not.toContain('y');
+  });
+
+  it('Polish #72: cached g-flag regex returns consistent results across calls', () => {
+    // Repro of the original bug: same compiled instance, called repeatedly.
+    // Without the strip, the second call would return false because
+    // lastIndex was advanced past the match by the first call.
+    const re = getCompiledRegex('hello', 'g')!;
+    for (let i = 0; i < 10; i++) {
+      expect(safeTest(re, 'hello world')).toBe(true);
+    }
+  });
+
+  it('Polish #72: safeTest defensively resets lastIndex even on bypass-cache callers', () => {
+    // A future caller could construct a stateful RegExp directly (e.g.
+    // `new RegExp('foo', 'g')`) and pass it to safeTest. Belt-and-
+    // suspenders: safeTest resets lastIndex itself.
+    const re = /foo/g;
+    re.lastIndex = 100; // simulate a prior match advancement
+    expect(safeTest(re, 'foo')).toBe(true);
+  });
 });

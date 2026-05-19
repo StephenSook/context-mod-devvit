@@ -50,8 +50,21 @@ const MAX_REGEX_INPUT_CHARS = 100_000;
  * calling RegExp.test(). Use this anywhere we test a wiki-controlled
  * pattern against a Reddit-controlled string (rule regex match, filter
  * regex match) to bound worst-case backtracking time.
+ *
+ * AE Polish #72: gemini-agent P1-5 finding. Previously called
+ * `re.test(bounded)` directly. For a cached RegExp compiled with the
+ * `g` or `y` flag, RegExp.test() ADVANCES `re.lastIndex` on a match
+ * (V8 sticky-mode semantics). Next call to safeTest with the SAME
+ * compiled instance starts the search FROM that offset → false-
+ * negatives for any subsequent test against a shorter string OR
+ * against text that doesn't contain the pattern at or after that
+ * offset. getCompiledRegex now strips `g`/`y` at compile time so
+ * cached regexes have no statefulness, but `lastIndex = 0` here is
+ * a belt-and-suspenders defense for callers that bypass the cache
+ * (currently none, but the API surface is public + future safety).
  */
 export function safeTest(re: RegExp, target: string): boolean {
+  re.lastIndex = 0;
   const bounded =
     target.length > MAX_REGEX_INPUT_CHARS ? target.slice(0, MAX_REGEX_INPUT_CHARS) : target;
   return re.test(bounded);
@@ -62,10 +75,20 @@ export function getCompiledRegex(
   flags: string,
   tag: string = 'cm/lib/regex-cache'
 ): RegExp | null {
-  const key = `${pattern}\x00${flags}`;
+  // AE Polish #72: strip `g` and `y` flags before compile. RegExp.test()
+  // on a stateful regex (`g`/`y`) advances `lastIndex` on a match, so a
+  // cached instance reused across rule evaluations returns false-
+  // negatives starting from the second matching call against a string
+  // shorter than `lastIndex`. Schema at src/shared/types.ts:104 allows
+  // RegexRule.flags to be any string, including `"g"`. Stripping at
+  // compile keeps semantics identical for .test() (which only returns
+  // boolean — `g`/`y` only matter for .exec/.matchAll/.replace) and
+  // eliminates the bug class entirely.
+  const sanitizedFlags = flags.replace(/[gy]/g, '');
+  const key = `${pattern}\x00${sanitizedFlags}`;
   if (COMPILE_CACHE.has(key)) return COMPILE_CACHE.get(key) ?? null;
   try {
-    const re = new RegExp(pattern, flags);
+    const re = new RegExp(pattern, sanitizedFlags);
     // Pull-Forward #8 — catastrophic-backtracking guard. A pattern like
     // `(a+)+$` against an adversarial body pins the event loop for seconds.
     // `safe-regex` static-analyzes the NFA shape to reject star-height >1.
