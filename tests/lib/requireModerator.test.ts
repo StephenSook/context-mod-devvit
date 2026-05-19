@@ -69,15 +69,40 @@ describe('requireModerator', () => {
     if (!r.ok) expect(r.status).toBe(401);
   });
 
-  it('returns 500 fail-CLOSED when getModerators throws', async () => {
+  it('AE Polish #10: returns 503 fail-CLOSED when Reddit returns 5xx (transient — retry-able)', async () => {
     getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
     getModerators.mockRejectedValue(new Error('reddit api 503'));
+    const r = await requireModerator();
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.status).toBe(503);
+      expect(r.error).toMatch(/transient/i);
+    }
+  });
+
+  it('AE Polish #10: returns 500 fail-CLOSED when getModerators throws non-transient (programming err)', async () => {
+    getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
+    getModerators.mockRejectedValue(new Error('undefined is not a function'));
     const r = await requireModerator();
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.status).toBe(500);
       expect(r.error).toMatch(/mod check failed/i);
     }
+  });
+
+  it('AE Polish #10: returns 503 on network errors (ECONNRESET, timeout)', async () => {
+    getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
+    getModerators.mockRejectedValue(new Error('ECONNRESET'));
+    const r = await requireModerator();
+    if (!r.ok) expect(r.status).toBe(503);
+  });
+
+  it('AE Polish #10: returns 503 on rate-limit (429)', async () => {
+    getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
+    getModerators.mockRejectedValue(new Error('HTTP 429 rate-limited'));
+    const r = await requireModerator();
+    if (!r.ok) expect(r.status).toBe(503);
   });
 
   it('returns 500 when getCurrentSubreddit throws (context lost)', async () => {
