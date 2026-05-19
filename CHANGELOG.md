@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — orchestrator hang defense
+
+- **AE Polish #42: `handleActivity` per-run TIMEOUT** — silent-failure-
+  hunter audit (Stephen's "do everything" round) caught this. Polish
+  #41 added a try/catch around `await runRun(...)` which guarded
+  THROWS but NOT a hung Promise. A `await redis.get(...)` against a
+  stuck connection or an ungated `fetch()` returning a Promise that
+  never resolves would silently stall the entire for-loop until
+  Devvit's platform request-timeout kicked in — no log line, no
+  recorded event, runs N+1 never evaluate. HIGH-severity silent
+  failure pattern. Fix: `runWithTimeout()` wraps `runRun()` in a
+  `Promise.race` against a 10s ceiling. Distinct error class
+  (`RunTimeoutError`) so the recordEvent payload differentiates
+  `(run-timeout)` from `(run-error)`. 10s is generous — the slowest
+  legit Phase-4 rule (imageRepost) has an 8s internal fetch timeout
+  + 6MB cap, so this gives 2s headroom. +1 test pinning the
+  Promise.race behavior via fake timers + assert next-run-evaluates.
+  725 tests green (was 724).
+
 ### Fixed — orchestrator isolation
 
 - **AE Polish #41: `handleActivity` per-run try/catch** — caught

@@ -151,6 +151,41 @@ describe('handleActivity per-run try/catch (Polish #41)', () => {
     expect(recordEvent.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('Polish #42: never-resolving Promise → timeout fires, recorded as run-timeout, next run still evaluates', async () => {
+    // The HIGH finding from silent-failure-hunter audit. Pre-Polish-#42 try/catch
+    // only guarded throws — a Promise that never resolves would hang the for-loop
+    // on that iteration. Now Promise.race w/ PER_RUN_TIMEOUT_MS catches the hang
+    // + records as run-timeout (distinct from run-error) + continues to next run.
+    vi.useFakeTimers();
+    try {
+      runRun
+        .mockReturnValueOnce(new Promise(() => {})) // never resolves
+        .mockResolvedValueOnce({ triggered: false, checkName: '', actions: [] });
+
+      const promise = handleActivity(item, author, 'r_test');
+      // Advance past PER_RUN_TIMEOUT_MS (10s)
+      await vi.advanceTimersByTimeAsync(10_001);
+      await promise;
+
+      // Both runs evaluated — the timeout let us continue past run 1.
+      expect(runRun).toHaveBeenCalledTimes(2);
+
+      // Timeout recorded distinctly as `(run-timeout)`.
+      const timeoutEvent = recordEvent.mock.calls.find(
+        (c) => (c[0] as { checkName: string }).checkName === '(run-timeout)'
+      );
+      expect(timeoutEvent).toBeDefined();
+      const payload = timeoutEvent![0] as {
+        actions: { kind: string; status: string; wouldHaveCalled?: string }[];
+      };
+      expect(payload.actions[0]?.kind).toBe('run-timeout');
+      expect(payload.actions[0]?.status).toBe('error');
+      expect(payload.actions[0]?.wouldHaveCalled).toMatch(/10000ms/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('Polish #41: error message truncated to 200 chars in event payload', async () => {
     const longMsg = 'x'.repeat(500);
     runRun.mockRejectedValueOnce(new Error(longMsg));

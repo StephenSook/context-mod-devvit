@@ -21,6 +21,43 @@ import { runRun } from './runRun';
 import { runAction } from './runAction';
 import { recordEvent } from '../state/recentEvents';
 
+/**
+ * AE Polish #42 — per-run TIMEOUT cap. Polish #41 added a try/catch
+ * around `await runRun(...)` which guards throws but NOT a hung Promise
+ * (Redis socket stall, ungated fetch in image-repost / OpenAI moderation,
+ * await on a never-resolving cache prime). Without a timeout race, a
+ * single hung run would silently stall the entire for-loop until the
+ * Devvit trigger handler hits the platform request timeout — no log
+ * line written, no recorded event, runs N+1 never evaluate.
+ *
+ * 10 seconds is generous: the only Phase-4 rule that does a network
+ * call is imageRepost (8s fetch timeout inside fetchAndDecode + 6MB
+ * cap), and history/attribution/recentActivity all read pre-cached
+ * data with fail-OPEN. 10s gives 2s headroom on the slowest legit path.
+ */
+const PER_RUN_TIMEOUT_MS = 10_000;
+
+class RunTimeoutError extends Error {
+  constructor(runName: string) {
+    super(`run "${runName}" exceeded ${PER_RUN_TIMEOUT_MS}ms wall clock`);
+    this.name = 'RunTimeoutError';
+  }
+}
+
+async function runWithTimeout<T>(p: Promise<T>, runName: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race<T>([
+      p,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new RunTimeoutError(runName)), PER_RUN_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function handleActivity(
   item: Item,
   author: Author,
@@ -72,10 +109,15 @@ export async function handleActivity(
     // event's runs.
     let result: Awaited<ReturnType<typeof runRun>>;
     try {
-      result = await runRun(run, item, author, subredditName);
+      // AE Polish #42: race the run against PER_RUN_TIMEOUT_MS so a hung
+      // Promise (vs throw) doesn't block the for-loop indefinitely.
+      result = await runWithTimeout(runRun(run, item, author, subredditName), run.name);
     } catch (err) {
+      const isTimeout = err instanceof RunTimeoutError;
+      const tag = isTimeout ? '(run-timeout)' : '(run-error)';
+      const kind = isTimeout ? 'run-timeout' : 'run-error';
       console.error(
-        '[cm/handleActivity] runRun threw — recording as run-error + continuing to next run:',
+        `[cm/handleActivity] runRun ${isTimeout ? 'timed out' : 'threw'} — recording as ${tag} + continuing to next run:`,
         run.name,
         err
       );
@@ -85,11 +127,11 @@ export async function handleActivity(
           ts: Date.now(),
           activityId: item.id,
           runName: run.name,
-          checkName: '(run-error)',
+          checkName: tag,
           triggered: false,
           actions: [
             {
-              kind: 'run-error',
+              kind,
               ok: false,
               status: 'error',
               wouldHaveCalled: msg.slice(0, 200),
