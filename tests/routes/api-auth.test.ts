@@ -71,6 +71,10 @@ vi.mock('../../src/lib/circuitBreaker', () => ({
   recordFailure: (...a: unknown[]) => recordFailure(...a),
   recordSuccess: (...a: unknown[]) => recordSuccess(...a),
 }));
+const readStatsSnapshot = vi.fn();
+vi.mock('../../src/state/statsRollup', () => ({
+  readStatsSnapshot: (...a: unknown[]) => readStatsSnapshot(...a),
+}));
 
 import { api } from '../../src/routes/api';
 
@@ -346,5 +350,260 @@ describe('GET /api/config-history (W8 — W2 mod-data leak fix)', () => {
     const res = await getJson('/config-history?demo=1');
     expect(res.status).toBe(200);
     expect(requireModeratorMock).not.toHaveBeenCalled();
+  });
+
+  it('Polish #27: mod auth + getRecentRevs returns 200 w/ revs array', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    getRecentRevs.mockResolvedValueOnce([
+      { rev: 5, config: { runs: [{ name: 'r1' }] } },
+      { rev: 4, config: { runs: [] } },
+    ]);
+    const res = await getJson('/config-history');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { revs: { rev: number }[] };
+    expect(body.revs).toHaveLength(2);
+    expect(body.revs[0]?.rev).toBe(5);
+    expect(getRecentRevs).toHaveBeenCalledWith('r_test', 10);
+  });
+
+  it('Polish #27: ?limit=N clamped to max 50', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    getRecentRevs.mockResolvedValueOnce([]);
+    await getJson('/config-history?limit=999');
+    expect(getRecentRevs).toHaveBeenCalledWith('r_test', 50);
+  });
+
+  it('Polish #27: non-numeric ?limit defaults to 10', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    getRecentRevs.mockResolvedValueOnce([]);
+    await getJson('/config-history?limit=abc');
+    expect(getRecentRevs).toHaveBeenCalledWith('r_test', 10);
+  });
+});
+
+// ============================================================================
+// AE Polish #27 — happy-path coverage for endpoints previously only auth-tested
+// ============================================================================
+
+describe('POST /api/mute-rule happy path (Polish #27)', () => {
+  it('logs ModActivity entry with kind="mute-rule" + actor=auth.username + detail=run/check', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    muteRule.mockResolvedValueOnce({ ok: true });
+    const res = await postJson('/mute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
+    expect(res.status).toBe(200);
+    expect(logModActivity).toHaveBeenCalledTimes(1);
+    const [sub, entry] = logModActivity.mock.calls[0] as [
+      string,
+      { kind: string; actor: string; detail: string; ts: number },
+    ];
+    expect(sub).toBe('r_test');
+    expect(entry.kind).toBe('mute-rule');
+    expect(entry.actor).toBe('mod_alice');
+    expect(entry.detail).toBe('spam/crypto');
+    expect(typeof entry.ts).toBe('number');
+  });
+
+  it('500 when muteRule returns Err Result — does NOT log activity', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    muteRule.mockResolvedValueOnce({ ok: false, error: 'Redis down' });
+    const res = await postJson('/mute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
+    expect(res.status).toBe(500);
+    expect(logModActivity).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/unmute-rule happy path (Polish #27)', () => {
+  it('auth + calls unmuteRule + logs ModActivity with kind="unmute-rule"', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    unmuteRule.mockResolvedValueOnce({ ok: true });
+    const res = await postJson('/unmute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
+    expect(res.status).toBe(200);
+    expect(unmuteRule).toHaveBeenCalledWith('r_test', 'spam', 'crypto');
+    expect(logModActivity).toHaveBeenCalledTimes(1);
+    const entry = logModActivity.mock.calls[0]?.[1] as {
+      kind: string;
+      actor: string;
+      detail: string;
+    };
+    expect(entry.kind).toBe('unmute-rule');
+    expect(entry.actor).toBe('mod_alice');
+    expect(entry.detail).toBe('spam/crypto');
+  });
+
+  it('500 when unmuteRule returns Err Result — does NOT log activity', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    unmuteRule.mockResolvedValueOnce({ ok: false, error: 'mute not found' });
+    const res = await postJson('/unmute-rule', {
+      runName: 'spam',
+      checkName: 'crypto',
+    });
+    expect(res.status).toBe(500);
+    expect(logModActivity).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 on missing runName/checkName (validate before auth-cost)', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    const res = await postJson('/unmute-rule', { runName: 'spam' });
+    expect(res.status).toBe(400);
+    expect(unmuteRule).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/muted-rules happy path (Polish #27)', () => {
+  it('demo=1 returns empty list w/o auth', async () => {
+    requireModeratorMock.mockResolvedValue(NON_MOD);
+    const res = await getJson('/muted-rules?demo=1');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { muted: unknown[] };
+    expect(body.muted).toEqual([]);
+    expect(requireModeratorMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-mod with 403', async () => {
+    requireModeratorMock.mockResolvedValue(NON_MOD);
+    const res = await getJson('/muted-rules');
+    expect(res.status).toBe(403);
+    expect(listMutedRules).not.toHaveBeenCalled();
+  });
+
+  it('mod auth + listMutedRules returns 200 w/ array', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    listMutedRules.mockResolvedValueOnce([
+      { runName: 'r1', checkName: 'c1', mutedAt: '2026-05-19T00:00:00Z' },
+    ]);
+    const res = await getJson('/muted-rules');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { muted: { runName: string }[] };
+    expect(body.muted[0]?.runName).toBe('r1');
+    expect(listMutedRules).toHaveBeenCalledWith('r_test');
+  });
+});
+
+describe('GET /api/mod-activity happy path (Polish #27)', () => {
+  it('mod auth + readModActivity returns 200 w/ activity array', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    readModActivity.mockResolvedValueOnce([
+      { ts: 1, actor: 'mod_alice', action: 'mute', runName: 'r1', checkName: 'c1' },
+    ]);
+    const res = await getJson('/mod-activity');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { activity: { actor: string }[] };
+    expect(body.activity[0]?.actor).toBe('mod_alice');
+    expect(readModActivity).toHaveBeenCalledWith('r_test');
+  });
+});
+
+describe('GET /api/recent happy path (Polish #27)', () => {
+  it('demo=1 returns synthetic events w/o calling getCurrentSubreddit', async () => {
+    const res = await getJson('/recent?demo=1');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { events: unknown[] };
+    expect(Array.isArray(body.events)).toBe(true);
+    expect(body.events.length).toBeGreaterThan(0);
+    expect(getCurrentSubreddit).not.toHaveBeenCalled();
+    expect(readRecent).not.toHaveBeenCalled();
+  });
+
+  it('non-demo: resolves sub + calls readRecent + strips server-only v/nonce fields', async () => {
+    // stripServerFields drops `v` (schema version) and `nonce` (storage-only)
+    // before wire-emit so client never sees those internals.
+    readRecent.mockResolvedValueOnce([
+      {
+        ts: 1,
+        activityId: 't3_a',
+        runName: 'r1',
+        checkName: 'c1',
+        triggered: true,
+        actions: [{ kind: 'remove', ok: true }],
+        v: 1,
+        nonce: 'storage-only-internal',
+      },
+    ]);
+    const res = await getJson('/recent');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { events: Record<string, unknown>[] };
+    expect(body.events).toHaveLength(1);
+    expect(body.events[0]?.v).toBeUndefined();
+    expect(body.events[0]?.nonce).toBeUndefined();
+    // Functional fields preserved.
+    expect(body.events[0]?.activityId).toBe('t3_a');
+    expect(body.events[0]?.runName).toBe('r1');
+    expect(readRecent).toHaveBeenCalledWith('r_test');
+  });
+
+  it('W12: surfaces sub-context loss as 503 w/ error message + empty events', async () => {
+    getCurrentSubreddit.mockRejectedValueOnce(new Error('ECONNRESET'));
+    const res = await getJson('/recent');
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string; events: unknown[] };
+    expect(body.error).toMatch(/subreddit context unavailable/i);
+    expect(body.error).toContain('ECONNRESET');
+    expect(body.events).toEqual([]);
+  });
+});
+
+describe('GET /api/stats happy path (Polish #27)', () => {
+  it('demo=1 returns DEMO_STATS counters w/o sub resolution', async () => {
+    const res = await getJson('/stats?demo=1');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      counters: { hourlyActions24h?: number[] };
+    };
+    expect(Array.isArray(body.counters.hourlyActions24h)).toBe(true);
+    expect(body.counters.hourlyActions24h).toHaveLength(24);
+    expect(getCurrentSubreddit).not.toHaveBeenCalled();
+  });
+
+  it('non-demo: returns snapshot counters from readStatsSnapshot', async () => {
+    const snapshot = {
+      total: 42,
+      today: 5,
+      lastHour: 1,
+      hourlyActions24h: new Array(24).fill(0),
+    };
+    readStatsSnapshot.mockResolvedValueOnce(snapshot);
+    const res = await getJson('/stats');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { counters: typeof snapshot };
+    expect(body.counters.total).toBe(42);
+    expect(readStatsSnapshot).toHaveBeenCalledWith('r_test');
+  });
+
+  it('W12: surfaces sub-context loss as 503', async () => {
+    getCurrentSubreddit.mockRejectedValueOnce(new Error('ETIMEDOUT'));
+    const res = await getJson('/stats');
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toMatch(/subreddit context unavailable/i);
+  });
+});
+
+describe('GET /api/health happy path (Polish #27)', () => {
+  it('returns 200 w/ {ok, name, version, ts} (no auth, no Redis)', async () => {
+    const res = await getJson('/health');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      ok: boolean;
+      name: string;
+      version: string;
+      ts: number;
+    };
+    expect(body.ok).toBe(true);
+    expect(body.name).toBe('cm-devvit');
+    expect(typeof body.version).toBe('string');
+    expect(typeof body.ts).toBe('number');
+    expect(body.ts).toBeGreaterThan(0);
+    // Critical: liveness probe MUST NOT call requireModerator or Redis.
+    expect(requireModeratorMock).not.toHaveBeenCalled();
+    expect(getCurrentSubreddit).not.toHaveBeenCalled();
   });
 });

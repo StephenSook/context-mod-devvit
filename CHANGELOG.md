@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Tested — endpoint happy-path coverage
+
+- **AE Tier 2 + Polish #27: e2e tests for endpoints previously only
+  auth-tested** — `tests/routes/api-auth.test.ts` had W8 auth-reject
+  coverage for all gated endpoints but ZERO happy-path tests for what
+  actually happens AFTER auth passes. Added 19 tests covering:
+  - `POST /api/mute-rule` — mod-activity log shape (kind/actor/detail/ts)
+    + 500 on Err Result (no activity log)
+  - `POST /api/unmute-rule` — happy path + Err Result + 400 validation
+  - `GET /api/muted-rules` — demo bypass + non-mod 403 + happy success
+  - `GET /api/mod-activity` — happy success
+  - `GET /api/config-history` — happy + `?limit=N` clamp to 50 + non-
+    numeric limit defaults to 10
+  - `GET /api/recent` — demo bypasses sub resolve + non-demo strips
+    server-only `v`/`nonce` fields + 503 on sub-context loss
+  - `GET /api/stats` — demo returns DEMO_STATS + non-demo snapshot
+    read + 503 on sub-context loss
+  - `GET /api/health` — 200 shape pin + asserts no auth/Redis calls
+    (liveness must stay cheap)
+  Plus new mock for `state/statsRollup.readStatsSnapshot`. 652 tests
+  green (was 633).
+
 ### Fixed — request hygiene
 
 - **AE Polish #26: `imageRepost` rule defense-in-depth fail-OPEN** —
