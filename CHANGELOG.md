@@ -10,6 +10,18 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Tested — direct unit coverage
 
+- **AE Polish #31: `demo-fixtures.ts` shape + privacy + frozen-mutation
+  guard** — judge-visible module (every `?demo=1` URL serves it) had
+  no direct test coverage. A drift here would silently break the
+  dashboard's render of synthetic fixtures mid-judging. +9 tests
+  pinning: required wire fields per event, custom-`now` determinism,
+  non-finite-`now` defensive fallback, privacy invariant (all
+  activityIds prefixed `t3_demo_` / `t1_demo_` — re-pins Polish #9 at
+  the source), action.kind enum bounds, all DEMO_STATS fields present,
+  hourlyActions24h is exactly 24 entries, frozen object + frozen inner
+  array (Devvit isolates can reuse module state across requests, so
+  any unfrozen mutation leaks). 675 tests green (was 666).
+
 - **AE Polish #30: `modActivity.ts` direct unit tests** — previously
   uncovered storage module (relied on indirect API-route tests via
   Polish #27 happy-path coverage). Added 10 direct unit tests pinning:
