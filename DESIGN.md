@@ -3,10 +3,11 @@ name: ContextMod Devvit
 description: Devvit Web port of FoxxMD's PRAW-era ContextMod moderation bot
 spec: design-md/v1
 audience: AI agents (Claude Code, Gemini, Codex) + future maintainers + asset generators
-last-updated: 2026-05-13
+last-updated: 2026-05-18
 related:
   - tailwind.config.ts (canonical token source)
   - src/client/index.html (font loading)
+  - src/client/styles.css (light-mode override block + AI-explainer pulse + reduced-motion + print)
   - assets/icon.png (256x256 app icon)
   - assets/social-preview.png (1280x640 OG card)
   - assets/thumbnail.png (1200x800 Devpost thumb)
@@ -31,7 +32,7 @@ related:
 - "Rule engine," "wiki config," "trigger," "action," "filter," "named rule"
 - Specific numbers with citations ("60K weekly visitors," "73% bot-driven")
 - First person ("I built," "I learned," "I cut")
-- Honest gating ("Phase 4 gated on Day-0 spike," "MHS rule depends on domain approval")
+- Honest gating ("Phase 4 ✅ shipped 2026-05-18 live-verified", "Phase 4.7 image-repost ✅ shipped 2026-05-18 via pure-JS blockhash spike", "MHS rule ✂️ cut per Reddit PR #96 AI-provider allowlist")
 
 ### Never say
 - AI-tone words — canonical list lives in [`scripts/check-ai-tone.sh`](./scripts/check-ai-tone.sh) `BLOCKLIST` array (do not duplicate here; the script is the source of truth).
@@ -66,6 +67,17 @@ Single source of truth: `tailwind.config.ts`. Hex values mirrored here for AI as
 ### Hairlines
 - `line` `rgba(255,255,255,0.06)` — default divider on dark surface
 - `lineStrong` `rgba(255,255,255,0.12)` — emphasized divider
+
+### Light-mode overrides (Z4 + AE Polish #1)
+`html[data-theme='light']` selector block in `src/client/styles.css` inverts the surface palette to a near-white canvas (`#fafaf9` body, `#18181b` text) for moderators who prefer light UIs. The block mirrors `ink.*` + `bone.*` + `border-line` + `.glass` rules with dark-on-light equivalents:
+- `.glass` background → `rgba(24,24,27,0.02)` (was `rgba(255,255,255,0.015)`) — AE CRITICAL #1 fix; cards stayed invisible white-on-white before this
+- `.text-bone-*` → `#18181b` / `#52525b` darkened
+- `pre`, `.bg-ink-*`, `.border-line` → light equivalents
+- Signal accents (ok/warn/err/info) intentionally keep their hues for color-coding parity across themes
+ThemeToggle component (`src/client/components/ThemeToggle.tsx`) flips `data-theme` on `<html>` + persists choice in `localStorage`.
+
+### Empty-state placeholders (AE Polish #1)
+Three dashboard components (`RuleStatsTable`, `RuleCountChips`, `ModActivityFeed`) reserve vertical space when empty instead of returning `null` — prevents first-paint layout shift when the first rule firing / mod action lands. Each renders its heading + a discoverability hint matching the populated layout's approximate height.
 
 ### Asset palette (for Banana / external image gen)
 Concentric rings + green dot motif. White hairlines on warm-charcoal. Single green accent. No additional colors. Use the in-app tokens above (ink + bone + signal).
@@ -103,10 +115,13 @@ Two named keyframes in `tailwind.config.ts`:
 
 - **pulse-dot** (2s ease-in-out infinite): green signal dot indicating "live." Used on Observatory dashboard "Live" indicator + map markers.
 - **shimmer** (8s linear infinite): loading shimmer on stat cards before data lands.
+- **cm-ai-pulse** (1.2s ease-in-out infinite, staggered 0/0.2/0.4s per-dot): 3-dot ripple for AI-explainer button loading state. Replaced the static "thinking…" text label (AE Polish #4).
+
+All animations respect `prefers-reduced-motion` (Y2-X55 — global `@media` block in styles.css drops every cm-* animation duration to 0.01ms for vestibular-sensitive users).
 
 CSS-only animations. **Never** use libraries that depend on runtime code-string evaluation — Devvit's CSP blocks them. (Framer Motion's older versions were the specific case that surfaced this constraint.)
 
-Custom hand-rolled keyframes for hero animation (in client CSS): `cmFadeUp`, `cmFadeLeft`, `cmFadeIn`, `cmDrawLine`. ~600–1000ms ease-out durations.
+Custom hand-rolled keyframes for hero animation (in client CSS): `cmFadeUp`, `cmFadeLeft`, `cmFadeIn`, `cmDrawLine`, `cmRefreshPulse`, `cmEventArrive`. ~600–1000ms ease-out durations.
 
 ## Iconography
 
@@ -172,15 +187,18 @@ Full key inventory + retention policy lives in [`data-retention.md`](./data-rete
 
 - `cm:proc:{thingId}` 24h NX — trigger-level idempotency
 - `cm:action:pending:{hash}` 5m NX — action reservation
-- `cm:action:done:{hash}` 7d — action completion marker
+- `cm:action:done:{hash}` 7d — action completion marker (now written even on dry-run per AE CRITICAL #7 — prevents post-toggle double-fire)
 - `cm:lock:{task}` 60s NX with ownership token — cron single-flight guard (`acquireLock` in `src/lib/idem.ts`)
-- `cm:{sub}:cfg:current_rev` / `cm:{sub}:cfg:rev:{n}` / `cm:{sub}:cfg:rev-counter` — atomic config publish (INCR-allocated rev + monotonic pointer guard, W4)
-- `cm:{sub}:events:recent50` ZSET — 50-deep ring buffer for dashboard, score=ts member=event-json
+- `cm:{sub}:cfg:current_rev` / `cm:{sub}:cfg:rev:{n}` / `cm:{sub}:cfg:rev-counter` — atomic config publish (INCR-allocated rev + monotonic pointer guard, W4) — wraps each phase in `PublishError` discriminated union per AE CRITICAL #6 to prevent rev-leak
+- `cm:{sub}:events:recent50` ZSET — 50-deep ring buffer for dashboard, score=ts member=event-json (shape-validated per AE Polish #5)
+- `cm:{sub}:author:hist:{name}` — JSON-blob 1h cache (Phase 4 — getPostsByUser + getCommentsByUser, FETCH_LIMIT=100). `degraded:true` written on Reddit throw (NOT cached — AE CRITICAL #5 prevents mass false-positive moderation during 429/5xx blip)
+- `cm:{sub}:img:hash:recent` — JSON-list of last 500 image-post {postId, hash, ts} entries (Phase 4.7 — perceptual blockhash 64-hex, 30d TTL refreshed on write)
 - `cm:mod-activity:{sub}` ZSET — 50-deep ring of mod-menu actions (actor + ts + kind)
-- `cm:muted-rules:{sub}` hash — soft-mute set
+- `cm:muted-rules:{sub}` hash — mute set (hard-mute now wired into runCheck per AE CRITICAL #4)
 - `cm:openai-key:{sub}` — encrypted-at-rest OpenAI key set via mod menu (Wave V)
-- `cm:rl:{bucket}:{sub}` — fixed-window rate-limit counter (1h TTL, X1)
-- `cm:cb:{bucket}:{failures,opened-at}` — circuit breaker state (X37)
+- `cm:rl:{bucket}:{sub}` + `cm:rl:{bucket}:{sub}:{username}` — fixed-window rate-limit counters (1h TTL, X1). Per-user layer added per AE Pull-Forward #7 closes the "malicious mod burns sub's whole quota" hole
+- `cm:cb:{bucket}:{failures,opened-at}` — circuit breaker state (X37, per-sub bucket per X43)
+- `cm:{sub}:stats:rollup:7d` — hourly snapshot, corrupt-key auto-deleted on parse-fail per AE Polish #6
 
 ## How AI agents should use this file
 
