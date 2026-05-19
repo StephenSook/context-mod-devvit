@@ -213,6 +213,7 @@ function AiExplainButton({ event }: { event: EventRecord }) {
       {state.loading && (
         <div
           className="cm-fade-in mt-2 p-2 rounded-sm bg-signal-info/5 border border-signal-info/20 space-y-1.5"
+          role="status"
           aria-live="polite"
           aria-label="AI explanation loading"
         >
