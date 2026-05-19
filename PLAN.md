@@ -98,8 +98,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 5.1 | AJV schema golden tests | `tests/config.test.ts` | **Vinh** | ⬜ | 1.2 | Fixture corpus from real CM configs |
-| 5.2 | Rule eval unit tests | `tests/rules/*.test.ts` | **Vinh** | ⬜ | 1.6, 4.* | Each rule covered |
+| 5.1 | AJV schema golden tests | `tests/core/config.test.ts`, `tests/config/default-config.test.ts`, `tests/config/starter-snippet.test.ts` | **Vinh** | ✅ 2026-05-19 | 1.2 | Stale-status backfill. Schema validates via parseConfig pipeline; covered by tests/core/config.test.ts + tests/config/default-config.test.ts (default install seed) + tests/config/starter-snippet.test.ts (EmptyState snippet pin, Polish #28). |
+| 5.2 | Rule eval unit tests | `tests/rules/*.test.ts` | **Vinh** | ✅ 2026-05-19 | 1.6, 4.* | Stale-status backfill. 8 rule test files green: attribution, author, history, imageRepost, recentActivity, regex, repost, ruleset. Plus filter tests + namedRules tests + handleActivity orchestrator tests. 749 total tests session-wide. |
 | 5.3 | E2E scenarios A–H on test sub | manual | **Stephen** | ⬜ | All prior | GIFs/screenshots → docs/demo-scenarios/ |
 | 5.4 | README polish + Fetch Domains section | `README.md` | **Stephen** | ⬜ | 5.3 | Devvit Rules requirement for fetch apps |
 | 5.5 | 60s demo video | YouTube unlisted | **Stephen** | ⬜ | 5.3 | OBS + Audacity + ffmpeg |

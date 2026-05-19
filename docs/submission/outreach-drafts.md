@@ -113,11 +113,11 @@ Notable paraphrase deltas:
 
 ---
 
-## 3. FoxxMD — optional quote ask (only if room left)
+## 3. FoxxMD — optional quote ask ✅ FoxxMD said YES 2026-05-19 per Stephen
 
-**Context:** Nice-to-have, not blocking. Bot username + WAU eligibility are confirmed; submission can ship without a personal quote. But a one-sentence FoxxMD endorsement in the Project Impact section helps Pillar 1.
+**Status:** FoxxMD confirmed YES to a quote 2026-05-19 (Stephen). Stephen will craft the quote in his own voice + get FoxxMD sign-off before the Devpost writeup section lands. Use a 1-2 sentence framing — short, declarative, no AI-tone words.
 
-**Send:** May 25-27, 2026 only IF Stephen has already moved technical discussion to GitHub issues for at least a week (so it doesn't read as a marketing ask). Otherwise skip.
+**Context (kept for audit trail):** Nice-to-have, not blocking. Bot username + WAU eligibility are confirmed; submission can ship without a personal quote. The endorsement strengthens Project Impact / Pillar 1.
 
 ```
 hey, one more thing — totally fine to say no. when i write up the project impact section for devpost, would you be cool if i pulled a one or two sentence quote from this thread (or wrote one and got your sign-off)? something like "i've been running CM since 2019, this port unblocks the 15+ operators stuck on dying infra" — your framing, your call. zero pressure if you'd rather i just describe the technical port and skip the quote.
@@ -194,11 +194,11 @@ thanks to:
 
 ---
 
-## 6. r/Devvit MID-HACKATHON progress post (2026-05-17, T-10)
+## 6. r/Devvit MID-HACKATHON progress post — ✂️ CANCELLED 2026-05-19 (Stephen call)
 
-**Context:** Now that v0.2.0 is in Reddit App Directory review + Phase 1+2+3 shipped, post to r/Devvit before submission day to (a) get eyes on the build w/ time to iterate on feedback, (b) plant a "this is a real port" signal vs the eventual AI-marketing wave that hits r/Devvit during hackathon week, (c) recruit playtesters from the active sub before May 27. Different post from §3 (early "is this the right path" check) and §5 (post-submission announcement).
+**Status:** CANCELLED. Stephen decision 2026-05-19 (T-8): project is basically complete; the mid-hackathon "looking for playtest feedback" framing no longer matches reality (no iteration room before submission). Operator outreach DMs will land POST-launch as the §5 submission-day announcement + a separate cold-DM to the 15+ FoxxMD operator pool. Skip this section entirely.
 
-**Send:** May 22–26 window (T-5 to T-1). After is too late for community feedback to iterate on; before is too early. Skip if r/Devvit moderator policy disallows project posts. (Original draft window was 5/17-20 against the May 20 target; refreshed for May 27 hard deadline.)
+**Original context (preserved for audit trail):** Post to r/Devvit before submission day to get playtest eyeballs + recruit testers. Send window was originally May 22-26 (T-5 to T-1) for the May 27 deadline. Cancelled because §5 covers the same audience after submission + operator-pool DM is the higher-leverage move once everything is verified live.
 
 **Pre-paraphrase draft (~500 words; Stephen cuts ~50% per outreach paraphrase pattern):**
 
