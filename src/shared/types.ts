@@ -385,15 +385,34 @@ export interface CheckResult {
   actions: Action[]; // empty when triggered = false
 }
 
-export interface RunResult {
+// AE Polish #96: type-design-analyzer #3 — RunResult as a tagged
+// discriminated union. Pre-Polish, three correlated optional fields
+// (`terminated`, `lastCheckName`, `missingGotoTarget`) co-existed on
+// one interface, so the type system permitted invalid states like
+// `{ terminated: 'goto-missing', lastCheckName: undefined }` or
+// `{ terminated: 'iteration-limit', missingGotoTarget: 'foo' }`.
+// Tagged sub-union encodes the correlations:
+//   - terminated=undefined ⇒ no other termination fields
+//   - terminated='iteration-limit' ⇒ lastCheckName required, no missingGotoTarget
+//   - terminated='goto-missing' ⇒ BOTH lastCheckName AND missingGotoTarget required
+// Producers (runRun) and consumers (handleActivity termination logger)
+// get exhaustive TS narrowing for free.
+export type RunResultBase = {
   triggered: boolean;
   checkName: string;
-  actions: Action[]; // actions to fire when triggered === true
-  terminated?: 'iteration-limit' | 'goto-missing';
-  lastCheckName?: string; // populated when terminated set
-  /** X47: target name when terminated === 'goto-missing'. */
-  missingGotoTarget?: string;
-}
+  actions: Action[];
+};
+export type RunResultActive = RunResultBase & { terminated?: undefined };
+export type RunResultIterationLimit = RunResultBase & {
+  terminated: 'iteration-limit';
+  lastCheckName: string;
+};
+export type RunResultGotoMissing = RunResultBase & {
+  terminated: 'goto-missing';
+  lastCheckName: string;
+  missingGotoTarget: string;
+};
+export type RunResult = RunResultActive | RunResultIterationLimit | RunResultGotoMissing;
 
 export interface ActionResult {
   status: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
