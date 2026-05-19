@@ -10,6 +10,35 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Tested — direct unit coverage
 
+- **AE Polish #34: `App.tsx` React-level state-machine tests** —
+  previously only sub-components had test coverage (Header / FilterChips
+  / EventDetails / etc.) but the top-level App's poll-loop + initialLoad
+  gating was untested. The Polish #2 (ErrorBanner suppression) +
+  Polish #3 (OnboardingTour suppression) invariants are load-bearing for
+  judge UX at t=0, so a regression that re-enabled either banner at
+  first paint would silently break the install-impression UI. +6 tests
+  via React Testing Library covering: initialLoad suppresses
+  ErrorBanner even when API errors, initialLoad suppresses
+  OnboardingTour even when hasSeenTour()=false, Header chrome renders
+  on first paint (no blank flash), happy-path events count shows up,
+  no demo-hint when ?demo=1 absent. 697 tests green.
+
+- **AE Polish #33: `configSource.ts` SKIP — 10 tests already cover
+  every edge** — audited as part of Phase A2 hunt. Pre-existing
+  `tests/core/configSource.test.ts` covers happy path, not-found,
+  parse-failed (JSON5 + AJV), unreachable, 404-shaped, auth/permission,
+  breaker-open short-circuit, recordFailure-only-on-unreachable, and
+  recordSuccess-on-happy-and-parse-failed. No new tests needed.
+
+- **AE Polish #32: `scheduler.ts` cron handler tests (3 endpoints)** —
+  previously uncovered. The `acquireLock` single-flight invariant is
+  load-bearing: overlapping cron invocations could double-publish a
+  config + race the W4 monotonic-pointer guard. +16 tests covering
+  `/refresh-config` (6 paths: lock-fail / no-installId / no-subname /
+  wiki-load-fail / no-change / publish + the CRITICAL finally-release
+  on publish throw), `/stats-rollup` (4 paths), `/image-hash-worker`
+  (5 paths including fail-OPEN on decode + blockhash throws).
+
 - **AE Polish #31: `demo-fixtures.ts` shape + privacy + frozen-mutation
   guard** — judge-visible module (every `?demo=1` URL serves it) had
   no direct test coverage. A drift here would silently break the
