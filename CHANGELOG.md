@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — React 18 hygiene
+
+- **AE Polish #39: setTimeout cleanup in `ActionBar` + `EmptyState`**
+  — caught during Phase F sweep. Three `setTimeout` sites without
+  `clearTimeout` cleanup:
+  - `ActionBar.handleReload`: 1.5s flash-clear timer
+  - `ActionBar.handleExport`: 1.5s flash-clear timer
+  - `EmptyState.handleCopy`: 2s copy-button reset timer
+  Symptom: rapid double-click fires two timers (first one clears the
+  flash early, second is a no-op); component unmount during the
+  pending window (which happens for EmptyState when a poll lands w/
+  new events → `events.length > 0` → EmptyState unmounts) fires
+  setState on an unmounted component, producing React 18 console
+  warnings on every install that successfully receives its first
+  events. Fix: `useRef` to track the active timer + `useEffect`
+  cleanup on unmount + cancel-then-reschedule on each new click.
+  718 tests still green.
+
 ### CRITICAL — production data path
 
 - **AE Polish #38: `/api/stats` wire-shape mismatch — dashboard never

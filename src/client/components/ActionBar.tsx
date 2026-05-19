@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { RefreshCw, FileText, ExternalLink, Download } from 'lucide-react';
 import type { EventRecord } from '../lib/types';
 import { eventsToCsv, csvFilename } from '../lib/csv-export';
@@ -29,6 +29,24 @@ export function ActionBar({
 }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  // AE Polish #39: track flash-clear timeout so a rapid second click cancels
+  // the pending clear (otherwise both timers fire — first clears, second
+  // no-ops on already-null flash) AND so an unmount during the 1.5s window
+  // doesn't fire setState on an unmounted component (React 18 warning).
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    };
+  }, []);
+
+  function scheduleFlashClear() {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => {
+      setFlash(null);
+      flashTimerRef.current = null;
+    }, 1500);
+  }
 
   const handleReload = async () => {
     if (busy) return;
@@ -37,7 +55,7 @@ export function ActionBar({
     try {
       await onReload();
       setFlash('refreshed');
-      setTimeout(() => setFlash(null), 1500);
+      scheduleFlashClear();
     } finally {
       setBusy(false);
     }
@@ -47,7 +65,7 @@ export function ActionBar({
     if (events.length === 0) return;
     downloadCsv(events, subreddit);
     setFlash('exported');
-    setTimeout(() => setFlash(null), 1500);
+    scheduleFlashClear();
   };
 
   const wikiUrl = `https://www.reddit.com/r/${subreddit}/wiki/botconfig/contextmod`;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Clipboard, Check } from 'lucide-react';
 import { STARTER_CONFIG_SNIPPET } from '../lib/starter-snippet';
 
@@ -6,12 +6,27 @@ const COPY_RESET_MS = 2000;
 
 export function EmptyState({ subreddit }: { subreddit: string }) {
   const [copied, setCopied] = useState(false);
+  // AE Polish #39: track the copy-reset timeout so a rapid second click
+  // cancels the pending reset (cleaner UX) AND so an unmount during the
+  // 2s window (which CAN happen — poll lands w/ new events → events.
+  // length>0 → EmptyState unmounts) doesn't fire setState on an
+  // unmounted component (React 18 warning).
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(STARTER_CONFIG_SNIPPET);
       setCopied(true);
-      setTimeout(() => setCopied(false), COPY_RESET_MS);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimerRef.current = null;
+      }, COPY_RESET_MS);
     } catch {
       // navigator.clipboard unavailable in this iframe context — silent. The
       // user can still select-and-copy the visible <pre> block manually.
