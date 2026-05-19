@@ -28,12 +28,15 @@
   "dependencies": {
     "@hono/node-server": "^1.19.9",
     "ajv": "^8.17.1",
+    "blockhash-core": "^0.1.0",
     "hono": "^4.12.19",
+    "jpeg-js": "^0.4.4",
     "json5": "^2.2.3",
     "lucide-react": "^1.14.0",
     "mustache": "^4.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "upng-js": "^2.1.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

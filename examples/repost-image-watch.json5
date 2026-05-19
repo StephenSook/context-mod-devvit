@@ -1,0 +1,64 @@
+// Phase 4.7 — image-repost detection via perceptual blockhash.
+//
+// Catches users re-posting the same image (or a near-duplicate — a JPEG
+// recompression, mild crop, small color shift). Uses upstream CM's blockhash
+// approach via pure-JS pipeline (upng-js + jpeg-js + blockhash-core) — no
+// native deps, runs inside Devvit's 30s/no-binding constraints.
+//
+// **SHIP THIS BEHIND dryRun: true** until your sub has watched the dry-run
+// feed for a few days. Image-repost false-positives nuke legit crossposts,
+// daily-thread imagery, meme remixes — the rule is intentionally loose. Mods
+// opt into live mode after the feed shows the matches they expect.
+//
+// Threshold notes (Vinh's 0.10 spike, 2026-05-18):
+//   - 0-2 bits: near-identical (same image, different JPEG compression)
+//   - 3-5 bits: same composition, minor crop / color shift
+//   - 6-8 bits: "same image" by upstream CM convention
+//   - 9+ bits: usually different images
+// Default 8 = within upstream's threshold. Tighten to 5 for stricter match
+// (less recall but fewer FPs); loosen to 12 for aggressive dedupe.
+//
+// Demo storyline (judges): mod installs → submits a known image → submits
+// the same image again 30 seconds later → bot fires comment "this image
+// was posted recently (matched t3_xxx)".
+
+{
+  dryRun: true,
+  runs: [
+    {
+      name: 'image-repost-watch',
+      checks: [
+        {
+          name: 'duplicate-image-detected',
+          combinator: 'AND',
+          // Skip self-posts (the rule body uses item.imageUrl which is only
+          // populated for link posts with a preview-redd.it variant); the
+          // filter just makes the intent explicit + cheap-fails early.
+          filters: { itemIs: { isSelf: false } },
+          rules: [
+            {
+              kind: 'imageRepost',
+              name: 'image-blockhash-match',
+              hammingThreshold: 8, // upstream CM "same image" default
+              windowDays: 30,
+            },
+          ],
+          actions: [
+            {
+              kind: 'comment',
+              template:
+                "Hey {{author.nameSafe}} 👋 — this image looks like a repost from the last 30 days. " +
+                'Mods reviewing this and removing if duplicate. Original poster context preserved in mod log.',
+              dryRun: true, // belt-and-suspenders per-action gate
+            },
+            {
+              kind: 'report',
+              reason: 'Possible image repost (perceptual hash match)',
+            },
+          ],
+          postBehavior: 'stop',
+        },
+      ],
+    },
+  ],
+}

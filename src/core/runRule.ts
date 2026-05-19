@@ -18,6 +18,7 @@ import { runRepostRule } from '../rules/repost';
 import { runHistoryRule } from '../rules/history';
 import { runAttributionRule } from '../rules/attribution';
 import { runRecentActivityRule } from '../rules/recentActivity';
+import { runImageRepostRule } from '../rules/imageRepost';
 
 export async function runRule(
   rule: Rule,
@@ -40,6 +41,8 @@ export async function runRule(
       return runAttributionRule(rule, author.name, sub);
     case 'recentActivity':
       return runRecentActivityRule(rule, author.name, sub);
+    case 'imageRepost':
+      return runImageRepostRule(rule, item, sub);
     case 'named':
       throw new Error(
         `runRule: encountered un-expanded named rule "${rule.name}" — expandNamedRules must run at config-parse time`

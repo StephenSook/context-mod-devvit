@@ -1,0 +1,137 @@
+/**
+ * Phase 4.7 — imageHashStore regression suite.
+ *
+ * Pins: findSimilar within threshold + above threshold; recordHash prepends
+ * + caps at MAX_ENTRIES + dedupes by postId; fail-OPEN on Redis errors.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const store = new Map<string, string>();
+vi.mock('@devvit/web/server', () => ({
+  redis: {
+    get: vi.fn(async (k: string) => store.get(k) ?? null),
+    set: vi.fn(async (k: string, v: string) => {
+      store.set(k, v);
+      return 'OK';
+    }),
+  },
+}));
+
+import { findSimilar, recordHash } from '../../src/state/imageHashStore';
+
+const KEY = 'cm:test_sub:img:hash:recent';
+
+beforeEach(() => {
+  store.clear();
+  vi.clearAllMocks();
+});
+
+describe('imageHashStore.findSimilar', () => {
+  it('returns null when store is empty', async () => {
+    const r = await findSimilar('a'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
+
+  it('returns match when within threshold', async () => {
+    // '0'^64 stored, query '1' at last position → 1-bit distance, threshold 8
+    store.set(
+      KEY,
+      JSON.stringify([{ postId: 't3_a', hash: '0'.repeat(64), ts: Date.now() }])
+    );
+    const r = await findSimilar('0'.repeat(63) + '1', 8, 'test_sub');
+    expect(r).not.toBeNull();
+    expect(r?.entry.postId).toBe('t3_a');
+    expect(r?.distance).toBe(1);
+  });
+
+  it('returns null when above threshold', async () => {
+    // Store all-0, query all-f → 256 bits distance, threshold 8 → no match
+    store.set(
+      KEY,
+      JSON.stringify([{ postId: 't3_a', hash: '0'.repeat(64), ts: Date.now() }])
+    );
+    const r = await findSimilar('f'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
+
+  it('AE Phase 4.7: skips entries with wrong hash length (corruption-tolerant)', async () => {
+    store.set(
+      KEY,
+      JSON.stringify([
+        { postId: 't3_bad', hash: 'short', ts: Date.now() },
+        { postId: 't3_a', hash: '0'.repeat(64), ts: Date.now() },
+      ])
+    );
+    const r = await findSimilar('0'.repeat(64), 0, 'test_sub');
+    expect(r?.entry.postId).toBe('t3_a');
+  });
+
+  it('AE Phase 4.7: fail-OPEN on Redis throw — returns null, no crash', async () => {
+    const { redis } = await import('@devvit/web/server');
+    vi.spyOn(redis, 'get').mockRejectedValueOnce(new Error('redis down'));
+    const r = await findSimilar('0'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
+});
+
+describe('imageHashStore.recordHash', () => {
+  it('prepends new entry to empty store', async () => {
+    await recordHash(
+      { postId: 't3_a', hash: '0'.repeat(64), ts: 100 },
+      30 * 86400,
+      'test_sub'
+    );
+    const raw = store.get(KEY)!;
+    const parsed = JSON.parse(raw);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].postId).toBe('t3_a');
+  });
+
+  it('dedupes by postId so same post re-record does not bloat the list', async () => {
+    await recordHash(
+      { postId: 't3_a', hash: '0'.repeat(64), ts: 100 },
+      30 * 86400,
+      'test_sub'
+    );
+    await recordHash(
+      { postId: 't3_a', hash: 'f'.repeat(64), ts: 200 },
+      30 * 86400,
+      'test_sub'
+    );
+    const parsed = JSON.parse(store.get(KEY)!);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].hash).toBe('f'.repeat(64)); // most-recent wins
+  });
+
+  it('caps at MAX_ENTRIES (500) — tail entry falls off on prepend', async () => {
+    // Pre-seed 500 entries indexed t3_0..t3_499. recordHash prepends the new
+    // one and slice(0, 500) keeps the first 500 → t3_499 (the tail) is the
+    // one that gets evicted. The store is a recency-ordered list, not a
+    // FIFO queue — most-recent-first, so "oldest" is the index-N entry.
+    const seed = Array.from({ length: 500 }, (_, i) => ({
+      postId: `t3_${i}`,
+      hash: i.toString(16).padStart(64, '0'),
+      ts: i,
+    }));
+    store.set(KEY, JSON.stringify(seed));
+    await recordHash(
+      { postId: 't3_new', hash: 'a'.repeat(64), ts: 999 },
+      30 * 86400,
+      'test_sub'
+    );
+    const parsed = JSON.parse(store.get(KEY)!);
+    expect(parsed).toHaveLength(500);
+    expect(parsed[0].postId).toBe('t3_new');
+    // t3_499 (was at seed[499], now at index 500 before slice → dropped)
+    expect(parsed.find((e: { postId: string }) => e.postId === 't3_499')).toBeUndefined();
+    // t3_0 was at seed[0], now at index 1 → still kept
+    expect(parsed.find((e: { postId: string }) => e.postId === 't3_0')).toBeDefined();
+  });
+
+  it('no-op on empty postId or hash (defense)', async () => {
+    await recordHash({ postId: '', hash: '0'.repeat(64), ts: 100 }, 30 * 86400, 'test_sub');
+    await recordHash({ postId: 't3_a', hash: '', ts: 100 }, 30 * 86400, 'test_sub');
+    expect(store.get(KEY)).toBeUndefined();
+  });
+});

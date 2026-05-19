@@ -18,6 +18,7 @@ export default defineConfig([
       'src/state/**/*.{ts,tsx,mjs,cjs,js}',
       'src/actions/**/*.{ts,tsx,mjs,cjs,js}',
       'src/config/**/*.{ts,tsx,mjs,cjs,js}',
+      'src/image/**/*.{ts,tsx,mjs,cjs,js}',
       'src/index.ts',
     ],
     languageOptions: {

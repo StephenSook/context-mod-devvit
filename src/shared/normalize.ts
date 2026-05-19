@@ -33,6 +33,19 @@ export interface PostSubmitPayload {
     createdAt?: number | string;
     linkFlair?: { text?: string };
     isSelf?: boolean;
+    /**
+     * Phase 4.7 — Reddit's preview.redd.it resolutions for image posts. Per
+     * Vinh's 0.10 spike, the smallest variant >=320px gives 0-2/256 bit
+     * blockhash drift vs full-res at ~5MB peak RAM (vs 180MB for full 4K).
+     * preview URLs are Reddit-signed (s=<sig>) so they MUST be read off the
+     * trigger payload, not synthesized.
+     */
+    preview?: {
+      images?: {
+        resolutions?: { width?: number; height?: number; url?: string }[];
+        source?: { width?: number; height?: number; url?: string };
+      }[];
+    };
   };
   author?: { id?: string; name?: string };
   subreddit?: { name?: string };
@@ -73,6 +86,36 @@ function ageSeconds(createdAt: number | string | undefined): number {
   const ms = typeof createdAt === 'number' ? createdAt : Date.parse(createdAt);
   if (!Number.isFinite(ms)) return 0;
   return Math.max(0, Math.floor((Date.now() - ms) / 1000));
+}
+
+/**
+ * Phase 4.7 — pick the best preview.redd.it variant for blockhashing. Per
+ * Vinh's 0.10 spike measurements: the largest variant with width ≤ 640 hits
+ * the sweet spot — 0-2/256 bit hash drift vs full-res at <5MB peak RAM.
+ * Smaller (320) works too (same fidelity), but 640 gives the decoder more
+ * signal for the 16x16 blockhash grid. Returns undefined for non-image posts
+ * or posts w/o preview metadata. Falls back to i.redd.it post.url ONLY when
+ * the URL itself is an i.redd.it image — never blindly returns post.url
+ * because that could be a 4K-JPEG-or-external-URL that bypasses the RAM
+ * ceiling.
+ */
+function pickPreviewVariant(p: NonNullable<PostSubmitPayload['post']>): string | undefined {
+  const resolutions = p.preview?.images?.[0]?.resolutions ?? [];
+  const fitted = resolutions
+    .filter((r): r is { width: number; height: number; url: string } =>
+      typeof r?.url === 'string' && typeof r.width === 'number' && r.width > 0
+    )
+    .sort((a, b) => a.width - b.width);
+  // Largest ≤640px. If all are larger, fall back to the smallest available.
+  const optimal = fitted.filter((r) => r.width <= 640).pop() ?? fitted[0];
+  if (optimal) return optimal.url;
+  // Fallback: post.url is an i.redd.it image. Bytes are capped in decode.ts
+  // so the worst case for a 4K JPEG is decode-time RAM still bounded.
+  const url = p.url ?? '';
+  if (/^https:\/\/i\.redd\.it\//i.test(url) && /\.(jpe?g|png)(\?|$)/i.test(url)) {
+    return url;
+  }
+  return undefined;
 }
 
 // Author enrichment.
@@ -234,6 +277,8 @@ export async function normalizePost(
     stickied: p.stickied ?? false,
     linkFlairText: p.linkFlair?.text ?? null,
   };
+  const preview = pickPreviewVariant(p);
+  if (preview) item.imageUrl = preview;
   return {
     item,
     author,

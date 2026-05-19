@@ -43,6 +43,14 @@ export const K = {
   // Author cache (Phase 4).
   authorHist: (name: string, sub: string = SUB_DEFAULT) => `cm:${sub}:author:hist:${name}`,
 
+  // Image-hash store (Phase 4.7). Single JSON-list key per sub holding the
+  // last N {postId, hash, ts} entries (cap 500, 30d TTL refresh on write).
+  // No LSH for v1 — at 500 entries each lookup is O(N) Hamming distance
+  // comparisons, measured ~30-50ms per query in Vinh's spike. Acceptable
+  // for hackathon; LSH band-indexing can layer on top of this same key
+  // shape post-MVP without a schema change.
+  imgHashRecent: (sub: string = SUB_DEFAULT) => `cm:${sub}:img:hash:recent`,
+
   // Stats rollup (Phase 4).
   statsRollup: (sub: string = SUB_DEFAULT) => `cm:${sub}:stats:rollup:7d`,
 

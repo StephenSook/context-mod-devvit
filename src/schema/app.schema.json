@@ -68,7 +68,8 @@
         { "$ref": "#/definitions/RepostRule" },
         { "$ref": "#/definitions/HistoryRule" },
         { "$ref": "#/definitions/AttributionRule" },
-        { "$ref": "#/definitions/RecentActivityRule" }
+        { "$ref": "#/definitions/RecentActivityRule" },
+        { "$ref": "#/definitions/ImageRepostRule" }
       ]
     },
     "RegexRule": {
@@ -165,6 +166,17 @@
         "subreddits":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
         "postCountGt":      { "type": "number", "minimum": 0 },
         "commentCountGt":   { "type": "number", "minimum": 0 }
+      }
+    },
+    "ImageRepostRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind":               { "const": "imageRepost" },
+        "name":               { "type": "string" },
+        "hammingThreshold":   { "type": "number", "minimum": 0, "maximum": 256 },
+        "windowDays":         { "type": "number", "minimum": 1, "maximum": 365 }
       }
     },
     "FilterSpec": {

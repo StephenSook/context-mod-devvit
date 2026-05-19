@@ -26,6 +26,14 @@ export interface Item {
   linkFlairText: string | null;
   depth?: number; // comments only
   op?: boolean; // comment was authored by OP
+  /**
+   * Phase 4.7 — preview-variant image URL for ImageRepostRule. Populated by
+   * normalize.ts when the V2 payload carries `post.preview.images[].resolutions[]`.
+   * Selected variant is the largest whose width ≤ 640 (Vinh's optimal RAM
+   * zone — 0-2/256 bit hash drift vs full-res, <5MB peak vs 180MB for 4K).
+   * Undefined when post is not an image / has no preview.
+   */
+  imageUrl?: string;
 }
 
 export interface Author {
@@ -181,6 +189,27 @@ export interface RecentActivityRule {
   commentCountGt?: number;
 }
 
+/**
+ * Phase 4.7 — Image-repost detection via perceptual blockhash (gated on
+ * 0.10 spike). Vinh's spike landed clean GO 2026-05-18 (commits 00feca5 +
+ * 19e94f0): pure-JS pipeline (upng-js + jpeg-js + blockhash-core) decodes
+ * preview.redd.it 320-640px variants in <1s + <5MB peak RAM + 0-2/256 bit
+ * fidelity vs full-res (within the 5-8 bit "same image" threshold).
+ *
+ * Triggers when a new image post's perceptual hash matches a recently-seen
+ * hash from the same sub within `hammingThreshold` bits. Sub-scoped store;
+ * fail-OPEN on decode/Reddit/Redis errors (image-repost is a soft signal,
+ * not a safety gate — same fail-open posture as RepostRule).
+ */
+export interface ImageRepostRule {
+  kind: 'imageRepost';
+  name?: string;
+  /** Default 8 — within upstream CM's "same image" threshold (5-8/256 bits). */
+  hammingThreshold?: number;
+  /** Default 30 — match window in days. Older hashes are TTL-evicted. */
+  windowDays?: number;
+}
+
 export type Rule =
   | RegexRule
   | AuthorRule
@@ -189,7 +218,8 @@ export type Rule =
   | RepostRule
   | HistoryRule
   | AttributionRule
-  | RecentActivityRule;
+  | RecentActivityRule
+  | ImageRepostRule;
 
 // Action shapes — runtime dispatch lives in src/actions/*.
 export interface RemoveAction {
