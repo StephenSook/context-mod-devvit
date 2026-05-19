@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { EventRecord } from '../lib/types';
 import { actionMarker } from '../lib/csv-export';
+import { extractServerError } from '../lib/api';
 
 /**
  * Expanded drill-down panel for an EventRow (S2 Wave).
@@ -184,6 +185,21 @@ function AiExplainButton({ event }: { event: EventRecord }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event: eventSummary }),
       });
+      // AE Polish #69: silent-failure-hunter MEDIUM finding — previously
+      // we did `const data = await res.json()` unconditionally. When the
+      // route returns HTML (Hono default 500 page, App-Server unhandled
+      // exception, reverse-proxy gateway error), res.json() throws
+      // "Unexpected token <" and that raw parser error landed in the
+      // user-facing error state via the outer catch — mods saw
+      // JSON-parse-noise instead of the actual server failure. Mirror
+      // the api.ts pattern: check res.ok first; on non-ok, extract via
+      // the shared helper which gracefully falls back to "HTTP <status>"
+      // when the body isn't structured JSON.
+      if (!res.ok) {
+        const msg = await extractServerError(res);
+        setState({ loading: false, error: msg });
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         setState({ loading: false, explanation: data.explanation });
