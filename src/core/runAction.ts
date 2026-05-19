@@ -46,6 +46,43 @@ import { runDistinguish } from '../actions/distinguish';
  * (e.g. ban duration, comment template) — dryRun is intentionally excluded so a
  * dry-run and a real run for the same logical action collide on the `done` marker.
  */
+// AE Polish #82: gemini brutal-audit P2-1. Distinguish RETRYABLE failures
+// (network blip, Reddit 5xx, transient rate-limit) from NON-RETRYABLE
+// failures (deterministic 4xx: post already removed, comment locked,
+// target user already banned). Pre-Polish, the catch at runAction:182
+// always called releaseAction → next event for the same activity would
+// retry the action against a target that will deterministically fail
+// the same way. Worst case: the pending TTL (5min) gates the retry, so
+// it's not infinite — but a mod editing the wiki to fix a misconfigured
+// rule had to wait out a 5min cooldown per actioned-thing.
+//
+// New behavior: on a non-retryable error, call commitAction (seal the
+// slot — done, no retry needed) instead of releaseAction. The action
+// recorded as status:'error' either way so the dashboard surfaces the
+// failure; the slot-seal just means we don't re-attempt a doomed call.
+//
+// Detection heuristic: Devvit's Reddit client errors carry message
+// strings derived from upstream HTTP responses. Match conservative
+// keywords that always indicate "this action will never succeed for
+// this target." When in doubt → retryable (preserves pre-Polish
+// safer-default behavior). False-positives (treating a retryable error
+// as non-retryable) cost ONE failed retry; false-negatives (treating
+// a non-retryable error as retryable) cost up to 5min of pending lease
+// + log noise. The keywords below are the conservative subset.
+const NON_RETRYABLE_PATTERNS = [
+  /\balready (removed|approved|locked|banned|distinguished|reported)\b/i,
+  /\b(post|comment|user|thing) (not found|does not exist|deleted)\b/i,
+  /\bHTTP 40[0-9]\b/, // generic 4xx fallback
+  /\b40[03-4]\s/, // 400 / 403 / 404 with trailing space (status-line shape)
+  /\bforbidden\b/i,
+  /\bunauthorized\b/i,
+];
+
+function isNonRetryableError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return NON_RETRYABLE_PATTERNS.some((p) => p.test(msg));
+}
+
 function payloadDigest(a: Action): string {
   switch (a.kind) {
     case 'remove':
@@ -173,6 +210,35 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
       // releasing would reopen the gate and cause double-action on retry.
       console.error(
         '[cm/runAction] side-effect succeeded but idempotency commit failed:',
+        action.kind,
+        ctx.item.id,
+        err
+      );
+      return { status: 'error', kind: action.kind };
+    }
+    // AE Polish #82: distinguish retryable vs non-retryable Reddit errors.
+    if (isNonRetryableError(err)) {
+      // Deterministic 4xx: post already removed / comment not found /
+      // user already banned / forbidden. Retrying would deterministically
+      // fail the same way. Seal the slot via commitAction so the next
+      // event for the same activity doesn't waste the 5-min pending TTL
+      // re-attempting. Side-effect didn't happen (sideEffectDone is
+      // false here) but committing is still correct because the failure
+      // is permanent for this {thingId, action, payload} key.
+      try {
+        await commitAction(aid, token, ctx.subredditName);
+      } catch (commitErr) {
+        // commitAction failure here is harmless — the pending lease will
+        // self-expire in 5min and a retry can proceed. Worst case
+        // identical to pre-Polish-#82 behavior (5min retry wait).
+        console.warn(
+          '[cm/runAction] non-retryable err — commitAction failed (harmless, pending TTL will reap):',
+          action.kind,
+          commitErr
+        );
+      }
+      console.error(
+        '[cm/runAction] non-retryable err — sealed slot, no retry:',
         action.kind,
         ctx.item.id,
         err

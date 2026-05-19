@@ -246,4 +246,63 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     expect(res.status).toBe('dry-run');
     expect(redditRemove).not.toHaveBeenCalled();
   });
+
+  // AE Polish #82: gemini brutal-audit P2-1. Non-retryable errors now
+  // commitAction (seal the slot) instead of releaseAction (retry). Avoids
+  // wasting the 5-min pending TTL on deterministic 4xx failures.
+  describe('Polish #82: non-retryable error path', () => {
+    it('seals slot via commitAction on "already removed" error', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('HTTP 400: post already removed'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      expect(res.status).toBe('error');
+      expect(commitAction).toHaveBeenCalled(); // sealed, not released
+      expect(releaseAction).not.toHaveBeenCalled();
+    });
+
+    it('seals slot on HTTP 404 not-found error', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('HTTP 404: comment not found'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      expect(res.status).toBe('error');
+      expect(commitAction).toHaveBeenCalled();
+      expect(releaseAction).not.toHaveBeenCalled();
+    });
+
+    it('seals slot on forbidden / unauthorized error', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('403 Forbidden: action not permitted'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      expect(res.status).toBe('error');
+      expect(commitAction).toHaveBeenCalled();
+      expect(releaseAction).not.toHaveBeenCalled();
+    });
+
+    it('STILL releases for retry on transient network error (retryable)', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('ECONNRESET'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      expect(res.status).toBe('error');
+      expect(releaseAction).toHaveBeenCalled();
+      // commitAction may have been called by the dry-run gate; what we
+      // care about is that releaseAction was the catch-side action.
+    });
+
+    it('STILL releases for retry on HTTP 5xx error (retryable)', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('HTTP 503: service unavailable'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      expect(res.status).toBe('error');
+      expect(releaseAction).toHaveBeenCalled();
+    });
+
+    it('non-retryable commitAction failure → harmless (logged, returns error anyway)', async () => {
+      reserveAction.mockResolvedValueOnce('tok_xyz');
+      redditRemove.mockRejectedValueOnce(new Error('HTTP 404: not found'));
+      commitAction.mockRejectedValueOnce(new Error('redis blip during seal'));
+      const res = await runAction({ kind: 'remove' }, ctx);
+      // Falls through to log warn, still returns error — pending TTL reaps.
+      expect(res.status).toBe('error');
+    });
+  });
 });
