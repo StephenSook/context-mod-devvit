@@ -10,6 +10,100 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
+AE Polish wave continued — 43 atomic polishes (#18-#71) shipped across
+this session covering 4 adversarial-review rounds (silent-failure-
+hunter, code-reviewer, gemini-agent, codex-rescue, vercel:performance-
+optimizer, type-design-analyzer) plus brain-dump audit work.
+
+### Fixed — Polish #62-#71 batch (post-CLS-audit continuation)
+
+- **AE Polish #62: CLS 0.328 → 0.04 layout-shift fix** — Lighthouse CLI
+  v13.3.0 surfaced a Cumulative Layout Shift of 0.328 (POOR; Google
+  threshold > 0.25) on the dashboard. 0.322 of that attributed to the
+  RECENT actions container — Polish #1's reserve-space pattern had
+  handled RuleStatsTable / RuleCountChips / ModActivityFeed but missed
+  four conditional renders above (StatsRow / Sparkline / FilterChips /
+  EventSearchInput) that all mounted on async-data arrival between FCP
+  and LCP. Fix: render StatsRow with ZERO_STATS fallback, reserve
+  sparkline 36px via minHeight wrapper, invisible-placeholder gate for
+  chips+search during initialLoad, `contain: layout` on recent-actions
+  container. Performance score 66 → 84, CLS POOR → GOOD (-87%),
+  Agentic-Browsing 45 → 66.
+
+- **AE Polish #63: /refresh-config logs+returns ignored on publish
+  failure** — silent-failure-hunter CRITICAL finding. configStore.publish
+  + redis.set(cfgLastWikiRev) at the bottom of /refresh-config ran with
+  NO try/catch. A PublishError propagated out as an unhandled 500 with
+  NO dashboard signal that the wiki → live-config sync had silently
+  stopped working. Mods would have seen "config silently stops auto-
+  updating" while the wiki kept changing. Fix mirrors the /stats-rollup
+  pattern: wrap in try/catch, log.error, return {status:'ignored'} so
+  the next 5-min tick retries cleanly. Critically the bad wiki rev is
+  NOT stamped at cfgLastWikiRev — otherwise the next tick would skip
+  ("no change") and the cluster never recovers.
+
+- **AE Polish #64: imageHashStore drops corrupt entries on read+write**
+  — silent-failure-hunter HIGH finding. findSimilar + recordHash trusted
+  JSON.parse'd entries unchecked beyond `hash.length`. A corrupt member
+  like `{postId: 999, hash: ..., ts: "yesterday"}` passed and persisted
+  forever, also mis-dedupe via `999 !== "t3_abc"`. Fix: isValidImageHashEntry
+  validator mirroring isValidRecentEventShape — applied on both read +
+  write paths. Bad entries dropped silently; store self-heals on next
+  write. 3 regression tests added.
+
+- **AE Polish #65: getRecentRevs explicit Redis fail-safe** —
+  silent-failure-hunter HIGH finding. No try/catch around bare redis.get
+  for cfgCurrentRev pointer + per-rev payload. Redis blip on
+  /api/config-history surfaced "HTTP 500" with no actionable detail.
+  Pattern divergence with getCurrentRev (explicit Error throws). Fix:
+  wrap pointer read (return [] on throw) + each per-rev read (skip +
+  continue scanning older revs). 2 regression tests added.
+
+- **AE Polish #66: derive client ActionKind from server Action union**
+  — type-design-analyzer top-1 fix. Hand-mirrored client ActionKind
+  union drifted — Polish #53 had to back-port `'distinguish'` after it
+  shipped server-side. Fix: `export type ActionKind = Action['kind']`
+  in shared/types.ts; client imports it. Adding new action variants
+  flows automatically; forgetting client KIND_ICON / KIND_COLOR / chip
+  entry is a compile error instead of runtime fallback.
+
+- **AE Polish #67: split zAdd + zRemRangeByRank logs in recordEvent**
+  — silent-failure-hunter MEDIUM finding. Shared catch logged "event
+  dropped" even when zAdd succeeded but trim failed (event was actually
+  persisted). Misleading for telemetry. Fix: split into two try blocks
+  with accurate per-failure log messages.
+
+- **AE Polish #68: wrap /api/recent + /api/stats reads defensively**
+  — silent-failure-hunter MEDIUM finding. readRecent / readStatsSnapshot
+  outer wraps handled the Redis call sites, but a synchronous pre-try
+  throw (key arg construction, import-time error) propagated to Hono's
+  default HTML 500 page. Client extractServerError threw "Unexpected
+  token <" instead of surfacing the actual server failure. Fix: outer
+  try/catch returns structured 503 envelopes both routes can parse.
+
+- **AE Polish #69: EventDetails uses extractServerError for explain-
+  event** — silent-failure-hunter MEDIUM finding. Previously
+  `await res.json()` was unconditional — HTML response (e.g. Hono 500)
+  threw "Unexpected token <" into the user-visible error state. Fix:
+  check res.ok first; non-ok routes through the shared extractServerError
+  helper (Polish #58 already exported it).
+
+- **AE Polish #70: narrow ActionResult.kind to ActionKind** —
+  type-design-analyzer top-5 fix. `kind: string` allowed any string;
+  same drift-elimination motive as Polish #66. Narrow to the derived
+  ActionKind union so misspelled kinds at emit sites surface as
+  compile errors.
+
+- **AE Polish #71: pin Date.now() in statsRollup bucket-math tests**
+  — CI green-verify caught Node-24-specific test failure on slow
+  runners. Race between test's `Date.now()` and computeStats's
+  internal `Date.now()` (delta ≥ 1ms put an event into bucket 18
+  instead of 19). Polish #43's boundary test had the same race.
+  Fix: vi.useFakeTimers + vi.setSystemTime around both, try/finally
+  restores real timers.
+
+### Pre-existing Polish #18-#54 batch
+
 AE Polish wave continued — 33 atomic polishes (#18-#54) shipped across
 this session covering 3 adversarial-review rounds (silent-failure-
 hunter, code-reviewer, gemini-agent) plus brain-dump audit work.
