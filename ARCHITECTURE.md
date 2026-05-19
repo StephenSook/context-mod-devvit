@@ -137,6 +137,32 @@ Every mutation endpoint, every form-submit, every mod-data GET, every cost-beari
 
 ---
 
+## 8.5. Per-event run isolation + wall-clock timeouts (AE Polish #41/#42/#47/#48)
+
+**Context.** `handleActivity` orchestrates every triggered event: for each run in the config, evaluate via `runRun` → if triggered, dispatch each action via `runAction`. Originally both loops awaited synchronously w/o any per-iteration error containment. Two distinct silent-failure vectors emerged during the AE adversarial review wave:
+
+1. **Throws from inside a rule path bubbled up + aborted the run loop.** `runRule → runCheck → runRun` have NO catches — a transient Reddit/Redis/OpenAI throw inside a Phase-4 rule (history/attribution/recentActivity/imageRepost) would propagate up + kill runs N+1 for the same event. Polish #41 added per-run try/catch.
+
+2. **A Promise that NEVER resolves stalls the loop indefinitely.** Polish #41's try/catch guards throws but not hangs. A `await redis.get(...)` against a stuck connection, an ungated `fetch()` in `imageRepost`, or any future external call that returns a non-rejecting infinite-wait Promise would block until Devvit's platform request timeout fired silently. Polish #42 added per-run `Promise.race` against a 10s ceiling, Polish #47 added the same to the per-action loop (8s ceiling — Reddit mod API SLA is sub-second).
+
+**Decision.** Three layered defenses, all expressed via one shared primitive:
+
+1. **`src/lib/timeout.ts`** — `withTimeout(p, ms, errFactory)`, `runWithTimeout(p, runName)`, `actionWithTimeout(p, kind)`. Tagged-error classes `RunTimeoutError` + `ActionTimeoutError` so caller catch blocks differentiate timeout from throw via `instanceof`. Constants `PER_RUN_TIMEOUT_MS = 10_000` + `PER_ACTION_TIMEOUT_MS = 8_000`.
+
+2. **Per-run try/catch in `src/core/handleActivity.ts`** — wraps `await runWithTimeout(runRun(...))`. On throw OR timeout: log + `recordEvent` w/ `checkName = '(run-error)'` or `'(run-timeout)'` (tagged distinctly via `instanceof RunTimeoutError`) + `continue` to next run. Runs N+1 always evaluate.
+
+3. **Per-action try/catch** — wraps `await actionWithTimeout(runAction(...))`. On throw/timeout: push `actionResults` entry w/ `status: 'error'` + `wouldHaveCalled: msg.slice(0, 200)` + `continue` to next action. Pre-Polish-#47 the action loop was unguarded — same hang vector one level deeper.
+
+**Sibling orchestrator parity.** `src/core/dryRunActivity.ts` (mod-menu "Test rules on this item" form) had the same hang vectors pre-Polish-#48. Polish #48 extracted the primitive to `src/lib/timeout.ts` so both orchestrators share semantics. A mod sees consistent behavior regardless of whether they trigger via post-submit (live) or mod-menu (dry-run).
+
+**Alternatives.** Bare `AbortController` (works for `fetch` but not for an `await redis.get` that doesn't accept signal). Per-rule timeouts (would require threading signal through every rule + state read). Global per-event timeout (loses per-iteration granularity for diagnostics — can't tell which run hung).
+
+**Consequences.** Slowest legit path is `imageRepost` (8s internal fetch timeout + 6MB cap, Polish #23). 10s per-run + 8s per-action gives generous headroom on the slowest legit path while bounding adversarial-case wall time. Test files: `tests/core/handleActivity-run-isolation.test.ts` + `tests/core/dryRunActivity-isolation.test.ts` + `tests/lib/timeout.test.ts`.
+
+**Related.** [`src/lib/timeout.ts`](./src/lib/timeout.ts), [`src/core/handleActivity.ts`](./src/core/handleActivity.ts), [`src/core/dryRunActivity.ts`](./src/core/dryRunActivity.ts), [`src/state/recentEvents.ts`](./src/state/recentEvents.ts) (recordEvent target for run-error/run-timeout/action-error rows).
+
+---
+
 ## 9. Per-sub rate limit + per-sub circuit breaker on every external HTTP call (X1+X37+X43+X46)
 
 **Context.** Each `/api/explain-event` click costs OpenAI tokens. A mod hitting "Explain with AI" on every event in a busy sub could burn an entire monthly quota in an afternoon. A sustained OpenAI outage would have the same effect — every retry burns. And every wiki refresh-config tick hits Reddit's wiki API; sustained 5xx blocks moderation updates.
