@@ -364,7 +364,15 @@ export interface RunResult {
 
 export interface ActionResult {
   status: 'ok' | 'skipped-locked' | 'dry-run' | 'error';
-  kind: string;
+  // AE Polish #70: type-design-analyzer top-5 fix — narrow from
+  // `string` to `ActionKind` (= Action['kind']). Same drift-elimination
+  // motive as Polish #66 (deriving client ActionKind from server). When
+  // a new Action variant lands (e.g. an unfair-mute pull-forward), the
+  // ActionResult.kind field automatically accepts the new literal AND
+  // refuses any unrelated string — eliminates a class of "kind got
+  // misspelled in a result-emitting site" bugs that the prior
+  // `kind: string` would silently swallow.
+  kind: ActionKind;
   wouldHaveCalled?: string; // populated when status === 'dry-run'
 }
 
