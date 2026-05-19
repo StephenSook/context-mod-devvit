@@ -33,7 +33,14 @@ export interface StatsRollup {
   // data. Adding the client-shape fields server-side closes that gap.
   /** Same as `today` — aliased for client-shape compat. */
   actionsToday: number;
-  /** Heuristic estimate: 4 minutes saved per moderation action today. */
+  /**
+   * HEURISTIC ESTIMATE — not a measurement. Computed as `today * 4`
+   * (4 minutes saved per moderation action). Field name kept as
+   * `timeSavedMin` for wire-shape stability post-Polish-#38, but
+   * the dashboard renders this w/ "(est.)" qualifier per Polish
+   * #46 to avoid misrepresenting the heuristic as ground truth.
+   * silent-failure-hunter Finding 3.
+   */
   timeSavedMin: number;
   /** Distinct rule keys seen in the event ring (proxy for active rules). */
   activeRules: number;

@@ -56,7 +56,12 @@ export function StatsRow({ stats }: { stats: StatsRollup }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 px-5 pt-4">
       <Card label="Actions today" value={String(stats.actionsToday)} accent="bone" delay={0.05} />
-      <Card label="Mod time saved" value={timeFmt} accent="ok" delay={0.12} />
+      {/* AE Polish #46: "(est.)" qualifier — silent-failure-hunter Finding
+          3 flagged that timeSavedMin reads as a measurement but is actually
+          a heuristic (`today * 4` per-action minutes). Without the qualifier,
+          mods would see "you saved 240 min today" + treat it as a measured
+          quantity. Compact label fits stat card on mobile. */}
+      <Card label="Mod time saved (est.)" value={timeFmt} accent="ok" delay={0.12} />
       <Card
         label="Active rules"
         value={String(stats.activeRules)}
