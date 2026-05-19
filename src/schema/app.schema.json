@@ -134,10 +134,10 @@
       "properties": {
         "kind":             { "const": "history" },
         "name":             { "type": "string" },
-        "postCountLt":      { "type": "number", "minimum": 0 },
-        "postCountGt":      { "type": "number", "minimum": 0 },
-        "commentCountLt":   { "type": "number", "minimum": 0 },
-        "commentCountGt":   { "type": "number", "minimum": 0 },
+        "postCountLt":      { "type": "number", "minimum": 0, "maximum": 100 },
+        "postCountGt":      { "type": "number", "minimum": 0, "maximum": 100 },
+        "commentCountLt":   { "type": "number", "minimum": 0, "maximum": 100 },
+        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 },
         "linkKarmaLt":      { "type": "number" },
         "linkKarmaGt":      { "type": "number" },
         "commentKarmaLt":   { "type": "number" },
@@ -164,8 +164,8 @@
         "kind":             { "const": "recentActivity" },
         "name":             { "type": "string" },
         "subreddits":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
-        "postCountGt":      { "type": "number", "minimum": 0 },
-        "commentCountGt":   { "type": "number", "minimum": 0 }
+        "postCountGt":      { "type": "number", "minimum": 0, "maximum": 100 },
+        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 }
       }
     },
     "ImageRepostRule": {
