@@ -82,9 +82,18 @@ export async function reserveAction(
   // Redis blip the action is permanently dropped — next trigger sees
   // firstSeen=false and skips. Retry of NX is idempotent: either we got the
   // pending slot first (succeeds), or someone else did (returns non-OK).
+  //
+  // AE Polish #85 (gemini brutal-audit): aligned with commitAction's
+  // `MAX_ATTEMPTS = backoffsMs.length + 1` style so both retry loops use
+  // the same idiom. Semantically equivalent to the prior `attempt <=
+  // lockBackoffsMs.length` form (both produce 3 attempts + 2 sleeps for
+  // backoffsMs=[100, 300]) — the change is for maintenance clarity, not
+  // behavior. Future-proof: if either array grows, both loops expand
+  // identically.
   const lockBackoffsMs = [100, 300];
+  const LOCK_MAX_ATTEMPTS = lockBackoffsMs.length + 1; // 3 attempts total
   let lockErr: unknown = null;
-  for (let attempt = 0; attempt <= lockBackoffsMs.length; attempt++) {
+  for (let attempt = 0; attempt < LOCK_MAX_ATTEMPTS; attempt++) {
     try {
       const reserved = await redis.set(pendingKey, token, {
         nx: true,
