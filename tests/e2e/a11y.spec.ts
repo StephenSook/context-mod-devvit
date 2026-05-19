@@ -40,6 +40,50 @@ test.describe('Observatory dashboard a11y (Z3-X53)', () => {
     expect(blocking).toEqual([]);
   });
 
+  test('AE Polish #15 — AI explainer loading + error states scan clean', async ({ page }) => {
+    // Agent D #7: the drill-down expanded row test scans the static layout
+    // but never the AI panel's loading skeleton or error states — exactly
+    // the hero demo surface for judges. Click Explain w/ AI, scan during
+    // the loading state (skeleton + aria-live), then scan after the
+    // mocked error response renders. Network requests intercepted so we
+    // don't hit OpenAI in CI.
+    await page.route('**/api/explain-event', async (route) => {
+      // Delay response so the loading state stays mounted long enough to scan.
+      await new Promise((r) => setTimeout(r, 300));
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: 'mod auth required for /api/explain-event' }),
+      });
+    });
+    await page.goto('/?demo=1');
+    await page.evaluate(() => localStorage.setItem('cm-tour-seen-v1', '1'));
+    await page.reload();
+    await page.locator('button[aria-expanded]').first().click();
+    const explainBtn = page.getByRole('button', { name: /Explain with AI/i });
+    await explainBtn.click();
+    // Loading state: pulse-dot skeleton, aria-busy, aria-live polite
+    const loadingResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    const loadingBlocking = loadingResults.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    if (loadingBlocking.length > 0) {
+      console.log('AI loading axe violations:', JSON.stringify(loadingBlocking, null, 2));
+    }
+    expect(loadingBlocking).toEqual([]);
+    // Wait for the 401 to land + friendly-error render
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 5_000 });
+    const errResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+      .analyze();
+    const errBlocking = errResults.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    expect(errBlocking).toEqual([]);
+  });
+
   test('AC — light-mode toggle preserves WCAG AA contrast (no new violations)', async ({
     page,
   }) => {
