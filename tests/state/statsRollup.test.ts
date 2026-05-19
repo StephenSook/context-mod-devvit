@@ -92,6 +92,54 @@ describe('computeStats (Y1-X7)', () => {
     const stats = await computeStats('r_test');
     expect(stats.topRules.length).toBe(5);
   });
+
+  it('Polish #38: emits client-shape fields (actionsToday/timeSavedMin/activeRules/topRule/hourlyActions24h)', async () => {
+    // Pre-fix: server returned only {total/lastHour/today/...}, client
+    // type expected {actionsToday/...}, client check on hourlyActions24h
+    // treated every real response as empty → dashboard always rendered
+    // ZERO_STATS. Test verifies the new client-shape fields land on the
+    // wire alongside the legacy fields.
+    const now = Date.now();
+    readRecentMock.mockResolvedValue([
+      event(now - 1000, 'spam-removal', 'crypto-giveaway', 'remove'),
+      event(now - 1000 * 60 * 30, 'spam-removal', 'crypto-giveaway', 'remove'),
+      event(now - 1000 * 60 * 60 * 5, 'low-karma-flag', 'fresh-account', 'report'),
+    ]);
+    const stats = await computeStats('r_test');
+    expect(stats.actionsToday).toBe(3);
+    expect(stats.timeSavedMin).toBe(12); // 3 * 4
+    expect(stats.activeRules).toBe(2);
+    expect(stats.topRule).toBe('spam-removal / crypto-giveaway');
+    expect(Array.isArray(stats.hourlyActions24h)).toBe(true);
+    expect(stats.hourlyActions24h).toHaveLength(24);
+    expect(stats.hourlyActions24h[23]).toBe(2);
+    // Event at `now - 5h` lands in bucket 19 (covers now-5h to now-4h).
+    // bucket k covers [dayStart + k*1h, dayStart + (k+1)*1h); for k=19
+    // that's [now-5h, now-4h], so a ts of exactly now-5h falls in bucket 19.
+    expect(stats.hourlyActions24h[19]).toBe(1);
+  });
+
+  it('Polish #38: empty event ring still emits client-shape fields w/ safe defaults', async () => {
+    readRecentMock.mockResolvedValue([]);
+    const stats = await computeStats('r_test');
+    expect(stats.actionsToday).toBe(0);
+    expect(stats.timeSavedMin).toBe(0);
+    expect(stats.activeRules).toBe(0);
+    expect(stats.topRule).toBe('—');
+    expect(stats.hourlyActions24h).toEqual(new Array(24).fill(0));
+  });
+
+  it('Polish #38: events outside 24h window don\'t contribute to hourlyActions24h', async () => {
+    const now = Date.now();
+    readRecentMock.mockResolvedValue([
+      event(now - 25 * 3_600_000, 'r', 'c', 'remove'),
+      event(now - 1000, 'r', 'c', 'remove'),
+    ]);
+    const stats = await computeStats('r_test');
+    expect(stats.hourlyActions24h.reduce((a, b) => a + b, 0)).toBe(1);
+    expect(stats.hourlyActions24h[23]).toBe(1);
+    expect(stats.hourlyActions24h[0]).toBe(0);
+  });
 });
 
 describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {

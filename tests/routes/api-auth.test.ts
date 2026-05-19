@@ -564,10 +564,21 @@ describe('GET /api/stats happy path (Polish #27)', () => {
   });
 
   it('non-demo: returns snapshot counters from readStatsSnapshot', async () => {
+    // Polish #38: snapshot now includes BOTH legacy server fields
+    // (total/today/lastHour) AND client-shape fields (actionsToday/
+    // timeSavedMin/activeRules/topRule/hourlyActions24h). Without the
+    // client-shape fields the dashboard never showed real stats.
     const snapshot = {
       total: 42,
       today: 5,
       lastHour: 1,
+      failedActions: 2,
+      topRules: [{ ruleKey: 'spam-removal / crypto', count: 3 }],
+      computedAt: Date.now(),
+      actionsToday: 5,
+      timeSavedMin: 20,
+      activeRules: 3,
+      topRule: 'spam-removal / crypto',
       hourlyActions24h: new Array(24).fill(0),
     };
     readStatsSnapshot.mockResolvedValueOnce(snapshot);
@@ -575,6 +586,12 @@ describe('GET /api/stats happy path (Polish #27)', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { counters: typeof snapshot };
     expect(body.counters.total).toBe(42);
+    // Polish #38: client-shape fields land on the wire
+    expect(body.counters.actionsToday).toBe(5);
+    expect(body.counters.timeSavedMin).toBe(20);
+    expect(body.counters.activeRules).toBe(3);
+    expect(body.counters.topRule).toBe('spam-removal / crypto');
+    expect(Array.isArray(body.counters.hourlyActions24h)).toBe(true);
     expect(readStatsSnapshot).toHaveBeenCalledWith('r_test');
   });
 

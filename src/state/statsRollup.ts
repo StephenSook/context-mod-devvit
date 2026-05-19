@@ -24,6 +24,23 @@ export interface StatsRollup {
   topRules: { ruleKey: string; count: number }[];
   /** Snapshot computation timestamp. */
   computedAt: number;
+  // AE Polish #38 — client-shape fields the dashboard StatsRow renders.
+  // Previously the server returned only {total/lastHour/today/...} but the
+  // client typed StatsRollup as {actionsToday/timeSavedMin/activeRules/
+  // topRule/hourlyActions24h} + checked `hourlyActions24h` to detect empty.
+  // Result: every production /api/stats response was treated as empty,
+  // dashboard fell back to ZERO_STATS, real stat cards never showed real
+  // data. Adding the client-shape fields server-side closes that gap.
+  /** Same as `today` — aliased for client-shape compat. */
+  actionsToday: number;
+  /** Heuristic estimate: 4 minutes saved per moderation action today. */
+  timeSavedMin: number;
+  /** Distinct rule keys seen in the event ring (proxy for active rules). */
+  activeRules: number;
+  /** Top rule by fire count, "—" when empty. */
+  topRule: string;
+  /** 24-bucket hourly histogram (oldest first, newest last). */
+  hourlyActions24h: number[];
 }
 
 function snapshotKey(sub: string): string {
@@ -62,6 +79,17 @@ export async function computeStats(sub: string): Promise<StatsRollup> {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
+  // AE Polish #38: build the 24-hour bucket histogram. Each bucket is one
+  // wall-clock hour. Index 0 = (now - 24h, now - 23h); index 23 = (now - 1h, now).
+  // Events outside the 24h window contribute nothing.
+  const hourlyActions24h = new Array<number>(24).fill(0);
+  const dayStart = now - 24 * 3_600_000;
+  for (const e of events) {
+    if (e.ts <= dayStart || e.ts > now) continue;
+    const bucket = Math.min(23, Math.floor((e.ts - dayStart) / 3_600_000));
+    hourlyActions24h[bucket]! += 1;
+  }
+
   return {
     total: events.length,
     lastHour,
@@ -69,6 +97,12 @@ export async function computeStats(sub: string): Promise<StatsRollup> {
     failedActions,
     topRules,
     computedAt: now,
+    // Client-shape fields (Polish #38) — derived from the same event ring.
+    actionsToday: today,
+    timeSavedMin: today * 4, // heuristic: 4 min saved per mod action
+    activeRules: ruleCounts.size,
+    topRule: topRules[0]?.ruleKey ?? '—',
+    hourlyActions24h,
   };
 }
 

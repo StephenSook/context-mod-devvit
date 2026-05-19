@@ -8,6 +8,34 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### CRITICAL — production data path
+
+- **AE Polish #38: `/api/stats` wire-shape mismatch — dashboard never
+  showed real stats in production**. Caught during Phase F hidden-bug
+  sweep. Server's `StatsRollup` had `{total, lastHour, today,
+  failedActions, topRules, computedAt}`. Client's `StatsRollup` type
+  expected `{actionsToday, timeSavedMin, activeRules, topRule,
+  hourlyActions24h}`. **Zero field overlap.** Client's
+  `fetchStatsSafe` validated by checking `Array.isArray(c.
+  hourlyActions24h)` — which was always `undefined` on server
+  responses — so every production `/api/stats` call returned
+  `{ok:true, empty:true}` and the dashboard fell back to ZERO_STATS.
+  **Every install that wasn't in `?demo=1` mode had a stat-card row
+  of 0/0/0/—, regardless of how much real moderation happened.**
+
+  Fix: `computeStats()` now produces both legacy server fields AND
+  client-shape fields (`actionsToday = today`, `timeSavedMin = today
+  * 4` heuristic, `activeRules = distinct ruleKeys`, `topRule =
+  topRules[0] ?? "—"`, `hourlyActions24h = 24-bucket histogram of
+  the last 24 wall-clock hours from the event ring`). Snapshot stays
+  backwards-compat — readers of legacy fields still work.
+
+  +3 tests on `computeStats` (Polish #38 client-shape emission, empty
+  ring safe defaults, events outside 24h window don't contribute) +
+  enhanced `tests/routes/api-auth.test.ts` /stats happy-path test to
+  assert all 5 client-shape fields land on the wire. 718 tests green
+  (was 712). tsc + lint clean.
+
 ### CI hardening + repo hygiene
 
 - **AE Polish #36: bundle-size CI gate + depcruise hard-gate +

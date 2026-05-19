@@ -447,11 +447,20 @@ forms.post('/set-openai-key-submit', async (c) => {
   if (!auth.ok) {
     return c.json({ showToast: authFailToast(auth.status, 'set the OpenAI key') });
   }
-  const apiKey =
+  const apiKeyRaw =
     (body as { apiKey?: string }).apiKey ??
     (body as { values?: { apiKey?: string } }).values?.apiKey ??
     '';
-  if (!apiKey.trim()) {
+  // AE Polish #37: normalize whitespace BEFORE validation. Previously
+  // `apiKey.startsWith('sk-')` checked the RAW string, so a paste like
+  // "  sk-proj-xyz" (leading whitespace common when copying from
+  // PDFs / Discord code blocks / wrapped emails) would be REJECTED as
+  // "Key should start with sk-..." even though apiKeyStore.setOpenaiKey
+  // trims the key before storing — so the underlying key was valid all
+  // along. Mods don't get the actionable feedback that whitespace is
+  // the issue; just a confusing "wrong format" toast.
+  const apiKey = apiKeyRaw.trim();
+  if (!apiKey) {
     return c.json({ showToast: 'Paste a key in the form field.' });
   }
   if (!apiKey.startsWith('sk-')) {

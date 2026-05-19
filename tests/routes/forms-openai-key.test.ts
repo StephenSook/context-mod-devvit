@@ -134,6 +134,45 @@ describe('POST /set-openai-key-submit (W9)', () => {
     expect(setOpenaiKeyMock).toHaveBeenCalledWith('r_test', 'sk-proj-abcdef1234567890');
   });
 
+  it('Polish #37: accepts key with leading/trailing whitespace (trim before validate)', async () => {
+    // Pre-fix: apiKey.startsWith('sk-') ran on the raw string, so a
+    // paste like "  sk-proj-xyz" or "sk-proj-xyz\n" would falsely
+    // reject as "Key should start with sk-..." — confusing because
+    // apiKeyStore.setOpenaiKey trimmed before storing anyway, so the
+    // underlying key was always going to be fine. Now trim happens
+    // BEFORE the startsWith check.
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    setOpenaiKeyMock.mockResolvedValue(undefined);
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: '  sk-proj-pad-with-whitespace  \n',
+    });
+    expect(r.showToast).toMatch(/saved/i);
+    // setOpenaiKey receives the trimmed value (no leading/trailing whitespace).
+    expect(setOpenaiKeyMock).toHaveBeenCalledWith(
+      'r_test',
+      'sk-proj-pad-with-whitespace'
+    );
+  });
+
+  it('Polish #37: whitespace-only key rejects as "paste a key" (not "should start with sk-")', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    const r = await postForm('/set-openai-key-submit', { apiKey: '   \n\t  ' });
+    expect(r.showToast).toMatch(/paste a key/i);
+    expect(setOpenaiKeyMock).not.toHaveBeenCalled();
+  });
+
+  it('Polish #37: length cap measured on TRIMMED key (whitespace doesn\'t push over 200)', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    setOpenaiKeyMock.mockResolvedValue(undefined);
+    // Pre-fix: an exactly-200-char key with leading whitespace would
+    // measure >200 against the raw length and reject as "suspiciously long".
+    const key = 'sk-' + 'x'.repeat(197); // exactly 200 chars
+    const r = await postForm('/set-openai-key-submit', {
+      apiKey: '  ' + key + '  ', // pre-trim length 204, post-trim 200
+    });
+    expect(r.showToast).toMatch(/saved/i);
+  });
+
   it('masks the key in the success toast (first 7 + last 4 only)', async () => {
     requireModeratorMock.mockResolvedValue(AS_MOD);
     setOpenaiKeyMock.mockResolvedValue(undefined);
