@@ -55,6 +55,27 @@ export const forms = new Hono();
 
 const SIMULATION_SAMPLE_LIMIT = 25;
 
+/**
+ * Map requireModerator() failure to user-facing toast text.
+ *
+ * Why: AE Polish #10 added a 503 (transient mod-check failure) status to
+ * distinguish "Reddit RPC blip — retry" from "you're not a mod." Forms
+ * previously surfaced the same "Mod-only action" toast for every failure,
+ * which lies to actual mods when their auth check fails to a 5xx.
+ */
+function authFailToast(
+  status: 401 | 403 | 500 | 503,
+  actionLabel: string,
+): string {
+  if (status === 503) {
+    return `Mod check temporarily unavailable. Retry in ~30s, then ${actionLabel}.`;
+  }
+  if (status === 500) {
+    return `Mod check failed. See logs, then ${actionLabel}.`;
+  }
+  return `Mod-only action. Only this sub's moderators can ${actionLabel}.`;
+}
+
 interface FetchedPost {
   id?: string;
   title?: string;
@@ -95,9 +116,7 @@ forms.post('/test-rules-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({
-      showToast: "Mod-only action. Only this sub's moderators can dry-run ContextMod.",
-    });
+    return c.json({ showToast: authFailToast(auth.status, 'dry-run ContextMod') });
   }
   const thingId =
     (body as { thingId?: string }).thingId ??
@@ -209,9 +228,7 @@ forms.post('/simulate-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({
-      showToast: "Mod-only action. Only this sub's moderators can simulate rules.",
-    });
+    return c.json({ showToast: authFailToast(auth.status, 'simulate rules') });
   }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
@@ -358,9 +375,7 @@ forms.post('/explain-rule-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({
-      showToast: "Mod-only action. Only this sub's moderators can call OpenAI.",
-    });
+    return c.json({ showToast: authFailToast(auth.status, 'call OpenAI') });
   }
   const ruleJson5 =
     (body as { ruleJson5?: string }).ruleJson5 ??
@@ -430,9 +445,7 @@ forms.post('/set-openai-key-submit', async (c) => {
   const body = await c.req.json<Record<string, unknown>>();
   const auth = await requireModerator();
   if (!auth.ok) {
-    return c.json({
-      showToast: "Mod-only action. Only this sub's moderators can set the OpenAI key.",
-    });
+    return c.json({ showToast: authFailToast(auth.status, 'set the OpenAI key') });
   }
   const apiKey =
     (body as { apiKey?: string }).apiKey ??

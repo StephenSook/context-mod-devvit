@@ -212,6 +212,43 @@ describe('POST /test-rules-submit form handler', () => {
     expect(getPostById).not.toHaveBeenCalled();
   });
 
+  it('Polish #18 — 503 (transient mod-check) surfaces "retry" toast, not misleading "not a mod"', async () => {
+    requireModeratorMock.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      error: 'mod check transient failure (retry in ~30s): fetch failed',
+    });
+    const req = new Request('http://x/test-rules-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: { thingId: 't3_abc' } }),
+    });
+    const res = await forms.request(req);
+    const json = (await res.json()) as { showToast: string };
+    expect(json.showToast).toMatch(/temporarily unavailable/i);
+    expect(json.showToast).toMatch(/retry/i);
+    expect(json.showToast).not.toMatch(/mod-only/i);
+    expect(dryRunActivity).not.toHaveBeenCalled();
+  });
+
+  it('Polish #18 — 500 (programming error) surfaces "see logs" toast, not "not a mod"', async () => {
+    requireModeratorMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      error: 'mod check failed: TypeError: cannot read prop of undefined',
+    });
+    const req = new Request('http://x/test-rules-submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: { thingId: 't3_abc' } }),
+    });
+    const res = await forms.request(req);
+    const json = (await res.json()) as { showToast: string };
+    expect(json.showToast).toMatch(/see logs/i);
+    expect(json.showToast).not.toMatch(/mod-only/i);
+    expect(dryRunActivity).not.toHaveBeenCalled();
+  });
+
   it('Codex H1 — routes comments through normalizeComment (live-parity enrichment)', async () => {
     getCommentById.mockResolvedValueOnce({
       id: 't1_xyz',

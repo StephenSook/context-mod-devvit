@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Fixed — UX honesty
+
+- **AE Polish #18: `forms.ts` auth-fail toast 503-aware** — all 4 form
+  submit handlers (`/test-rules-submit`, `/simulate-rule-submit`,
+  `/explain-rule-submit`, `/set-openai-key-submit`) previously surfaced
+  the same `"Mod-only action"` toast for every `requireModerator()`
+  failure, including the transient-503 case that AE Polish #10 added.
+  This *lied to actual moderators* whenever Reddit RPC blipped — a mod
+  would dismiss the toast assuming they'd lost privileges. Added a
+  small `authFailToast(status, actionLabel)` helper that branches:
+  503 → `"Mod check temporarily unavailable. Retry in ~30s..."`,
+  500 → `"Mod check failed. See logs..."`, 401/403 → unchanged
+  `"Mod-only action..."`. +2 tests covering 503 + 500 toast text +
+  no-side-effect guarantees. 602 tests green (was 600).
+
 ## [0.6.6] — 2026-05-18
 
 Post-AE wrap. v0.6.5 CI caught its own a11y regression (axe Polish #15
