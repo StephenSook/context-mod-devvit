@@ -10,6 +10,21 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Fixed — UX honesty
 
+- **AE Polish #20: `friendlyExplainError` precedence — Redis before
+  api-key** — `/api/explain-event`'s api-key-resolve-failure path
+  (added in Wave V) returns `"Could not read OpenAI API key (Redis/
+  settings unavailable). Retry in ~60s."` That string contains BOTH
+  `'api key'` AND `'redis'` substrings. With the old branch order the
+  `'api key'` check fired first, surfacing
+  `"OpenAI API key is not configured. Use the 'ContextMod: Set OpenAI
+  API key' mod menu to add one."` — which sends the mod to a form
+  that *also* fails (same Redis outage) AND makes them think their
+  configured key has vanished. Reordered: Redis/subsystem-degraded
+  check now precedes the api-key check, so the root cause (Redis is
+  down) wins. +1 test pinning the precedence. 614 tests green (was
+  613). Root cause was order-dependence in a fallback ladder w/
+  multi-match strings — fix is per-string, not architectural.
+
 - **AE Polish #19: client `friendlyExplainError` 503-aware** —
   paired w/ Polish #18 on the server side. When `/api/explain-event`
   returns 503 (transient mod-check failure), the response body is

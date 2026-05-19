@@ -65,6 +65,18 @@ describe('friendlyExplainError', () => {
     expect(friendlyExplainError(raw)).toBe(raw);
   });
 
+  it('Polish #20: api-key-resolve-failed (Redis down) maps to Redis-degraded, not "configure key"', () => {
+    // /api/explain-event returns this 503 body when getOpenaiKey() throws.
+    // The raw contains BOTH 'api key' AND 'redis' — Redis is the root cause.
+    // Misclassifying as "configure key" sends the mod to a form that also
+    // breaks (same Redis outage) + makes them think their key is gone.
+    const raw = 'Could not read OpenAI API key (Redis/settings unavailable). Retry in ~60s.';
+    const out = friendlyExplainError(raw);
+    expect(out).toMatch(/Backend storage is degraded/i);
+    expect(out).not.toMatch(/Set OpenAI API key/i);
+    expect(out).not.toMatch(/is not configured/i);
+  });
+
   it('Polish #19: ordering — "mod check transient" check fires before generic "mod"-substring matches', () => {
     // Defensive: even though the new branch uses 'mod check transient' (specific),
     // confirm a misleading message like "mod check transient" doesn't also get

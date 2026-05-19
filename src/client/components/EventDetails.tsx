@@ -123,11 +123,18 @@ export function friendlyExplainError(raw: string): string {
   if (lower.includes('breaker') || lower.includes('temporarily unavailable')) {
     return 'AI service is temporarily unavailable. Try again in a minute.';
   }
-  if (lower.includes('api key') || lower.includes('missing')) {
-    return 'OpenAI API key is not configured. Use the "ContextMod: Set OpenAI API key" mod menu to add one.';
-  }
+  // Polish #20: Redis/subsystem-degraded check BEFORE api-key check.
+  // The api-key resolve failure path returns "Could not read OpenAI API key
+  // (Redis/settings unavailable). Retry in ~60s." which contains both
+  // 'api key' AND 'redis' substrings. The root cause is Redis, not a
+  // missing key — directing the mod to "Set OpenAI API key" sends them
+  // to a form that will also fail (same Redis-down condition) + makes
+  // them think their key is gone when it's actually fine.
   if (lower.includes('redis') || lower.includes('subsystem degraded')) {
     return 'Backend storage is degraded. Try again in ~60s.';
+  }
+  if (lower.includes('api key') || lower.includes('missing')) {
+    return 'OpenAI API key is not configured. Use the "ContextMod: Set OpenAI API key" mod menu to add one.';
   }
   if (lower.includes('timed out') || lower.includes('timeout')) {
     return 'AI request timed out (~30s). Try again — usually a transient OpenAI hiccup.';
