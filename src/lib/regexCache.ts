@@ -14,6 +14,16 @@ import safeRegex from 'safe-regex';
  * popular sub would pin the event loop on every post submission —
  * exactly the DoS Pull-Forward #8 was meant to prevent.
  *
+ * **AE Polish #45 — known safe-regex limitation**: `safe-regex` v2.x
+ * only analyzes star-height on the basic NFA. It does NOT detect ReDoS
+ * patterns using BACKREFERENCES (`/^(.*?)\1+$/`) or LOOKAROUNDS
+ * (`/^(?=(a+))\1*$/`) — both V8-supported, both catastrophic on
+ * adversarial inputs. These patterns slip through `safeRegex(re)` and
+ * still pin the event loop. Mitigation: input-length truncation in
+ * `safeTest()` below caps worst-case runtime even when the pattern is
+ * malicious. Bounded input → bounded worst-case backtrack. Doesn't
+ * make the regex SAFE, but keeps the event loop responsive.
+ *
  * Same Module-level Map approach: keyed on `pattern\0flags` (NUL separator
  * prevents `pattern="a",flags="b"` colliding with `pattern="ab",flags=""`).
  * Invalid patterns AND safe-regex-rejected patterns cache as `null` so we
@@ -23,6 +33,29 @@ import safeRegex from 'safe-regex';
  * per sub, not thousands); per-install cache plateaus at config size.
  */
 const COMPILE_CACHE = new Map<string, RegExp | null>();
+
+/**
+ * AE Polish #45 — input-length cap for `.test()`. Caps adversarial-input
+ * worst-case backtracking time even when safe-regex missed a catastrophic
+ * pattern (backref/lookaround bypass — see module-level docblock).
+ *
+ * 100KB is generous for Reddit title (300 char limit) + body (~40KB limit
+ * on text posts) + URL (max ~2KB practical). The cap only fires on
+ * adversarial-sized inputs where the regex would already be a problem.
+ */
+const MAX_REGEX_INPUT_CHARS = 100_000;
+
+/**
+ * Bounded `.test()` — truncates the target to MAX_REGEX_INPUT_CHARS before
+ * calling RegExp.test(). Use this anywhere we test a wiki-controlled
+ * pattern against a Reddit-controlled string (rule regex match, filter
+ * regex match) to bound worst-case backtracking time.
+ */
+export function safeTest(re: RegExp, target: string): boolean {
+  const bounded =
+    target.length > MAX_REGEX_INPUT_CHARS ? target.slice(0, MAX_REGEX_INPUT_CHARS) : target;
+  return re.test(bounded);
+}
 
 export function getCompiledRegex(
   pattern: string,

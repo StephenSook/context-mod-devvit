@@ -5,7 +5,7 @@
  */
 
 import type { FilterSpec, AuthorFilter, ItemFilter, Item, Author } from '../shared/types';
-import { getCompiledRegex } from '../lib/regexCache';
+import { getCompiledRegex, safeTest } from '../lib/regexCache';
 
 export function passesFilters(
   filters: FilterSpec | undefined,
@@ -73,7 +73,10 @@ function passesItem(f: ItemFilter, i: Item): boolean {
 function cachedRegexTest(pattern: string, target: string, fieldName: string): boolean {
   const re = getCompiledRegex(pattern, '', `cm/filters/${fieldName}`);
   if (re === null) return false; // bad pattern OR safe-regex rejected → non-match
-  return re.test(target);
+  // AE Polish #45: bounded .test() — defense against backref/lookaround
+  // ReDoS patterns that safe-regex misses. Caps worst-case adversarial-
+  // input runtime so event loop stays responsive.
+  return safeTest(re, target);
 }
 
 // Re-export the field-level helpers for unit testing.

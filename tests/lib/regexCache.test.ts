@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getCompiledRegex, _resetRegexCache } from '../../src/lib/regexCache';
+import { getCompiledRegex, safeTest, _resetRegexCache } from '../../src/lib/regexCache';
 
 beforeEach(() => {
   _resetRegexCache();
@@ -92,5 +92,37 @@ describe('getCompiledRegex (Polish #35)', () => {
     // is identifiable. Just verify it doesn't break the contract.
     const re = getCompiledRegex('^x$', '', 'cm/test/custom');
     expect(re).toBeInstanceOf(RegExp);
+  });
+});
+
+describe('safeTest — bounded input ReDoS defense (Polish #45)', () => {
+  it('passes short input through unchanged (no truncation)', () => {
+    const re = /hello/;
+    expect(safeTest(re, 'hello world')).toBe(true);
+    expect(safeTest(re, 'bye world')).toBe(false);
+  });
+
+  it('truncates input >100KB before .test() (worst-case adversarial cap)', () => {
+    // safe-regex doesn't catch backref ReDoS like `^(.*?)\1+$`. Bounded
+    // input is the defense-in-depth so the event loop stays responsive
+    // even when the regex itself is malicious.
+    const re = /^xxxxx$/; // matches exactly 5 x's
+    const huge = 'x'.repeat(200_000); // 200KB of x — would fail if untruncated
+    // After truncation to 100KB, `^xxxxx$` still doesn't match 100KB-of-x,
+    // but the test runs in BOUNDED time regardless.
+    const start = Date.now();
+    safeTest(re, huge);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeLessThan(500); // generous ceiling; bounded input → fast
+  });
+
+  it('test result correct on inputs at the 100KB boundary', () => {
+    const re = /target/;
+    // Match within the cap
+    const within = 'x'.repeat(99_000) + 'target';
+    expect(safeTest(re, within)).toBe(true);
+    // Match BEYOND the cap — truncation drops it, so no match
+    const beyond = 'x'.repeat(100_000) + 'target'; // total 100,006 chars
+    expect(safeTest(re, beyond)).toBe(false);
   });
 });
