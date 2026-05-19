@@ -22,7 +22,7 @@
 
 import { redis } from '@devvit/web/server';
 import { K } from './keys';
-import { hammingDistance } from '../image/hash';
+import { hammingDistance, asBlockHash, type BlockHash } from '../image/hash';
 
 const MAX_ENTRIES = 500;
 const DEFAULT_TTL_SEC = 30 * 86_400;
@@ -30,7 +30,11 @@ const SUB_DEFAULT = '_';
 
 export interface ImageHashEntry {
   postId: string;
-  hash: string; // 64-hex-char blockhash
+  // AE Polish #94: branded BlockHash (was: `string` w/ 64-hex docstring).
+  // Constructed via computeBlockhash (image/hash.ts) or asBlockHash at
+  // the Redis read trust boundary. The length-check in findSimilar
+  // becomes a documented invariant rather than the only runtime fence.
+  hash: BlockHash;
   ts: number;
 }
 
@@ -53,6 +57,15 @@ function isValidImageHashEntry(e: unknown): e is ImageHashEntry {
   if (typeof o.postId !== 'string' || o.postId.length === 0) return false;
   if (typeof o.hash !== 'string') return false;
   if (typeof o.ts !== 'number' || !Number.isFinite(o.ts)) return false;
+  // AE Polish #94: validate the BlockHash shape at the Redis trust
+  // boundary. asBlockHash throws on mismatch (64 hex chars required);
+  // wrap in try so the validator stays a `is`-predicate returning bool
+  // rather than throwing.
+  try {
+    asBlockHash(o.hash);
+  } catch {
+    return false;
+  }
   return true;
 }
 
@@ -66,7 +79,7 @@ function isValidImageHashEntry(e: unknown): e is ImageHashEntry {
  * care that A duplicate exists, not which one is closest.
  */
 export async function findSimilar(
-  candidateHash: string,
+  candidateHash: BlockHash,
   threshold: number,
   sub: string = SUB_DEFAULT
 ): Promise<SimilarMatch | null> {

@@ -24,7 +24,7 @@
 
 import type { ImageRepostRule, Item, RuleResult } from '../shared/types';
 import { fetchAndDecode } from '../image/decode';
-import { computeBlockhash } from '../image/hash';
+import { computeBlockhash, type BlockHash } from '../image/hash';
 import { findSimilar, recordHash, type SimilarMatch } from '../state/imageHashStore';
 import { acquireLock } from '../lib/idem';
 
@@ -55,7 +55,7 @@ export async function runImageRepostRule(
     return { triggered: false };
   }
 
-  let candidateHash: string;
+  let candidateHash: BlockHash;
   try {
     candidateHash = computeBlockhash(decoded.frame);
   } catch (err) {
