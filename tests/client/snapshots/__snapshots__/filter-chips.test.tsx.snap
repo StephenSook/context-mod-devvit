@@ -59,6 +59,27 @@ exports[`FilterChips snapshot (Y2-X23) > renders all=active default state 1`] = 
     class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
     type="button"
   >
+    ban
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    flair
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    distinguish
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
     failed
   </button>
   <button
@@ -130,6 +151,27 @@ exports[`FilterChips snapshot (Y2-X23) > renders kind=remove active 1`] = `
     class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
     type="button"
   >
+    ban
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    flair
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    distinguish
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
     failed
   </button>
   <button
@@ -195,6 +237,27 @@ exports[`FilterChips snapshot (Y2-X23) > renders status=failed active 1`] = `
     type="button"
   >
     report
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    ban
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    flair
+  </button>
+  <button
+    aria-pressed="false"
+    class="telemetry text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-sm border transition-colors border-line text-bone-300 hover:text-bone-50 hover:border-bone-200/40"
+    type="button"
+  >
+    distinguish
   </button>
   <button
     aria-pressed="true"

@@ -21,6 +21,12 @@ function isActive(filter: EventFilter, candidate: EventFilter): boolean {
   return true;
 }
 
+// AE Polish #59: full ActionKind coverage. Previously the chip strip had
+// remove/comment/approve/lock/report but skipped ban/userFlair/distinguish
+// — even though events with those kinds still rendered in the stream + had
+// their proper icons (post-Polish-#53). Mods who wanted to filter by
+// "show me only the bans this week" had to use the search input.
+// Adding chips closes the gap; the strip wraps naturally on mobile.
 const CHIPS: { label: string; filter: EventFilter }[] = [
   { label: 'all', filter: { kind: 'all' } },
   { label: 'remove', filter: { kind: 'action', action: 'remove' } },
@@ -28,6 +34,9 @@ const CHIPS: { label: string; filter: EventFilter }[] = [
   { label: 'approve', filter: { kind: 'action', action: 'approve' } },
   { label: 'lock', filter: { kind: 'action', action: 'lock' } },
   { label: 'report', filter: { kind: 'action', action: 'report' } },
+  { label: 'ban', filter: { kind: 'action', action: 'ban' } },
+  { label: 'flair', filter: { kind: 'action', action: 'userFlair' } },
+  { label: 'distinguish', filter: { kind: 'action', action: 'distinguish' } },
   { label: 'failed', filter: { kind: 'failed' } },
   { label: 'dry-run', filter: { kind: 'dry-run' } },
 ];
