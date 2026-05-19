@@ -13,8 +13,14 @@ const banUser = vi.fn().mockResolvedValue(undefined);
 const setUserFlair = vi.fn().mockResolvedValue(undefined);
 const postLock = vi.fn().mockResolvedValue(undefined);
 const commentLock = vi.fn().mockResolvedValue(undefined);
-const getPostById = vi.fn().mockResolvedValue({ lock: postLock });
-const getCommentById = vi.fn().mockResolvedValue({ lock: commentLock });
+const postDistinguish = vi.fn().mockResolvedValue(undefined);
+const commentDistinguish = vi.fn().mockResolvedValue(undefined);
+const getPostById = vi
+  .fn()
+  .mockResolvedValue({ lock: postLock, distinguish: postDistinguish });
+const getCommentById = vi
+  .fn()
+  .mockResolvedValue({ lock: commentLock, distinguish: commentDistinguish });
 
 vi.mock('@devvit/web/server', () => ({
   reddit: {
@@ -36,6 +42,7 @@ import { runLock } from '../../src/actions/lock';
 import { runReport } from '../../src/actions/report';
 import { runBan } from '../../src/actions/ban';
 import { runUserFlair } from '../../src/actions/userFlair';
+import { runDistinguish } from '../../src/actions/distinguish';
 import type { ActionContext, Item, Author, AppConfig } from '../../src/shared/types';
 
 const post: Item = {
@@ -214,5 +221,36 @@ describe('runUserFlair', () => {
     const opts = setUserFlair.mock.calls[0]![0] as Record<string, unknown>;
     expect(opts).not.toHaveProperty('text');
     expect(opts).not.toHaveProperty('cssClass');
+  });
+});
+
+describe('runDistinguish (AE Pull-Forward #2)', () => {
+  it('distinguishes posts via getPostById().distinguish() — no args per Reddit API', async () => {
+    await runDistinguish({ kind: 'distinguish' }, baseCtx(post));
+    expect(getPostById).toHaveBeenCalledWith('t3_abc');
+    expect(postDistinguish).toHaveBeenCalledWith();
+    expect(getCommentById).not.toHaveBeenCalled();
+  });
+
+  it('post target ignores sticky arg (Reddit has no post-sticky distinguish)', async () => {
+    await runDistinguish({ kind: 'distinguish', sticky: true }, baseCtx(post));
+    expect(postDistinguish).toHaveBeenCalledWith();
+  });
+
+  it('distinguishes comments via getCommentById().distinguish(false) when sticky unset', async () => {
+    await runDistinguish({ kind: 'distinguish' }, baseCtx(comment));
+    expect(getCommentById).toHaveBeenCalledWith('t1_xyz');
+    expect(commentDistinguish).toHaveBeenCalledWith(false);
+    expect(getPostById).not.toHaveBeenCalled();
+  });
+
+  it('passes sticky:true to comment.distinguish(true) — pins bot reply to thread top', async () => {
+    await runDistinguish({ kind: 'distinguish', sticky: true }, baseCtx(comment));
+    expect(commentDistinguish).toHaveBeenCalledWith(true);
+  });
+
+  it('throws on unexpected ID prefix', async () => {
+    const bad: Item = { ...post, id: 'xx_abc' };
+    await expect(runDistinguish({ kind: 'distinguish' }, baseCtx(bad))).rejects.toThrow();
   });
 });

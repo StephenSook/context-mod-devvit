@@ -259,6 +259,19 @@ export interface UserFlairAction {
   cssClass?: string;
   dryRun?: boolean;
 }
+/**
+ * AE Pull-Forward — DistinguishAction (upstream FoxxMD parity). Marks the
+ * target post or comment as moderator-distinguished (the green [M] tag on
+ * Reddit). Most commonly applied alongside a `comment` action so the bot's
+ * reply visibly reads as a moderator action instead of a regular user post.
+ * Sticky-comment variant via `sticky: true` (post comments only).
+ */
+export interface DistinguishAction {
+  kind: 'distinguish';
+  /** Default true. Sticky pins the comment to the top of the thread (post-level only). */
+  sticky?: boolean;
+  dryRun?: boolean;
+}
 
 export type Action =
   | RemoveAction
@@ -267,7 +280,8 @@ export type Action =
   | LockAction
   | ReportAction
   | BanAction
-  | UserFlairAction;
+  | UserFlairAction
+  | DistinguishAction;
 
 export type CheckCombinator = 'AND' | 'OR';
 export type PostBehavior = 'next' | 'stop' | { goto: string };

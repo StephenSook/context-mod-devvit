@@ -37,6 +37,7 @@ import { runLock } from '../actions/lock';
 import { runReport } from '../actions/report';
 import { runBan } from '../actions/ban';
 import { runUserFlair } from '../actions/userFlair';
+import { runDistinguish } from '../actions/distinguish';
 
 /**
  * Stable payload digest fed into actionId. Keeps the hash deterministic across
@@ -61,6 +62,8 @@ function payloadDigest(a: Action): string {
       return `dur=${a.duration ?? 0}|reason=${a.reason ?? ''}|note=${a.note ?? ''}`;
     case 'userFlair':
       return `text=${a.text ?? ''}|css=${a.cssClass ?? ''}`;
+    case 'distinguish':
+      return `sticky=${a.sticky ?? false}`;
   }
 }
 
@@ -153,6 +156,9 @@ export async function runAction(action: Action, ctx: ActionContext): Promise<Act
         break;
       case 'userFlair':
         await runUserFlair(action, ctx);
+        break;
+      case 'distinguish':
+        await runDistinguish(action, ctx);
         break;
     }
     sideEffectDone = true;
