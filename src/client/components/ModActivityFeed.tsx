@@ -62,7 +62,28 @@ export function ModActivityFeed({ refreshedAt }: { refreshedAt: number }) {
       </div>
     );
   }
-  if (state.empty) return null;
+  if (state.empty) {
+    // AE Polish #1: render heading + empty placeholder so the first mod
+    // action doesn't pop a new section into existence + shift the events
+    // stream down.
+    return (
+      <div
+        className="cm-fade-up px-5 py-2 border-t border-line/40"
+        style={{ animationDelay: '0.6s' }}
+      >
+        <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium mb-1.5">
+          mod{' '}
+          <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+            activity
+          </span>
+        </h2>
+        <p className="telemetry text-[10px] text-bone-300/60 italic font-serif">
+          No mod actions yet. Use the mod menu (reload-config, test-rules,
+          simulate-rule) to populate this feed.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

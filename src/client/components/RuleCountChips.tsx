@@ -13,13 +13,18 @@ export function RuleCountChips({ events }: { events: EventRecord[] }) {
     return Object.entries(byRule).sort((a, b) => b[1] - a[1]);
   }, [events]);
 
-  if (counts.length === 0) return null;
-
   const visible = counts.slice(0, MAX_CHIPS);
   const overflow = counts.length - visible.length;
 
+  // AE Polish #1: reserve min-height equivalent to one chip row when empty
+  // so the dashboard doesn't shift down on first rule firing. Empty state
+  // is invisible chrome (no chips rendered) but preserves vertical space.
+  if (counts.length === 0) {
+    return <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2 min-h-[22px]" />;
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2">
+    <div className="flex flex-wrap items-center gap-1.5 px-5 pb-2 min-h-[22px]">
       {visible.map(([name, n]) => (
         <span
           key={name}

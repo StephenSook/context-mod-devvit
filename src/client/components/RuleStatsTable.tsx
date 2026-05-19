@@ -80,7 +80,24 @@ function RuleStatsTableImpl({ events }: { events: EventRecord[] }) {
     if (sortKey !== key) return '';
     return sortDir === 'desc' ? ' ▼' : ' ▲';
   }
-  if (stats.length === 0) return null;
+  // AE Polish #1: reserve vertical space when empty instead of returning null.
+  // Previously the table would pop into existence on first rule firing,
+  // shifting every component below it down by ~100px — bad first-paint UX.
+  if (stats.length === 0) {
+    return (
+      <div className="cm-fade-up px-5 pt-3 pb-2" style={{ animationDelay: '0.5s' }}>
+        <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium mb-2">
+          rule{' '}
+          <span className="font-serif italic normal-case tracking-normal text-bone-200/80">
+            stats
+          </span>
+        </h2>
+        <div className="rounded-md border border-line px-3 py-4 text-[11px] text-bone-300/60 italic font-serif">
+          No rule firings yet. The table will populate as events arrive.
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cm-fade-up px-5 pt-3 pb-2" style={{ animationDelay: '0.5s' }}>
       <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium mb-2">
