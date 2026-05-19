@@ -253,12 +253,16 @@ describe('BadTriggerIdError (Polish #81 — ThingId brand boundary guard)', () =
     ).rejects.toThrow(BadTriggerIdError);
   });
 
-  it('throws on a post payload with t1_ prefix (wrong kind for post)', async () => {
+  // AE Polish #92: lying-test-name fix. Original title was "throws on a
+  // post payload with t1_ prefix" — the body asserts NO throw. Renamed
+  // to reflect actual behavior (cross-prefix acceptance is intentional;
+  // ThingId is the post|comment union, downstream actions dispatch on
+  // prefix anyway so we don't over-constrain at normalize-time).
+  it('accepts t1_ prefix on post payload (looser-but-correct boundary)', async () => {
     // Defense-in-depth: post payloads should carry t3_ IDs. A t1_ id here
     // would be an upstream payload bug; we accept either prefix at the
     // type level (ThingId is post|comment union) but downstream actions
     // dispatch on prefix anyway, so we don't over-constrain here.
-    // Verifying instead that t1_ DOES pass — looser-but-correct.
     const { item } = await normalizePost(
       { post: { id: 't1_unexpected_for_post', title: 'x' }, author: { name: 'a' } },
       baseConfig

@@ -252,16 +252,21 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
   // wasting the 5-min pending TTL on deterministic 4xx failures.
   describe('Polish #82: non-retryable error path', () => {
     it('seals slot via commitAction on "already removed" error', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('HTTP 400: post already removed'));
       const res = await runAction({ kind: 'remove' }, ctx);
       expect(res.status).toBe('error');
-      expect(commitAction).toHaveBeenCalled(); // sealed, not released
+      // AE Polish #92: assert commitAction received the correct token
+      // (pre-fix the test stubbed reserveAction with a bare string;
+      // destructuring yielded token: undefined; a regression that
+      // dropped the token from the call would have passed the prior
+      // `toHaveBeenCalled()` assertion).
+      expect(commitAction).toHaveBeenCalledWith(expect.any(String), 'tk-xyz', ctx.subredditName);
       expect(releaseAction).not.toHaveBeenCalled();
     });
 
     it('seals slot on HTTP 404 not-found error', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('HTTP 404: comment not found'));
       const res = await runAction({ kind: 'remove' }, ctx);
       expect(res.status).toBe('error');
@@ -270,7 +275,7 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     });
 
     it('seals slot on forbidden / unauthorized error', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('403 Forbidden: action not permitted'));
       const res = await runAction({ kind: 'remove' }, ctx);
       expect(res.status).toBe('error');
@@ -279,7 +284,7 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     });
 
     it('STILL releases for retry on transient network error (retryable)', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('ECONNRESET'));
       const res = await runAction({ kind: 'remove' }, ctx);
       expect(res.status).toBe('error');
@@ -289,7 +294,7 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     });
 
     it('STILL releases for retry on HTTP 5xx error (retryable)', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('HTTP 503: service unavailable'));
       const res = await runAction({ kind: 'remove' }, ctx);
       expect(res.status).toBe('error');
@@ -297,7 +302,7 @@ describe('runAction — dry-run gate (Phase 2.5)', () => {
     });
 
     it('non-retryable commitAction failure → harmless (logged, returns error anyway)', async () => {
-      reserveAction.mockResolvedValueOnce('tok_xyz');
+      reserveAction.mockResolvedValueOnce({ token: 'tk-xyz' });
       redditRemove.mockRejectedValueOnce(new Error('HTTP 404: not found'));
       commitAction.mockRejectedValueOnce(new Error('redis blip during seal'));
       const res = await runAction({ kind: 'remove' }, ctx);
