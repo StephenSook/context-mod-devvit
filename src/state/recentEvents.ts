@@ -48,11 +48,27 @@ export async function recordEvent(
       score: event.ts,
       member: JSON.stringify(versioned),
     });
-    await redis.zRemRangeByRank(K.eventsRecent(sub), 0, -51); // keep last 50
   } catch (err) {
     // Event-log write is best-effort — losing one row should never abort the
     // already-completed Reddit action. Log and move on.
     console.error('[cm/recentEvents] zAdd failed (event dropped):', event, err);
+    return;
+  }
+  // AE Polish #67: silent-failure-hunter MEDIUM finding. Previously the
+  // trim sat inside the same try as zAdd — if zAdd succeeded but
+  // zRemRangeByRank failed (independent Redis call), the catch logged
+  // "event dropped" which was misleading (the event WAS written, only
+  // the trim failed). Split into its own try with a separate, accurate
+  // log message. Tail-bound miss is self-healing: every future write
+  // re-attempts the trim, so a transient blip on one call just leaves
+  // the ZSET briefly oversized.
+  try {
+    await redis.zRemRangeByRank(K.eventsRecent(sub), 0, -51); // keep last 50
+  } catch (err) {
+    console.warn(
+      '[cm/recentEvents] zRemRangeByRank failed — event persisted, trim deferred:',
+      err
+    );
   }
 }
 
