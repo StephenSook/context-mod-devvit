@@ -104,24 +104,38 @@ describe('computeStats (Y1-X7)', () => {
     // treated every real response as empty → dashboard always rendered
     // ZERO_STATS. Test verifies the new client-shape fields land on the
     // wire alongside the legacy fields.
-    const now = Date.now();
-    readRecentMock.mockResolvedValue([
-      event(now - 1000, 'spam-removal', 'crypto-giveaway', 'remove'),
-      event(now - 1000 * 60 * 30, 'spam-removal', 'crypto-giveaway', 'remove'),
-      event(now - 1000 * 60 * 60 * 5, 'low-karma-flag', 'fresh-account', 'report'),
-    ]);
-    const stats = await computeStats('r_test');
-    expect(stats.actionsToday).toBe(3);
-    expect(stats.timeSavedMin).toBe(12); // 3 * 4
-    expect(stats.activeRules).toBe(2);
-    expect(stats.topRule).toBe('spam-removal / crypto-giveaway');
-    expect(Array.isArray(stats.hourlyActions24h)).toBe(true);
-    expect(stats.hourlyActions24h).toHaveLength(24);
-    expect(stats.hourlyActions24h[23]).toBe(2);
-    // Event at `now - 5h` lands in bucket 19 (covers now-5h to now-4h).
-    // bucket k covers [dayStart + k*1h, dayStart + (k+1)*1h); for k=19
-    // that's [now-5h, now-4h], so a ts of exactly now-5h falls in bucket 19.
-    expect(stats.hourlyActions24h[19]).toBe(1);
+    //
+    // AE Polish #71: pin system time so the test's `now` and
+    // computeStats's internal Date.now() agree. Without this, slow CI
+    // runners (Node 24 was the visible repro — Node 20/22 passed) read
+    // a later Date.now() inside computeStats than the test captured,
+    // bumping the bucket assignment down by 1 (e.g. a 5h-old event
+    // landed in bucket 18 instead of 19 when CI added even ~1ms of
+    // drift). Fake timers force determinism.
+    vi.useFakeTimers();
+    const now = new Date('2026-05-19T15:30:00Z').getTime();
+    vi.setSystemTime(now);
+    try {
+      readRecentMock.mockResolvedValue([
+        event(now - 1000, 'spam-removal', 'crypto-giveaway', 'remove'),
+        event(now - 1000 * 60 * 30, 'spam-removal', 'crypto-giveaway', 'remove'),
+        event(now - 1000 * 60 * 60 * 5, 'low-karma-flag', 'fresh-account', 'report'),
+      ]);
+      const stats = await computeStats('r_test');
+      expect(stats.actionsToday).toBe(3);
+      expect(stats.timeSavedMin).toBe(12); // 3 * 4
+      expect(stats.activeRules).toBe(2);
+      expect(stats.topRule).toBe('spam-removal / crypto-giveaway');
+      expect(Array.isArray(stats.hourlyActions24h)).toBe(true);
+      expect(stats.hourlyActions24h).toHaveLength(24);
+      expect(stats.hourlyActions24h[23]).toBe(2);
+      // Event at `now - 5h` lands in bucket 19 (covers now-5h to now-4h).
+      // bucket k covers [dayStart + k*1h, dayStart + (k+1)*1h); for k=19
+      // that's [now-5h, now-4h], so a ts of exactly now-5h falls in bucket 19.
+      expect(stats.hourlyActions24h[19]).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Polish #38: empty event ring still emits client-shape fields w/ safe defaults', async () => {
@@ -151,12 +165,24 @@ describe('computeStats (Y1-X7)', () => {
     // EXCLUDED an event at exactly dayStart, but the bucket formula
     // Math.floor((0)/3600000) = 0 would have assigned it to bucket 0.
     // Bounds + assignment disagreed on the boundary. Fixed to `< dayStart`.
-    const now = Date.now();
-    const dayStart = now - 24 * 3_600_000;
-    readRecentMock.mockResolvedValue([event(dayStart, 'r', 'c', 'remove')]);
-    const stats = await computeStats('r_test');
-    expect(stats.hourlyActions24h[0]).toBe(1);
-    expect(stats.hourlyActions24h.reduce((a, b) => a + b, 0)).toBe(1);
+    //
+    // AE Polish #71: same fake-timer pin as Polish #38 test above —
+    // computeStats's internal Date.now() reads a later value than the
+    // test's `Date.now()` on slow CI runners (Node 24 was the visible
+    // repro). Without pinning, the event's ts ends up < computeStats's
+    // dayStart by `delta`, gets EXCLUDED, bucket 0 count is 0 not 1.
+    vi.useFakeTimers();
+    const now = new Date('2026-05-19T15:30:00Z').getTime();
+    vi.setSystemTime(now);
+    try {
+      const dayStart = now - 24 * 3_600_000;
+      readRecentMock.mockResolvedValue([event(dayStart, 'r', 'c', 'remove')]);
+      const stats = await computeStats('r_test');
+      expect(stats.hourlyActions24h[0]).toBe(1);
+      expect(stats.hourlyActions24h.reduce((a, b) => a + b, 0)).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('Polish #43: event at exactly now lands in last bucket (23) — upper edge inclusive', async () => {
