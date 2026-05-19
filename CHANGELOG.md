@@ -10,6 +10,19 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Fixed — UX honesty
 
+- **AE Polish #21: client surfaces server-supplied error body on non-200**
+  — `fetchRecentSafe` / `fetchStatsSafe` previously returned a generic
+  `"HTTP 503"` string when `/api/recent` / `/api/stats` failed, dropping
+  the structured detail the server already includes (e.g. `"subreddit
+  context unavailable: ECONNRESET"`). The `ErrorBanner` then showed
+  mods just `"HTTP 503"` — diagnostically useless. Added
+  `extractServerError(res)` helper that parses the JSON body and
+  prepends `HTTP <status>:` so mods see e.g.
+  `"HTTP 503: subreddit context unavailable: ECONNRESET"`. Falls back
+  to bare `HTTP <status>` when the body isn't JSON or has no `error`
+  field. +3 unit tests covering the body-extract success, body-missing-
+  error, and body-parse-throws fallback paths. 617 tests green (was 614).
+
 - **AE Polish #20: `friendlyExplainError` precedence — Redis before
   api-key** — `/api/explain-event`'s api-key-resolve-failure path
   (added in Wave V) returns `"Could not read OpenAI API key (Redis/

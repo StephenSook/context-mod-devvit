@@ -91,6 +91,48 @@ describe('fetchRecentSafe', () => {
     if (!result.ok) expect(result.error).toContain('404');
   });
 
+  it('Polish #21: 503 + server error body → surfaces server message + code', async () => {
+    // /api/recent returns this exact shape when reddit.getCurrentSubreddit throws.
+    mockFetch({
+      ok: false,
+      status: 503,
+      json: () =>
+        Promise.resolve({
+          error: 'subreddit context unavailable: ECONNRESET',
+          events: [],
+        }),
+    });
+    const result = await fetchRecentSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('503');
+      expect(result.error).toContain('subreddit context unavailable');
+      expect(result.error).toContain('ECONNRESET');
+    }
+  });
+
+  it('Polish #21: non-200 + body without error field → falls back to HTTP code', async () => {
+    mockFetch({
+      ok: false,
+      status: 502,
+      json: () => Promise.resolve({ unrelated: 'foo' }),
+    });
+    const result = await fetchRecentSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('HTTP 502');
+  });
+
+  it('Polish #21: non-200 + body JSON parse throws → falls back to HTTP code (no crash)', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new Error('bad JSON')),
+    }) as unknown as typeof fetch;
+    const result = await fetchRecentSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('HTTP 500');
+  });
+
   it('network failure → ok:false error includes message', async () => {
     mockFetchReject(new Error('Failed to fetch'));
     const result = await fetchRecentSafe();
