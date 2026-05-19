@@ -102,6 +102,24 @@ export async function publish(config: AppConfig, sub?: string): Promise<number> 
       );
     }
   }
+  // AE Polish #83: gemini brutal-audit P2-2. The regex COMPILE_CACHE in
+  // src/lib/regexCache.ts is unbounded by design (module docstring
+  // explicitly acknowledges this). Per-install steady-state is small
+  // (dozens of rules per sub), but on a config-churn day — mod editing
+  // the wiki repeatedly with different regex patterns — the cache
+  // grows monotonically. A new pointer advance means a new effective
+  // config is live; old rev's regex patterns are no longer in use and
+  // can be evicted. Lazy-import to avoid the configStore → regexCache
+  // dependency edge at module-load (regexCache imports nothing from
+  // configStore, so the cycle is one-directional, but explicit lazy
+  // import keeps the surface minimal).
+  try {
+    const { _resetRegexCache } = await import('../lib/regexCache');
+    _resetRegexCache();
+  } catch (err) {
+    // Non-fatal — cache is best-effort optimization, not correctness.
+    console.warn('[cm/configStore] regex cache reset failed (harmless):', msg(err));
+  }
   return next;
 }
 
