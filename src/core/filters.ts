@@ -5,6 +5,7 @@
  */
 
 import type { FilterSpec, AuthorFilter, ItemFilter, Item, Author } from '../shared/types';
+import { getCompiledRegex } from '../lib/regexCache';
 
 export function passesFilters(
   filters: FilterSpec | undefined,
@@ -56,29 +57,23 @@ function passesItem(f: ItemFilter, i: Item): boolean {
     f.linkFlairTextNotIn.includes(i.linkFlairText)
   )
     return false;
-  // Invalid filter regex MUST not throw — mirrors
-  // src/rules/regex.ts try/catch pattern. Bad pattern → filter-failed = skip.
-  // (Parse-time validator + catastrophic-backtracking detection deferred
-  // post-hackathon — tracked as MED/LOW Codex findings.)
-  if (f.titleMatches && !safeRegexTest(f.titleMatches, i.title, 'titleMatches')) return false;
-  if (f.bodyMatches && !safeRegexTest(f.bodyMatches, i.body, 'bodyMatches')) return false;
-  if (f.urlMatches && !safeRegexTest(f.urlMatches, i.url, 'urlMatches')) return false;
+  // AE Polish #35: filter regex uses the SHARED compile cache + safe-regex
+  // guard from src/lib/regexCache.ts. Previously this had its own
+  // `safeRegexTest` that (a) compiled fresh `new RegExp()` per call (no
+  // cache) and (b) was misnamed — actually NOT safe-regex protected, so a
+  // mod's `titleMatches: '(a+)+$'` filter on a popular sub would pin the
+  // event loop on every post submission. Same attack surface as the rule
+  // regex path that Pull-Forward #8 hardened.
+  if (f.titleMatches && !cachedRegexTest(f.titleMatches, i.title, 'titleMatches')) return false;
+  if (f.bodyMatches && !cachedRegexTest(f.bodyMatches, i.body, 'bodyMatches')) return false;
+  if (f.urlMatches && !cachedRegexTest(f.urlMatches, i.url, 'urlMatches')) return false;
   return true;
 }
 
-function safeRegexTest(pattern: string, target: string, fieldName: string): boolean {
-  try {
-    return new RegExp(pattern).test(target);
-  } catch (err) {
-    console.error(
-      '[cm/filters] invalid',
-      fieldName,
-      'pattern — treating as non-match:',
-      pattern,
-      err
-    );
-    return false;
-  }
+function cachedRegexTest(pattern: string, target: string, fieldName: string): boolean {
+  const re = getCompiledRegex(pattern, '', `cm/filters/${fieldName}`);
+  if (re === null) return false; // bad pattern OR safe-regex rejected → non-match
+  return re.test(target);
 }
 
 // Re-export the field-level helpers for unit testing.

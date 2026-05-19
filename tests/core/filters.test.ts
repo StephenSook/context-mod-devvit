@@ -140,3 +140,43 @@ describe('passesFilters — combined item + author', () => {
     ).toBe(false);
   });
 });
+
+describe('passesFilters — safe-regex guard (Polish #35)', () => {
+  it('catastrophic-backtracking titleMatches pattern rejected as non-match', () => {
+    // `(a+)+$` is a classic ReDoS pattern. safe-regex rejects star-height >1.
+    // Without Polish #35 the filter would compile it + happily DoS the event
+    // loop on every post submission. Now the shared regexCache returns null
+    // for the pattern + filter treats it as non-match (filter fails).
+    const itemWithA = {
+      ...baseItem,
+      title: 'a'.repeat(20) + 'b', // forces backtracking on the bad pattern
+    };
+    const result = passesFilters(
+      { itemIs: { titleMatches: '(a+)+$' } },
+      itemWithA,
+      baseAuthor
+    );
+    // Pattern rejected → filter test returns false → filter fails → false.
+    expect(result).toBe(false);
+  });
+
+  it('catastrophic-backtracking bodyMatches pattern rejected as non-match', () => {
+    const itemWithA = { ...baseItem, body: 'a'.repeat(20) + 'b' };
+    expect(
+      passesFilters({ itemIs: { bodyMatches: '(a+)+$' } }, itemWithA, baseAuthor)
+    ).toBe(false);
+  });
+
+  it('catastrophic-backtracking urlMatches pattern rejected as non-match', () => {
+    const itemWithUrl = { ...baseItem, url: 'a'.repeat(20) + 'b' };
+    expect(
+      passesFilters({ itemIs: { urlMatches: '(a+)+$' } }, itemWithUrl, baseAuthor)
+    ).toBe(false);
+  });
+
+  it('well-formed regex still works after Polish #35 (no regression)', () => {
+    expect(
+      passesFilters({ itemIs: { titleMatches: '^hi$' } }, baseItem, baseAuthor)
+    ).toBe(true);
+  });
+});

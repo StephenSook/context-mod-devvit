@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
+### Security — defense-in-depth
+
+- **AE Polish #35: filter regex now uses shared safe-regex cache** —
+  caught during Phase B audit. `src/core/filters.ts` had its own
+  `safeRegexTest` helper that was MISNAMED — it (a) compiled fresh
+  `new RegExp()` on EVERY filter eval w/ no cache and (b) lacked the
+  `safe-regex` catastrophic-backtracking guard that Pull-Forward #8
+  added for the rule path. So `filters.titleMatches: '(a+)+$'` on a
+  popular sub would pin the event loop on every post submission —
+  exactly the DoS surface Pull-Forward #8 was supposed to close.
+  Extracted shared `getCompiledRegex()` to `src/lib/regexCache.ts`,
+  wired both `src/rules/regex.ts` AND `src/core/filters.ts` through
+  it, so cache + safe-regex now apply to BOTH paths. +15 tests
+  covering: shared-cache contract (returns + caches RegExp, NUL-
+  separator key, cache hit identity, invalid pattern returns null,
+  null cached for invalid, catastrophic-backtracking pattern
+  rejected, well-formed patterns pass), filter ReDoS rejection
+  (titleMatches/bodyMatches/urlMatches each get the `(a+)+$` test).
+  712 tests green (was 697). tsc + lint clean.
+
 ### Tested — direct unit coverage
 
 - **AE Polish #34: `App.tsx` React-level state-machine tests** —
