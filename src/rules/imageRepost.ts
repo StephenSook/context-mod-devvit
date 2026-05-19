@@ -25,7 +25,7 @@
 import type { ImageRepostRule, Item, RuleResult } from '../shared/types';
 import { fetchAndDecode } from '../image/decode';
 import { computeBlockhash } from '../image/hash';
-import { findSimilar, recordHash } from '../state/imageHashStore';
+import { findSimilar, recordHash, type SimilarMatch } from '../state/imageHashStore';
 
 const DEFAULT_HAMMING_THRESHOLD = 8;
 const DEFAULT_WINDOW_DAYS = 30;
@@ -70,13 +70,40 @@ export async function runImageRepostRule(
   const windowDays = rule.windowDays ?? DEFAULT_WINDOW_DAYS;
   const ttlSec = windowDays * 86_400;
 
-  const match = await findSimilar(candidateHash, threshold, sub);
+  // Polish #26: defense-in-depth fail-OPEN around the storage calls.
+  // imageHashStore's findSimilar + recordHash already catch + warn on Redis
+  // throws (returning null / void), but matching the rule-level pattern
+  // used by repost.ts + scheduler.ts's image-hash-worker keeps the
+  // invariant explicit AT the rule layer: a Redis blip during evaluation
+  // must NEVER abort the surrounding handleActivity loop (which would
+  // skip every later run's rules + actions for the same event).
+  let match: SimilarMatch | null = null;
+  try {
+    match = await findSimilar(candidateHash, threshold, sub);
+  } catch (err) {
+    console.warn(
+      '[cm/rules/imageRepost] findSimilar threw — fail-open (no trigger):',
+      item.id,
+      err
+    );
+    return { triggered: false };
+  }
   // Always record AFTER the lookup so the same post can't match itself.
-  await recordHash(
-    { postId: item.id, hash: candidateHash, ts: Date.now() },
-    ttlSec,
-    sub
-  );
+  try {
+    await recordHash(
+      { postId: item.id, hash: candidateHash, ts: Date.now() },
+      ttlSec,
+      sub
+    );
+  } catch (err) {
+    // Lookup already succeeded; honor its decision. Lost record means
+    // future posts won't dedupe against THIS post, but won't false-positive.
+    console.warn(
+      '[cm/rules/imageRepost] recordHash threw — trigger decision still honored from lookup:',
+      item.id,
+      err
+    );
+  }
 
   if (match) {
     return { triggered: true };

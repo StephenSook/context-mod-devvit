@@ -10,6 +10,21 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
 
 ### Fixed — request hygiene
 
+- **AE Polish #26: `imageRepost` rule defense-in-depth fail-OPEN** —
+  brought `runImageRepostRule` into line w/ `repost.ts` + the
+  `image-hash-worker` scheduler handler: rule-level try/catch around
+  `findSimilar` + `recordHash`. The storage layer (`imageHashStore`)
+  already catches Redis errors itself, so this is belt+suspenders —
+  but `runRule` / `runCheck` / `runRun` have NO catches in the call
+  chain, so a future regression that let a Redis throw escape the
+  store would have aborted the entire `handleActivity` loop for the
+  triggering event (skipping every later run's rules + actions for
+  the same post). Now: lookup-throw → triggered:false (skip the rule);
+  recordHash-throw → trigger decision from the lookup is still honored.
+  +3 tests for the 3 throw paths (findSimilar throws, recordHash
+  throws after no-match, recordHash throws after match). 633 tests
+  green (was 630).
+
 - **AE Polish #25: `explainRule.ts` wires AbortController + 30s timeout**
   — the rule-explainer form path had an `AbortError` catch branch but
   NO `AbortController` was actually instantiated, so a hung OpenAI

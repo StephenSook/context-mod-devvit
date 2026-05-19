@@ -153,4 +153,69 @@ describe('runImageRepostRule', () => {
       'r_test'
     );
   });
+
+  it('Polish #26: findSimilar throws (Redis) → fail-OPEN, return false, no abort', async () => {
+    // Defense-in-depth: imageHashStore.findSimilar normally catches Redis
+    // errors itself, but a future regression that lets it throw must NOT
+    // bubble up out of runImageRepostRule (which would abort the whole
+    // handleActivity loop + skip later runs for the event).
+    fetchAndDecode.mockResolvedValueOnce({
+      ok: true,
+      frame: { width: 16, height: 16, rgba: new Uint8Array(16 * 16 * 4) },
+      bytes: 100,
+      contentType: 'image/jpeg',
+    });
+    computeBlockhash.mockReturnValueOnce('b'.repeat(64));
+    findSimilar.mockRejectedValueOnce(new Error('Redis ECONNRESET'));
+    const result = await runImageRepostRule(
+      { kind: 'imageRepost' },
+      baseItem,
+      'r_test'
+    );
+    expect(result.triggered).toBe(false);
+    // recordHash should NOT be called when findSimilar threw — we bailed early.
+    expect(recordHash).not.toHaveBeenCalled();
+  });
+
+  it('Polish #26: recordHash throws (Redis) → lookup result still honored', async () => {
+    // The lookup succeeded (no match), so the rule should return triggered:false
+    // regardless of whether the write-through to the store succeeded.
+    fetchAndDecode.mockResolvedValueOnce({
+      ok: true,
+      frame: { width: 16, height: 16, rgba: new Uint8Array(16 * 16 * 4) },
+      bytes: 100,
+      contentType: 'image/jpeg',
+    });
+    computeBlockhash.mockReturnValueOnce('c'.repeat(64));
+    findSimilar.mockResolvedValueOnce(null);
+    recordHash.mockRejectedValueOnce(new Error('Redis timeout'));
+    const result = await runImageRepostRule(
+      { kind: 'imageRepost' },
+      baseItem,
+      'r_test'
+    );
+    // Lookup said no match → triggered:false honored despite recordHash throw.
+    expect(result.triggered).toBe(false);
+  });
+
+  it('Polish #26: recordHash throws but lookup matched → triggered:true still wins', async () => {
+    fetchAndDecode.mockResolvedValueOnce({
+      ok: true,
+      frame: { width: 16, height: 16, rgba: new Uint8Array(16 * 16 * 4) },
+      bytes: 100,
+      contentType: 'image/jpeg',
+    });
+    computeBlockhash.mockReturnValueOnce('d'.repeat(64));
+    findSimilar.mockResolvedValueOnce({
+      entry: { postId: 't3_other', hash: 'd'.repeat(64), ts: Date.now() },
+      distance: 0,
+    });
+    recordHash.mockRejectedValueOnce(new Error('Redis down'));
+    const result = await runImageRepostRule(
+      { kind: 'imageRepost' },
+      baseItem,
+      'r_test'
+    );
+    expect(result.triggered).toBe(true);
+  });
 });
