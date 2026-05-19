@@ -92,4 +92,23 @@ describe('runRegexRule — compile cache (AE Pull-Forward #5)', () => {
     expect(runRegexRule(bad, baseItem).triggered).toBe(false);
     expect(runRegexRule(bad, baseItem).triggered).toBe(false);
   });
+
+  it('AE Pull-Forward #8: catastrophic-backtracking pattern rejected — treated as non-match', () => {
+    // Classic NFA-explosion pattern: nested + quantifiers. Against an
+    // adversarial body w/ many "a"s + trailing non-match this would pin
+    // the event loop for seconds. safe-regex rejects it at compile time.
+    const evil = { kind: 'regex' as const, pattern: '(a+)+$' };
+    expect(runRegexRule(evil, baseItem).triggered).toBe(false);
+    // Cached null so repeat calls don't re-warn.
+    expect(runRegexRule(evil, baseItem).triggered).toBe(false);
+  });
+
+  it('safe-regex passes well-formed patterns (no false positives on common mod patterns)', () => {
+    // baseItem.title = 'free crypto giveaway scam'
+    expect(runRegexRule({ kind: 'regex', pattern: 'crypto|nft' }, baseItem).triggered).toBe(true);
+    expect(
+      runRegexRule({ kind: 'regex', pattern: '\\b(scam|spam)\\b' }, baseItem).triggered
+    ).toBe(true);
+    expect(runRegexRule({ kind: 'regex', pattern: '^[A-Z]{4,}$' }, baseItem).triggered).toBe(false);
+  });
 });

@@ -1,4 +1,5 @@
 import type { RegexRule, Item, RuleResult } from '../shared/types';
+import safeRegex from 'safe-regex';
 
 /**
  * AE Pull-Forward #5 — RegExp compile cache.
@@ -25,6 +26,19 @@ function getCompiled(pattern: string, flags: string): RegExp | null {
   if (COMPILE_CACHE.has(key)) return COMPILE_CACHE.get(key) ?? null;
   try {
     const re = new RegExp(pattern, flags);
+    // AE Pull-Forward #8 — catastrophic-backtracking guard. A pattern like
+    // `(a+)+$` against an adversarial body could pin the event loop for
+    // seconds + DoS the trigger handler. `safe-regex` static-analyzes the
+    // pattern's NFA shape to reject star-height >1 + other footguns. We
+    // cache the null result so a bad pattern doesn't re-warn on every event.
+    if (!safeRegex(re)) {
+      console.error(
+        '[cm/rules/regex] pattern rejected by safe-regex (catastrophic-backtracking risk) — treating as non-match:',
+        pattern
+      );
+      COMPILE_CACHE.set(key, null);
+      return null;
+    }
     COMPILE_CACHE.set(key, re);
     return re;
   } catch (err) {
