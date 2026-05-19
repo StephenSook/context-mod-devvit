@@ -247,6 +247,55 @@ thanks to everyone in the r/Devvit Discord who answered questions through this b
 
 ---
 
+## 7. Cold-DM to FoxxMD's operator pool (post-launch first-touch)
+
+**Context:** FoxxMD confirmed (May 12, 2026, 3:19 PM) that `u/ContextModBot` is the main account he personally owns + runs (mods r/mealtimevideos, 60k visitors/week), and that ~15 other accounts run CM via the FoxxMD-hosted server, some of which mod 10k-1M subscriber subs + ~150 NSFW subs. These operators are the natural early-adopter pool: they already speak CM's JSON5 config schema, they're already running rule-engine moderation, and the original PRAW deployment is increasingly hard to keep online without a Python ops budget.
+
+**Audience-discovery:** Stephen pulls the operator list by inspecting `u/ContextModBot`'s mod-of subs publicly + the bot accounts mods register with FoxxMD's server (he can share the list privately if needed). DON'T pre-list names in the draft — paraphrase per recipient.
+
+**Send window:** POST-launch only. Drop these AFTER §5 (submission-day announcement) lands and after `npm run launch` completes the App Directory v0.6.7 review. Sending pre-launch would force the operators to wait on review queue + creates a credibility risk if Devvit review punts.
+
+**Status:** PENDING (queued for T+0 to T+3). Stephen sends ~5/day max so the outreach doesn't look automated; each one paraphrased so a recipient who cross-references won't see identical text.
+
+**Pre-cut draft (~70 words; Stephen drops the migration-guide reference paragraph on roughly half the sends + leans on the link instead):**
+
+```
+hey, you mod a sub running FoxxMD's ContextMod via the original PRAW build. just shipped a Devvit Web port — same JSON5 wiki schema, no central server, no token management, one-click install. drop-in for the 3 MVP rule kinds (regex / author / ruleSet) + 7 actions. shorter migration than you'd expect — 10–15 min if your config sticks to MVP rules.
+
+repo + migration guide: github.com/StephenSook/context-mod-devvit/blob/main/docs/migration-from-upstream-cm.md
+app listing: developers.reddit.com/apps/cm-devvit
+
+zero pressure — if PRAW's working for you, keep it. just wanted to put it on your radar in case the hosting overhead is wearing thin.
+```
+
+**Stephen paraphrase pre-cut targets (per [[outreach-paraphrase-pattern]]):**
+
+- Drop the rule-kind/action count list on half the sends (recipients who run CM already know the schema).
+- Rewrite the opener — "you mod a sub running FoxxMD's ContextMod" sounds like a form letter. Personalize w/ the specific sub name OR drop entirely and lead with "saw you running CM via PRAW — built a Devvit port."
+- Cut the "shorter migration than you'd expect" sentence — it's promotional. The migration guide will speak for itself.
+- Cut "zero pressure / if PRAW's working" softener on confident sends; keep on cold ones.
+
+**Suggested per-recipient angles** (Stephen picks ONE per send so messages don't all read the same):
+
+- r/mealtimevideos operator (FoxxMD himself, but framing for the public list) → emphasize the per-sub-isolation install model (no shared infra).
+- 10k-1M-subscriber operators → emphasize per-install Redis isolation (their rules + counters don't leak into another sub's).
+- 150-NSFW-sub fleet operator → emphasize one-click install + the dry-run rule tester (validating regex patterns against a real post w/o side-effects is a bigger win for high-volume subs).
+- Smaller subs (sub-10k) → emphasize the dashboard ("see what your rules are actually doing" beats raw bot logs for low-volume mods).
+
+**Reply-handling protocol:**
+
+- If they ask about feature parity vs upstream CM → point at `docs/migration-from-upstream-cm.md`'s "What's covered" table.
+- If they ask about the cut MHS rule → 1-sentence answer ("Reddit PR #96 locked AI-provider fetch policy to OpenAI + Gemini; api.moderatehatespeech.com falls outside — they keep running upstream CM for that rule, this Devvit build covers everything else"). Don't apologize.
+- If they ask about MHS-replacement → say it's on the post-hackathon roadmap and ask which classifier they'd want (Anthropic via OpenAI-compatible adapter is a candidate).
+- If they say "send me the install link" → reply w/ developers.reddit.com/apps/cm-devvit and offer to walk through the wiki seed.
+- If they say "not interested / not for me" → thank them, move on, no follow-up.
+
+**AI-tone scan:** clear (verified against blocklist: no "leverage / synergize / streamline / robust / comprehensive / cutting-edge / paradigm / utilize / harness").
+
+**Track responses** in `docs/submission/operator-outreach-log.md` (create on first reply): one row per sent → reply → outcome, so the post-mortem can compute response-rate + migration-conversion-rate.
+
+---
+
 ## Stephen's editorial pass (before sending any of these)
 
 For each message:
