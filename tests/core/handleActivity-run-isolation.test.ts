@@ -186,6 +186,58 @@ describe('handleActivity per-run try/catch (Polish #41)', () => {
     }
   });
 
+  it('Polish #47: action that NEVER resolves → action timeout fires, recorded as error, next action still runs', async () => {
+    // Pass-2 reviewer (pr-review-toolkit:code-reviewer) found this: Polish
+    // #42 wrapped runRun but the action-dispatch loop (for action in
+    // result.actions { await runAction(...) }) was UNGUARDED. Each runAction
+    // makes Reddit API calls — same hang vector, one level deeper.
+    // Polish #47 wraps each runAction in a Promise.race against 8s.
+    vi.useFakeTimers();
+    try {
+      // TWO_RUN_CONFIG has 2 runs. Mock runRun for BOTH so the for-loop
+      // doesn't get an undefined `result` on iteration 2.
+      runRun
+        .mockResolvedValueOnce({
+          triggered: true,
+          checkName: 'c1',
+          actions: [
+            { kind: 'remove', isSpam: true },
+            { kind: 'comment', template: 'hi' },
+          ],
+        })
+        .mockResolvedValueOnce({ triggered: false, checkName: '', actions: [] });
+      // First action of run-1 hangs, second resolves normally
+      runAction
+        .mockReturnValueOnce(new Promise(() => {})) // never resolves
+        .mockResolvedValueOnce({ status: 'ok', kind: 'comment' });
+
+      const promise = handleActivity(item, author, 'r_test');
+      await vi.advanceTimersByTimeAsync(8_001);
+      await promise;
+
+      // Both actions attempted — first timed out, second normal.
+      expect(runAction).toHaveBeenCalledTimes(2);
+
+      // recordEvent fired once for the triggered run-1.
+      const triggeredEvent = recordEvent.mock.calls.find(
+        (c) => (c[0] as { triggered: boolean }).triggered === true
+      );
+      expect(triggeredEvent).toBeDefined();
+      const payload = triggeredEvent![0] as {
+        actions: { kind: string; status: string; wouldHaveCalled?: string }[];
+      };
+      // First action result: error + wouldHaveCalled has the timeout msg
+      expect(payload.actions[0]?.kind).toBe('remove');
+      expect(payload.actions[0]?.status).toBe('error');
+      expect(payload.actions[0]?.wouldHaveCalled).toMatch(/8000ms/);
+      // Second action: succeeded normally
+      expect(payload.actions[1]?.kind).toBe('comment');
+      expect(payload.actions[1]?.status).toBe('ok');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('Polish #41: error message truncated to 200 chars in event payload', async () => {
     const longMsg = 'x'.repeat(500);
     runRun.mockRejectedValueOnce(new Error(longMsg));

@@ -55,6 +55,30 @@ Forward-looking (post-v0.6.6): see [`ROADMAP.md`](./ROADMAP.md).
   the Polish #6 corrupt-snapshot delete pattern. +1 test pinning that
   the snapshot key is GONE after a shape-stale fall-through.
 
+### Fixed — orchestrator hang defense (pass 2)
+
+- **AE Polish #47: per-ACTION timeout cap** — second-pass code-reviewer
+  audit caught this gap. Polish #42 wrapped the rule-eval phase
+  (`await runRun(...)`) in a Promise.race against 10s, but the
+  action-dispatch loop (`for action in result.actions { await
+  runAction(...) }`) was UNGUARDED. Each `runAction` makes a Reddit
+  API call (`reddit.remove`, `reddit.banUser`, etc.) — same hang
+  vector Polish #42 was meant to close, just one level deeper. A
+  Devvit platform hiccup mid-action or a transient Reddit 5xx that
+  never closes the connection would stall the action loop + block
+  subsequent actions for the same triggered check. Fix:
+  `actionWithTimeout(p, kind)` wraps each `await runAction(...)` in
+  a Promise.race against `PER_ACTION_TIMEOUT_MS = 8s`. Distinct
+  error class `ActionTimeoutError`. On timeout: log + push action
+  result w/ `status:'error'` + `wouldHaveCalled` carrying the
+  timeout message + `continue` to next action. Refactored the
+  timeout primitive into a shared `withTimeout(p, ms, errFactory)`
+  helper used by both `runWithTimeout` (Polish #42) and the new
+  `actionWithTimeout` (Polish #47). 8s ceiling is generous —
+  Reddit's mod-action SLA is sub-second. +1 test pinning the
+  per-action timeout behavior via fake timers. 732 tests green
+  (was 731).
+
 ### Fixed — orchestrator hang defense
 
 - **AE Polish #42: `handleActivity` per-run TIMEOUT** — silent-failure-
