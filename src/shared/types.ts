@@ -305,6 +305,15 @@ export type Action =
   | UserFlairAction
   | DistinguishAction;
 
+// AE Polish #66: type-design-analyzer top-1 fix — single source of truth
+// for action kinds. Before this, src/client/lib/types.ts hand-mirrored
+// the union as `ActionKind = 'remove' | 'approve' | ...` and drift was
+// caught only by manual review (Polish #53 added 'distinguish' to the
+// client side AFTER it had shipped server-side). Derive once from the
+// server-side Action union; importing this from the client makes the
+// drift class structurally impossible.
+export type ActionKind = Action['kind'];
+
 export type CheckCombinator = 'AND' | 'OR' | 'NOT';
 export type PostBehavior = 'next' | 'stop' | { goto: string };
 

@@ -1,18 +1,16 @@
-// AE Polish #53: `distinguish` was added server-side by Pull-Forward #2
-// (upstream FoxxMD parity) but never reflected in the client ActionKind
-// union. Result: when an event with `kind: 'distinguish'` reached the
-// dashboard, EventRow's KIND_ICON lookup returned `undefined` + fell
-// back to AlertTriangle, KIND_COLOR returned bone.300 gray fallback.
-// Mods saw a generic warning icon for a deliberate moderator action.
-export type ActionKind =
-  | 'remove'
-  | 'approve'
-  | 'lock'
-  | 'comment'
-  | 'report'
-  | 'ban'
-  | 'userFlair'
-  | 'distinguish';
+// AE Polish #66: derive ActionKind from the server-side Action union
+// (src/shared/types.ts). Previously this file hand-mirrored the union
+// as a string-literal alias — drift was caught only by manual review,
+// and Polish #53 had to be filed to back-port `'distinguish'` AFTER it
+// had shipped server-side and produced a fallback AlertTriangle icon
+// in EventRow. Deriving `Action['kind']` makes the drift class
+// structurally impossible: adding a new action variant server-side
+// (e.g. an `unfair-mute` upstream pull-forward) automatically expands
+// the client union, and forgetting the client KIND_ICON / KIND_COLOR /
+// chip entry surfaces as a compile error at the switch sites instead
+// of a runtime fallback.
+import type { Action } from '../../shared/types';
+export type ActionKind = Action['kind'];
 
 export type EventRecord = {
   ts: number;
