@@ -100,7 +100,11 @@ jobs:
   e2e-cross-browser:
     runs-on: ubuntu-latest
     name: E2E Playwright matrix (firefox + webkit)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # AE Polish #8 (Agent D #5): was gated push-to-main-only — PRs got
+    # zero Firefox/WebKit signal + cross-engine regressions only
+    # surfaced after merge (then needed a revert). Now runs on push +
+    # PR. cancel-in-progress already set false per CI concurrency policy,
+    # so PR force-push churn won't pile up runs.
     env:
       PW_FULL_MATRIX: '1'
     steps:

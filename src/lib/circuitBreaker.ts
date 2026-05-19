@@ -64,7 +64,14 @@ export async function checkCircuit(
       retryInSec: Math.ceil((openSec * 1000 - elapsedMs) / 1000),
     };
   } catch (err) {
-    console.warn('[cm/circuitBreaker] check failed (fail-open):', bucket, err);
+    // AE Polish #7 (Agent B #7): upgrade to console.error + tag with
+    // `breaker_unavailable` so ops sees the cost-multiplier during a
+    // Redis outage. Fail-OPEN is intentional (better to let OpenAI calls
+    // through than block everything when our local Redis is the blip)
+    // but combined w/ retryWithJitter a single user click can hammer
+    // the external service 3× per request — that's a real billing
+    // surface to surface in logs.
+    console.error('[cm/circuitBreaker] breaker_unavailable (fail-open):', bucket, err);
     return { state: 'closed' };
   }
 }

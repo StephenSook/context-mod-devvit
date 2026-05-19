@@ -96,14 +96,35 @@ export async function writeStatsSnapshot(sub: string): Promise<WriteSnapshotResu
 /**
  * Read the snapshot if fresh enough; otherwise compute on-the-fly. Used by
  * /api/stats. Treats snapshots older than 1h as stale.
+ *
+ * AE Polish #6 (Agent B #6): a corrupt snapshot (invalid JSON, missing
+ * computedAt, etc.) used to fall through to compute silently — but the
+ * same corrupt key kept getting re-parsed every dashboard poll (~30s)
+ * until the next hourly cron overwrote it. Now we DEL the bad key on
+ * parse failure so the next read goes straight to compute without the
+ * wasted GET + parse round-trip.
  */
 export async function readStatsSnapshot(sub: string): Promise<StatsRollup> {
+  const key = snapshotKey(sub);
   try {
-    const raw = await redis.get(snapshotKey(sub));
+    const raw = await redis.get(key);
     if (raw) {
-      const parsed = JSON.parse(raw) as StatsRollup;
-      if (parsed.computedAt > Date.now() - 3_600_000) {
-        return parsed;
+      try {
+        const parsed = JSON.parse(raw) as StatsRollup;
+        if (parsed.computedAt > Date.now() - 3_600_000) {
+          return parsed;
+        }
+      } catch (parseErr) {
+        // AE Polish #6: nuke the corrupt key so subsequent reads don't
+        // re-pay the GET + JSON.parse(invalid) overhead until the next
+        // hourly cron. Best-effort — if del fails too the next cycle
+        // gets another chance.
+        console.warn('[cm/statsRollup] corrupt snapshot — deleting key:', key, parseErr);
+        try {
+          await redis.del(key);
+        } catch (delErr) {
+          console.warn('[cm/statsRollup] failed to delete corrupt key:', key, delErr);
+        }
       }
     }
   } catch (err) {
