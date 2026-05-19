@@ -241,6 +241,29 @@ api.post('/explain-event', async (c) => {
       429
     );
   }
+  // AE Pull-Forward #7: per-USER tighter cap on top of the per-sub gate.
+  // Closes the "malicious or runaway mod burns the sub's whole quota" hole.
+  // A sub with 5 mods + per-sub cap of 30/hr was effectively 6/hr/mod — but
+  // one bad-actor mod (or a runaway scripted hit on the Explain button)
+  // could consume all 30 alone. Per-user 10/hr means the worst single mod
+  // gets 10 + the rest of the sub gets the remaining 20. Same fail-CLOSED
+  // on degraded — cost gate first.
+  const rlUser = await checkRateLimit('explain', `${auth.sub}:${auth.username}`, 10, 3600);
+  if (rlUser.degraded) {
+    return c.json({
+      ok: false,
+      error: 'Rate-limit subsystem degraded (Redis unavailable). Retry in ~60s.',
+    }, 503);
+  }
+  if (!rlUser.allowed) {
+    return c.json(
+      {
+        ok: false,
+        error: `Your personal rate limit: ${rlUser.count}/${rlUser.max} calls this hour. Other mods on r/${auth.sub} can still use Explain — yours resets in ~${Math.ceil(rlUser.resetInSec / 60)}min.`,
+      },
+      429
+    );
+  }
   // AD CRITICAL #1: previously `getOpenaiKey` + `settings.get` lived
   // outside the try block, so a Redis or Devvit-settings throw would
   // 500 the route w/ NO log.error, NO breaker classification, NO json
