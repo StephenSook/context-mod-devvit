@@ -53,7 +53,7 @@ api.get('/recent', async (c) => {
 
   // AE Polish #68: silent-failure-hunter MEDIUM finding. readRecent's
   // OWN try/catch on the zRange returns [] on Redis failure, but its
-  // inner JSON.parse / migrate() at line 84-90 catches per-row failures
+  // inner JSON.parse / migrate() in `readRecent` catches per-row failures
   // — and a SYNCHRONOUS throw (e.g. malformed key, key argument
   // construction blow-up) that happens BEFORE entering readRecent's
   // try would propagate up here. Hono's default 500 response is HTML

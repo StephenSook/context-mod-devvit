@@ -3,7 +3,7 @@
  *
  * Wraps every action with `reserveAction → side-effect → commitAction/releaseAction`
  * per D4. The action ID MUST come from the exported `actionId(thingId, actionType, payload)`
- * helper at src/lib/idem.ts:123 — pipe-separated. Hand-rolling concat collides on inputs
+ * helper in `src/lib/idem.ts` — pipe-separated. Hand-rolling concat collides on inputs
  * like ('t3_a','ban','x') vs ('t3_ab','an','x') and lets an attacker alias another user's
  * already-committed action to bypass `reserveAction`.
  *
@@ -49,12 +49,12 @@ import { runDistinguish } from '../actions/distinguish';
 // AE Polish #82: gemini brutal-audit P2-1. Distinguish RETRYABLE failures
 // (network blip, Reddit 5xx, transient rate-limit) from NON-RETRYABLE
 // failures (deterministic 4xx: post already removed, comment locked,
-// target user already banned). Pre-Polish, the catch at runAction:182
-// always called releaseAction → next event for the same activity would
-// retry the action against a target that will deterministically fail
-// the same way. Worst case: the pending TTL (5min) gates the retry, so
-// it's not infinite — but a mod editing the wiki to fix a misconfigured
-// rule had to wait out a 5min cooldown per actioned-thing.
+// target user already banned). Pre-Polish, the catch block below always
+// called releaseAction → next event for the same activity would retry
+// the action against a target that will deterministically fail the same
+// way. Worst case: the pending TTL (5min) gates the retry, so it's not
+// infinite — but a mod editing the wiki to fix a misconfigured rule had
+// to wait out a 5min cooldown per actioned-thing.
 //
 // New behavior: on a non-retryable error, call commitAction (seal the
 // slot — done, no retry needed) instead of releaseAction. The action

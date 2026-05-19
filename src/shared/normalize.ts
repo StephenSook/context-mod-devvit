@@ -8,7 +8,7 @@
  * Contrarian: unbounded fan-out on busy subs otherwise).
  *
  * Reality-correction 2026-05-15: Devvit payload field is `author.name`, NOT
- * `author.username`. See `src/routes/triggers.ts:20-23` for the shipped shape.
+ * `author.username`. See `src/routes/triggers.ts` for the shipped shape.
  */
 
 import { reddit } from '@devvit/web/server';

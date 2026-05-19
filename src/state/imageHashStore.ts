@@ -43,7 +43,7 @@ export interface SimilarMatch {
 // in findSimilar + recordHash were cast to ImageHashEntry[] and then the
 // `hash`/`postId`/`ts` fields were trusted unchecked. A corrupt member
 // like `{postId: 123, hash: "...", ts: "yesterday"}` passed the existing
-// `hash.length` guard at line 69 and propagated into match results and
+// `hash.length` guard in `findSimilar` and propagated into match results and
 // re-writes. Mirror the recentEvents.ts isValidRecentEventShape pattern:
 // validate every field before trust. Bad entries are dropped silently;
 // the store self-heals on next write.

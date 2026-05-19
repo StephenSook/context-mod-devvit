@@ -12,13 +12,13 @@
 // Reddit's fullname format is `t<type>_<base36>`; rule engine only sees
 // posts (t3_) and comments (t1_), so the union is closed. Branding the
 // shape at the type system level lets action-dispatch sites (lock.ts,
-// report.ts, distinguish.ts) narrow via `startsWith('t3_')` /
-// `startsWith('t1_')` and drop their ad-hoc `as` casts. Critically,
-// distinguish.ts:36's `throw new Error('unexpected id prefix')` becomes
-// provably unreachable code after narrowing (TS can prove the if/else
-// covers the union exhaustively).
+// report.ts, distinguish.ts) narrow via `isPostId` / `isCommentId`
+// predicates and drop their ad-hoc `as` casts. The pre-Polish
+// "unexpected id prefix" runtime throws in distinguish.ts + lock.ts
+// became provably unreachable under the brand — they were deleted
+// (TS proves the union exhaustively narrowed).
 //
-// Construction-site validation lives in src/shared/normalize.ts —
+// Construction-site validation lives in `src/shared/normalize.ts` —
 // invalid IDs throw BadTriggerIdError; handleActivity's per-run
 // try/catch records that as a (run-error) event so the dashboard sees
 // the failure instead of the activity silently disappearing.

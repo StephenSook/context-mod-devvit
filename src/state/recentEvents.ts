@@ -117,7 +117,7 @@ export async function readRecent(sub?: string): Promise<RecentEvent[]> {
  *
  * AE Polish #5: previously `case 1` returned `obj as unknown as RecentEvent`
  * w/ no field validation. A poisoned member like `{v:1, actions:"not-array"}`
- * propagated to statsRollup.ts:51 `for (const a of e.actions)` which throws
+ * propagated to `statsRollup.ts` `for (const a of e.actions)` which throws
  * on iteration of a non-iterable + brings down /api/stats. Now each field
  * is type-checked before the cast; bad members get dropped + logged like
  * any other parse failure (parsed.member is logged at the caller in

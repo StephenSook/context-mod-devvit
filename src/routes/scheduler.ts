@@ -76,7 +76,7 @@ scheduler.post('/refresh-config', async (c) => {
     // (b) fail again — either way leaving the cluster in a state where
     // wiki edits never reach the rule engine until manual intervention.
     //
-    // Sibling cron /stats-rollup (line 101-108) handles its persistence
+    // Sibling cron `/stats-rollup` (below) handles its persistence
     // failure via writeStatsSnapshot returning a discriminated
     // {persisted, error} result + an explicit log.error. Mirror that
     // pattern here: wrap publish+set in try/catch, log.error w/ the

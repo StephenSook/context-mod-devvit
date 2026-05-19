@@ -171,13 +171,13 @@ export async function getRecentRevs(
   // calls had no try/catch. A Redis blip while a mod was opening the
   // config-history modal propagated up to /api/config-history → Hono
   // unhandled 500 → client extractServerError surfaced "HTTP 500" with
-  // no actionable detail. Compare getCurrentRev (line 122) which throws
-  // explicit Error messages — getRecentRevs has no equivalent.
+  // no actionable detail. Compare `getCurrentRev` above which throws
+  // explicit Error messages — getRecentRevs had no equivalent.
   //
   // Fix: catch Redis throws, log to telemetry, return [] so the modal
   // renders an empty-state ("no recent revs") instead of an error
   // banner. Single-rev parse failures already use this same posture
-  // (logged + skipped at line 167-170).
+  // (logged + skipped at the corrupt-payload `console.warn` below).
   let ptr: string | null | undefined;
   try {
     ptr = await redis.get(K.cfgCurrentRev(sub));

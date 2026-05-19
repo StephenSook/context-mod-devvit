@@ -79,11 +79,11 @@ export function getCompiledRegex(
   // on a stateful regex (`g`/`y`) advances `lastIndex` on a match, so a
   // cached instance reused across rule evaluations returns false-
   // negatives starting from the second matching call against a string
-  // shorter than `lastIndex`. Schema at src/shared/types.ts:104 allows
-  // RegexRule.flags to be any string, including `"g"`. Stripping at
-  // compile keeps semantics identical for .test() (which only returns
-  // boolean — `g`/`y` only matter for .exec/.matchAll/.replace) and
-  // eliminates the bug class entirely.
+  // shorter than `lastIndex`. The `RegexRule.flags` schema field
+  // (`src/shared/types.ts`) allows any string, including `"g"`. Stripping
+  // at compile keeps semantics identical for .test() (which only
+  // returns boolean — `g`/`y` only matter for .exec/.matchAll/.replace)
+  // and eliminates the bug class entirely.
   const sanitizedFlags = flags.replace(/[gy]/g, '');
   const key = `${pattern}\x00${sanitizedFlags}`;
   if (COMPILE_CACHE.has(key)) return COMPILE_CACHE.get(key) ?? null;

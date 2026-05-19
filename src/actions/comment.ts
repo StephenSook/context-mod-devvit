@@ -3,7 +3,7 @@
  * context, then posts as the app via reddit.submitComment.
  *
  * Codex H4 2026-05-16 hardening: Mustache.escape now defaults to escapeMarkdown
- * (template.ts:18). Both `{{author.name}}` and `{{author.nameSafe}}` render
+ * (see `template.ts`). Both `{{author.name}}` and `{{author.nameSafe}}` render
  * identically — single escape via render-time pass. The `*Safe` fields remain
  * exposed as aliases so older configs that explicitly reference them keep
  * working. Mods who want truly raw content use Mustache triple-stash
