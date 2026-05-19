@@ -167,6 +167,24 @@ export async function readStatsSnapshot(sub: string): Promise<StatsRollup> {
         }
         // Fall through to compute below — either snapshot is time-stale OR
         // shape-stale (pre-Polish-#38 write).
+        //
+        // AE Polish #44: nuke the bad key on shape-stale fall-through.
+        // silent-failure-hunter Finding 4: without this, every /api/stats
+        // poll (~10s cadence) for the next 1h would re-GET + re-parse the
+        // same stale-shape snapshot + recompute, paying full cost on each
+        // poll until the hourly cron overwrote it. Defeats the cache.
+        // Mirrors the Polish #6 corrupt-snapshot delete pattern.
+        if (!hasClientShape) {
+          try {
+            await redis.del(key);
+          } catch (delErr) {
+            console.warn(
+              '[cm/statsRollup] failed to delete stale-shape key:',
+              key,
+              delErr
+            );
+          }
+        }
       } catch (parseErr) {
         // AE Polish #6: nuke the corrupt key so subsequent reads don't
         // re-pay the GET + JSON.parse(invalid) overhead until the next

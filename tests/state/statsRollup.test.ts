@@ -15,6 +15,11 @@ vi.mock('@devvit/web/server', () => ({
       store.set(k, v);
       return 'OK';
     }),
+    // AE Polish #44: shape-stale fall-through now deletes the bad key.
+    del: vi.fn(async (k: string) => {
+      store.delete(k);
+      return 1;
+    }),
   },
 }));
 vi.mock('../../src/state/recentEvents', () => ({
@@ -216,6 +221,27 @@ describe('writeStatsSnapshot + readStatsSnapshot (Y1-X7)', () => {
     const stats = await readStatsSnapshot('r_test');
     expect(stats.total).toBe(1);
     expect(readRecentMock).toHaveBeenCalled();
+  });
+
+  it('Polish #44: shape-stale snapshot is DELETED on fall-through (defeats stale-cache poll spam)', async () => {
+    // silent-failure-hunter Finding 4: without delete, every /api/stats poll
+    // (~10s cadence) for the next ~1h would re-GET + re-parse the same
+    // stale-shape snapshot + recompute, defeating the snapshot cache entirely.
+    // Mirrors the Polish #6 parseErr branch which already does this.
+    const stale = {
+      total: 50,
+      lastHour: 5,
+      today: 10,
+      failedActions: 2,
+      topRules: [{ ruleKey: 'r/c', count: 5 }],
+      computedAt: Date.now(),
+      // NO hourlyActions24h — pre-Polish-#38 shape
+    };
+    store.set('cm:stats:snapshot:r_test', JSON.stringify(stale));
+    readRecentMock.mockResolvedValue([]);
+    await readStatsSnapshot('r_test');
+    // The CRITICAL guarantee: key is GONE after the fall-through.
+    expect(store.has('cm:stats:snapshot:r_test')).toBe(false);
   });
 
   it('Polish #40: pre-Polish-#38 snapshot (no hourlyActions24h) → falls through to recompute (auto-heal)', async () => {
