@@ -101,9 +101,46 @@ export function EventDetails({ event }: { event: EventRecord }) {
 }
 
 /**
+ * AE Polish #4 — friendly error mapping for common /api/explain-event failures.
+ * Raw server messages ("Unauthorized: mod auth required for /api/explain-event")
+ * are too dev-flavored for moderator UX. Map known patterns to plain English;
+ * fall back to a short truncation of the raw message for anything else.
+ */
+function friendlyExplainError(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes('mod auth') || lower.includes('moderator') || lower.includes('401') || lower.includes('403')) {
+    return 'Sign in as a moderator of this sub to use AI explanations.';
+  }
+  if (lower.includes('rate limit') || lower.includes('429')) {
+    return raw; // already mod-friendly per api.ts
+  }
+  if (lower.includes('breaker') || lower.includes('temporarily unavailable')) {
+    return 'AI service is temporarily unavailable. Try again in a minute.';
+  }
+  if (lower.includes('api key') || lower.includes('missing')) {
+    return 'OpenAI API key is not configured. Use the "ContextMod: Set OpenAI API key" mod menu to add one.';
+  }
+  if (lower.includes('redis') || lower.includes('subsystem degraded')) {
+    return 'Backend storage is degraded. Try again in ~60s.';
+  }
+  if (lower.includes('timed out') || lower.includes('timeout')) {
+    return 'AI request timed out (~30s). Try again — usually a transient OpenAI hiccup.';
+  }
+  // Truncate the raw to keep it readable.
+  return raw.length > 160 ? raw.slice(0, 160) + '…' : raw;
+}
+
+/**
  * Wave V Phase V7 — "Explain with AI" button on each event drill-down.
  * POSTs to /api/explain-event w/ event summary, renders OpenAI explanation
  * inline. Mod-auth gated server-side (no client UI for non-mods).
+ *
+ * AE Polish #4: loading state shows an animated 3-dot pulse + skeleton
+ * for where the explanation will land (no more static "thinking…" label
+ * for the 2-8s OpenAI wait). Error path runs through friendlyExplainError
+ * so judges hitting a known-class failure (auth, rate-limit, breaker,
+ * key-missing, Redis-degraded, timeout) get an actionable message instead
+ * of a raw stack-fragment.
  */
 function AiExplainButton({ event }: { event: EventRecord }) {
   const [state, setState] = useState<{
@@ -154,18 +191,50 @@ function AiExplainButton({ event }: { event: EventRecord }) {
         type="button"
         onClick={() => void handleClick()}
         disabled={state.loading}
-        className="telemetry text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border border-signal-info/60 text-signal-info hover:bg-signal-info/10 transition-colors disabled:opacity-50 disabled:cursor-wait"
+        aria-busy={state.loading}
+        className="telemetry text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm border border-signal-info/60 text-signal-info hover:bg-signal-info/10 transition-colors disabled:opacity-50 disabled:cursor-wait inline-flex items-center gap-1.5"
       >
-        {state.loading ? 'thinking…' : '✨ Explain with AI'}
+        {state.loading ? (
+          <>
+            <span aria-hidden="true" className="inline-flex gap-0.5">
+              <span className="cm-ai-pulse-dot" style={{ animationDelay: '0s' }}>·</span>
+              <span className="cm-ai-pulse-dot" style={{ animationDelay: '0.2s' }}>·</span>
+              <span className="cm-ai-pulse-dot" style={{ animationDelay: '0.4s' }}>·</span>
+            </span>
+            <span>thinking</span>
+          </>
+        ) : (
+          <>
+            <span aria-hidden="true">✨</span>
+            <span>Explain with AI</span>
+          </>
+        )}
       </button>
+      {state.loading && (
+        <div
+          className="cm-fade-in mt-2 p-2 rounded-sm bg-signal-info/5 border border-signal-info/20 space-y-1.5"
+          aria-live="polite"
+          aria-label="AI explanation loading"
+        >
+          <div className="h-2 rounded bg-signal-info/15 animate-pulse w-full" />
+          <div className="h-2 rounded bg-signal-info/15 animate-pulse w-5/6" />
+          <div className="h-2 rounded bg-signal-info/15 animate-pulse w-3/5" />
+        </div>
+      )}
       {state.explanation && (
-        <p className="cm-fade-in mt-2 text-[11px] text-bone-100 leading-relaxed p-2 rounded-sm bg-signal-info/5 border border-signal-info/30">
+        <p
+          className="cm-fade-in mt-2 text-[11px] text-bone-100 leading-relaxed p-2 rounded-sm bg-signal-info/5 border border-signal-info/30"
+          aria-live="polite"
+        >
           {state.explanation}
         </p>
       )}
       {state.error && (
-        <p className="cm-fade-in mt-2 text-[10px] text-signal-err/90 p-2 rounded-sm bg-signal-err/5 border border-signal-err/30">
-          {state.error}
+        <p
+          className="cm-fade-in mt-2 text-[10px] text-signal-err/90 p-2 rounded-sm bg-signal-err/5 border border-signal-err/30"
+          role="alert"
+        >
+          {friendlyExplainError(state.error)}
         </p>
       )}
     </div>

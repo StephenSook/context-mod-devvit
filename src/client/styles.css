@@ -125,6 +125,17 @@
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.7; }
   }
+  /* AE Polish #4 — 3-dot pulse for AI explain loading state. Animation
+     delay is set inline per-dot (0/0.2/0.4s) so the dots ripple
+     left-to-right instead of all pulsing in sync. */
+  @keyframes cm-ai-pulse {
+    0%, 100% { opacity: 0.3; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-1px); }
+  }
+  .cm-ai-pulse-dot {
+    display: inline-block;
+    animation: cm-ai-pulse 1.2s ease-in-out infinite;
+  }
   /* Light-mode MVP — ThemeToggle attaches data-theme="light" on <html>.
      Inverts body background + primary text colors so high-contrast surfaces
      stay readable. Signal accents (ok/err/warn/info) keep hues for
