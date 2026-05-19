@@ -188,4 +188,23 @@ describe('imageHashStore.recordHash', () => {
       't3_new',
     ]);
   });
+
+  // AE Polish #93: gap caught by pr-test-analyzer. findSimilar has
+  // `if (!Array.isArray(entries)) return null;` defending against a
+  // stored value that JSON.parses to a non-array (corrupt blob, schema
+  // migration drift). No prior test covered this — a regression
+  // dropping the guard (e.g. `entries = Array.from(parsed)`) would
+  // pass all existing tests but throw on iteration in production.
+  it('Polish #93: findSimilar returns null when stored JSON is a non-array', async () => {
+    // Object instead of array — corrupt blob.
+    store.set(KEY, JSON.stringify({ not: 'an array' }));
+    const r = await findSimilar('a'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
+
+  it('Polish #93: findSimilar returns null when stored JSON is a bare string', async () => {
+    store.set(KEY, JSON.stringify('totally-not-array'));
+    const r = await findSimilar('a'.repeat(64), 8, 'test_sub');
+    expect(r).toBeNull();
+  });
 });

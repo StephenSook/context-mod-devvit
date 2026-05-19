@@ -549,6 +549,25 @@ describe('GET /api/recent happy path (Polish #27)', () => {
     expect(body.error).toContain('ECONNRESET');
     expect(body.events).toEqual([]);
   });
+
+  // AE Polish #93: gap caught by pr-test-analyzer. The Polish #68
+  // defensive wrap on `readRecent` (api.ts try/catch around the helper
+  // call) had no test — only the sibling getCurrentSubreddit-rejection
+  // path was covered. A regression removing the try/catch wrap would
+  // pass all prior tests but produce Hono's HTML 500 page when readRecent
+  // throws synchronously.
+  it('Polish #68: 503 + structured body when readRecent throws synchronously', async () => {
+    getCurrentSubreddit.mockResolvedValueOnce({ name: 'r_test' });
+    readRecent.mockImplementationOnce(() => {
+      throw new Error('sync boom — key construction blew up');
+    });
+    const res = await getJson('/recent');
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { error: string; events: unknown[] };
+    expect(body.error).toMatch(/events unavailable/i);
+    expect(body.error).toContain('sync boom');
+    expect(body.events).toEqual([]);
+  });
 });
 
 describe('GET /api/stats happy path (Polish #27)', () => {
@@ -601,6 +620,21 @@ describe('GET /api/stats happy path (Polish #27)', () => {
     expect(res.status).toBe(503);
     const body = (await res.json()) as { error: string };
     expect(body.error).toMatch(/subreddit context unavailable/i);
+  });
+
+  // AE Polish #93: Polish #68 wrap for /api/stats had no test (only
+  // sibling getCurrentSubreddit path was covered).
+  it('Polish #68: 503 + structured body when readStatsSnapshot throws synchronously', async () => {
+    getCurrentSubreddit.mockResolvedValueOnce({ name: 'r_test' });
+    readStatsSnapshot.mockImplementationOnce(() => {
+      throw new Error('sync boom — fallback compute hit unexpected state');
+    });
+    const res = await getJson('/stats');
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { counters: unknown; error: string };
+    expect(body.error).toMatch(/stats unavailable/i);
+    expect(body.error).toContain('sync boom');
+    expect(body.counters).toEqual({});
   });
 });
 

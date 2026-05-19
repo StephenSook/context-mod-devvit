@@ -20,6 +20,14 @@ vi.mock('@devvit/web/server', () => ({
   },
 }));
 
+// AE Polish #93: mock the regexCache module so we can assert Polish
+// #83 wiring (publish() must reset the cache on every successful
+// pointer advance — uncovered by prior tests, would silently regress).
+const _resetRegexCacheMock = vi.fn();
+vi.mock('../../src/lib/regexCache', () => ({
+  _resetRegexCache: _resetRegexCacheMock,
+}));
+
 import { publish, getCurrentRev, PublishError, getRecentRevs } from '../../src/state/configStore';
 import type { AppConfig } from '../../src/shared/types';
 
@@ -28,6 +36,7 @@ const cfgB: AppConfig = { runs: [{ name: 'b', checks: [] }] };
 
 beforeEach(() => {
   store.clear();
+  _resetRegexCacheMock.mockClear();
 });
 
 describe('configStore', () => {
@@ -210,5 +219,35 @@ describe('configStore — AE Polish #65 getRecentRevs explicit Redis fail-safe',
     // Newest rev (rev 2) was skipped but the older two are still returned.
     expect(out.length).toBe(2);
     expect(out.map((s) => s.rev).sort()).toEqual([0, 1]);
+  });
+});
+
+// AE Polish #93: gap caught by pr-test-analyzer for Polish #83.
+describe('configStore — Polish #83 regex-cache reset on publish', () => {
+  it('publish() calls _resetRegexCache once after successful pointer advance', async () => {
+    expect(_resetRegexCacheMock).not.toHaveBeenCalled();
+    await publish(cfgA);
+    expect(_resetRegexCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('two publishes → two cache resets (one per pointer advance)', async () => {
+    await publish(cfgA);
+    await publish(cfgB);
+    expect(_resetRegexCacheMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('PublishError on rev allocate → NO cache reset (pointer never advanced)', async () => {
+    const failingRedis = await import('@devvit/web/server');
+    const incrSpy = vi
+      .spyOn(failingRedis.redis, 'incrBy')
+      .mockRejectedValueOnce(new Error('redis down'));
+    try {
+      await publish(cfgA);
+      expect.fail('should have thrown');
+    } catch {
+      // expected
+    }
+    expect(_resetRegexCacheMock).not.toHaveBeenCalled();
+    incrSpy.mockRestore();
   });
 });

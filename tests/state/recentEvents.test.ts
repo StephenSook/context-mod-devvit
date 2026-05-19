@@ -251,4 +251,30 @@ describe('readRecent', () => {
     const out = await readRecent();
     expect(out).toHaveLength(0);
   });
+
+  // AE Polish #93: gap caught by pr-test-analyzer. Polish #67 split
+  // recordEvent's single try into two — zAdd in one (logs "event
+  // dropped" on fail) and zRemRangeByRank in a second (logs "trim
+  // deferred"). The new split-branch path where zAdd SUCCEEDS but
+  // trim FAILS had no test. A regression collapsing the splits would
+  // re-introduce the misleading "event dropped" log when the event
+  // was actually persisted.
+  it('Polish #67: zAdd success + trim failure resolves (event persisted, trim deferred)', async () => {
+    zAdd.mockResolvedValueOnce(1);
+    zRemRangeByRank.mockRejectedValueOnce(new Error('trim transient redis err'));
+    await expect(
+      recordEvent({
+        ts: Date.now(),
+        activityId: 't3_z',
+        runName: 'r',
+        checkName: 'c',
+        triggered: true,
+        actions: [{ kind: 'remove', ok: true }],
+      })
+    ).resolves.toBeUndefined();
+    // Both calls fired (zAdd before the fail). Importantly, the trim
+    // failure didn't bubble — recordEvent stayed best-effort.
+    expect(zAdd).toHaveBeenCalledTimes(1);
+    expect(zRemRangeByRank).toHaveBeenCalledTimes(1);
+  });
 });

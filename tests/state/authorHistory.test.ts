@@ -360,4 +360,23 @@ describe('getAuthorHistory', () => {
 
     expect(redisDel).toHaveBeenCalledWith('cm:sub1:author:hist:alice');
   });
+
+  // AE Polish #93: gap caught by pr-test-analyzer. The Polish #78
+  // self-heal calls `redis.del(key)` wrapped in try/catch — the catch
+  // branch ("cache del after parse-fail also failed") is uncovered.
+  // A regression removing the try/catch would crash the rule path
+  // instead of falling through to fetchAndCache.
+  it('Polish #93: redis.del failure during self-heal does not throw — fetch still proceeds', async () => {
+    redisGet.mockResolvedValueOnce('this is not json{{{');
+    redisDel.mockRejectedValueOnce(new Error('del transient redis err'));
+    getPostsByUser.mockReturnValueOnce(stubListing([post({ id: 't3_p1' })]));
+    getCommentsByUser.mockReturnValueOnce(stubListing([]));
+
+    const h = await getAuthorHistory('alice', 'sub1');
+
+    // Despite the del failure, fetch still ran + payload was returned.
+    expect(h.username).toBe('alice');
+    expect(h.posts).toHaveLength(1);
+    expect(h.degraded).toBe(false);
+  });
 });
