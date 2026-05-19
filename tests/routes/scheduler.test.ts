@@ -159,7 +159,7 @@ describe('POST /refresh-config (Polish #32)', () => {
     expect(releaseMock).toHaveBeenCalled();
   });
 
-  it('releases lock even when configStore.publish throws (finally guarantee)', async () => {
+  it('returns ignored + releases lock when configStore.publish throws (Polish #63 — silent-failure fix)', async () => {
     acquireLockMock.mockResolvedValueOnce(releaseMock);
     redisGet
       .mockResolvedValueOnce('install_abc')
@@ -171,12 +171,23 @@ describe('POST /refresh-config (Polish #32)', () => {
       config: { runs: [] },
     });
     configStorePublish.mockRejectedValueOnce(new Error('Redis down'));
-    // Hono catches the throw + returns 500. The CRITICAL invariant under
-    // test is that the finally block ran — the next cron tick must be
-    // able to acquire the lock (release() ran before the response landed).
+    // Polish #63: previously this returned 500 because the publish+set
+    // pair was unwrapped → the throw propagated → Hono surfaced an
+    // unhandled 500. Mods got NO log signal that wiki sync had silently
+    // stopped working. Mirror the /stats-rollup pattern: log.error w/ the
+    // PublishError detail + return {status:'ignored'} so the next 5-min
+    // tick retries cleanly. The finally still releases the lock — that
+    // invariant is preserved (asserted below).
     const res = await post('/refresh-config');
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { status: string }).toEqual({ status: 'ignored' });
     expect(releaseMock).toHaveBeenCalled();
+    // The bad wiki rev must NOT have been stamped — otherwise the next
+    // tick would skip and the cluster never recovers.
+    expect(redisSet).not.toHaveBeenCalledWith(
+      expect.stringContaining('r_test'),
+      'wiki_rev_NEW'
+    );
   });
 });
 

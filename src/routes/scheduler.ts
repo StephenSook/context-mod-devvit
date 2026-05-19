@@ -65,13 +65,39 @@ scheduler.post('/refresh-config', async (c) => {
       return c.json<TaskResponse>({ status: 'success' }, 200);
     }
 
-    const rev = await configStore.publish(loaded.config, subName);
-    await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
-    log.info('cm/cron/refresh-config', 'published', {
-      sub: subName,
-      rev,
-      wikiRev: loaded.revisionId,
-    });
+    // AE Polish #63: silent-failure-hunter CRITICAL — previously the
+    // configStore.publish() + redis.set(cfgLastWikiRev) calls ran with NO
+    // try/catch. A PublishError ("rev allocated but payload write or
+    // pointer advance failed") propagated out of this handler, the finally
+    // released the lock, Hono returned an unhandled 500 — but mods saw NO
+    // dashboard signal that the wiki → live-config sync had silently
+    // stopped working. Worse, the next cron tick 5 min later would either
+    // (a) re-attempt and possibly succeed (transient blip recovered) or
+    // (b) fail again — either way leaving the cluster in a state where
+    // wiki edits never reach the rule engine until manual intervention.
+    //
+    // Sibling cron /stats-rollup (line 101-108) handles its persistence
+    // failure via writeStatsSnapshot returning a discriminated
+    // {persisted, error} result + an explicit log.error. Mirror that
+    // pattern here: wrap publish+set in try/catch, log.error w/ the
+    // PublishError details, return {status:'ignored'} so the scheduler
+    // backs off and the next 5-min tick retries cleanly.
+    try {
+      const rev = await configStore.publish(loaded.config, subName);
+      await redis.set(K.cfgLastWikiRev(subName), loaded.revisionId);
+      log.info('cm/cron/refresh-config', 'published', {
+        sub: subName,
+        rev,
+        wikiRev: loaded.revisionId,
+      });
+    } catch (err) {
+      log.error('cm/cron/refresh-config', 'publish failed — wiki config NOT applied', {
+        sub: subName,
+        wikiRev: loaded.revisionId,
+        err: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      });
+      return c.json<TaskResponse>({ status: 'ignored' }, 200);
+    }
   } finally {
     await release();
   }
