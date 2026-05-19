@@ -36,7 +36,7 @@
       "required": ["name", "combinator", "rules"],
       "properties": {
         "name": { "type": "string" },
-        "combinator": { "enum": ["AND", "OR"] },
+        "combinator": { "enum": ["AND", "OR", "NOT"] },
         "rules": {
           "type": "array",
           "items": { "$ref": "#/definitions/Rule" }
@@ -101,7 +101,7 @@
       "properties": {
         "kind": { "const": "ruleset" },
         "name": { "type": "string" },
-        "combinator": { "enum": ["AND", "OR"] },
+        "combinator": { "enum": ["AND", "OR", "NOT"] },
         "rules": {
           "type": "array",
           "items": { "$ref": "#/definitions/Rule" }

@@ -111,10 +111,20 @@ export interface AuthorRule {
   filter: AuthorFilter; // reuses the filter shape
 }
 
+/**
+ * RuleSetRule combinators:
+ *   - AND — triggers only when ALL nested rules trigger
+ *   - OR  — triggers when ANY nested rule triggers
+ *   - NOT — triggers when NONE of the nested rules trigger (AE Pull-Forward
+ *           #3, upstream FoxxMD parity). Use case: "catch new accounts EXCEPT
+ *           trusted contributors" — wrap the trust check in NOT inside an
+ *           outer AND combinator. Equivalent to De Morgan'd NAND of all
+ *           sub-rules. Empty NOT vacuously triggers (no rules to negate).
+ */
 export interface RuleSetRule {
   kind: 'ruleset';
   name?: string;
-  combinator: 'AND' | 'OR';
+  combinator: 'AND' | 'OR' | 'NOT';
   rules: Rule[];
 }
 
@@ -283,7 +293,7 @@ export type Action =
   | UserFlairAction
   | DistinguishAction;
 
-export type CheckCombinator = 'AND' | 'OR';
+export type CheckCombinator = 'AND' | 'OR' | 'NOT';
 export type PostBehavior = 'next' | 'stop' | { goto: string };
 
 export interface Check {

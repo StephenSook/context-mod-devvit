@@ -98,3 +98,54 @@ describe('runRuleSet — nested', () => {
     expect(r.triggered).toBe(true);
   });
 });
+
+describe('runRuleSet — NOT (AE Pull-Forward #3 upstream FoxxMD parity)', () => {
+  it('NOT([miss, miss, miss]) → triggered=true (every sub-rule misses)', async () => {
+    const r = await runRuleSet(
+      { kind: 'ruleset', combinator: 'NOT', rules: [ruleMiss, ruleMiss, ruleMiss] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(true);
+  });
+
+  it('NOT([miss, hit, miss]) → triggered=false (any hit negates)', async () => {
+    const r = await runRuleSet(
+      { kind: 'ruleset', combinator: 'NOT', rules: [ruleMiss, ruleHit, ruleMiss] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+  });
+
+  it('NOT([hit]) → triggered=false (single hit negates)', async () => {
+    const r = await runRuleSet(
+      { kind: 'ruleset', combinator: 'NOT', rules: [ruleHit] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+  });
+
+  it('empty NOT → triggered=false (consistent w/ empty AND/OR — namedRules cycle convention)', async () => {
+    const r = await runRuleSet(
+      { kind: 'ruleset', combinator: 'NOT', rules: [] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+  });
+
+  it('AND( hit, NOT([miss]) ) → triggered=true (use case: "catch X EXCEPT Y")', async () => {
+    const r = await runRuleSet(
+      {
+        kind: 'ruleset',
+        combinator: 'AND',
+        rules: [ruleHit, { kind: 'ruleset', combinator: 'NOT', rules: [ruleMiss] }],
+      },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(true);
+  });
+});

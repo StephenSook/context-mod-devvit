@@ -51,6 +51,22 @@ export async function runCheck(
       actions: check.actions ?? [],
     };
   }
+  if (check.combinator === 'NOT') {
+    // AE Pull-Forward #3: NOT combinator — triggers iff NONE of the rules
+    // trigger. Short-circuit on first hit. Same semantics as the RuleSet
+    // NOT combinator (see src/rules/ruleset.ts).
+    for (const r of check.rules) {
+      const res = await runRule(r, item, author, sub);
+      if (res.triggered) {
+        return { triggered: false, checkName: check.name, actions: [] };
+      }
+    }
+    return {
+      triggered: true,
+      checkName: check.name,
+      actions: check.actions ?? [],
+    };
+  }
   // OR
   for (const r of check.rules) {
     const res = await runRule(r, item, author, sub);

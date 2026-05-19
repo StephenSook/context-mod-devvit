@@ -131,3 +131,44 @@ describe('runCheck — hard-mute (AE CRITICAL #4)', () => {
     expect(r.triggered).toBe(true);
   });
 });
+
+describe('runCheck — NOT combinator (AE Pull-Forward #3)', () => {
+  beforeEach(() => {
+    isRuleMutedMock.mockResolvedValue(false);
+  });
+
+  const ruleNeverMatches: import('../../src/shared/types').Rule = {
+    kind: 'regex',
+    pattern: 'this-string-is-not-in-the-item-title',
+  };
+
+  it('NOT([miss]) → check triggers + actions fire (every rule misses negation)', async () => {
+    const r = await runCheck(
+      {
+        name: 'block-untrusted',
+        combinator: 'NOT',
+        rules: [ruleNeverMatches],
+        actions: [removeAction],
+      },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(true);
+    expect(r.actions).toEqual([removeAction]);
+  });
+
+  it('NOT([hit]) → check does NOT trigger (any hit negates)', async () => {
+    const r = await runCheck(
+      {
+        name: 'block-untrusted',
+        combinator: 'NOT',
+        rules: [ruleHit],
+        actions: [removeAction],
+      },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+    expect(r.actions).toEqual([]);
+  });
+});

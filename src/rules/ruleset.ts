@@ -2,8 +2,23 @@ import type { RuleSetRule, Item, Author, RuleResult } from '../shared/types';
 import { runRule } from '../core/runRule';
 
 /**
- * Nested AND/OR group. Short-circuits: AND stops on first false, OR stops on
- * first true. Cycles into runRule (the dispatcher) so nested rulesets work.
+ * Nested rule combinator: AND / OR / NOT.
+ *
+ * Short-circuits per combinator:
+ *   - AND stops on first false → returns false (any miss = no trigger)
+ *   - OR  stops on first true  → returns true  (any hit = trigger)
+ *   - NOT stops on first true  → returns false (any hit = NOT-triggered)
+ *     AE Pull-Forward #3 upstream FoxxMD parity — use case: "catch new
+ *     accounts EXCEPT trusted contributors" — wrap the trust check in NOT
+ *     inside an outer AND combinator.
+ *
+ * Empty-list semantics: empty AND/OR/NOT all return {triggered: false}.
+ * Default-false matches the namedRules cycle-break convention (empty
+ * AND-ruleset = "never triggers") + avoids the gotcha where an empty NOT
+ * would otherwise vacuously trigger every check.
+ *
+ * Cycles into runRule (the dispatcher) so nested rulesets compose for
+ * arbitrary boolean expressions.
  */
 export async function runRuleSet(
   rule: RuleSetRule,
@@ -12,15 +27,19 @@ export async function runRuleSet(
   sub?: string
 ): Promise<RuleResult> {
   if (rule.rules.length === 0) {
-    // Empty AND = vacuously true is surprising; empty OR = false is also
-    // surprising. Default to false — namedRules cycle break uses an empty
-    // AND-ruleset as "never triggers" and depends on this convention.
     return { triggered: false };
   }
   if (rule.combinator === 'AND') {
     for (const r of rule.rules) {
       const res = await runRule(r, item, author, sub);
       if (!res.triggered) return { triggered: false };
+    }
+    return { triggered: true };
+  }
+  if (rule.combinator === 'NOT') {
+    for (const r of rule.rules) {
+      const res = await runRule(r, item, author, sub);
+      if (res.triggered) return { triggered: false };
     }
     return { triggered: true };
   }
