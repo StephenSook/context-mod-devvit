@@ -194,4 +194,58 @@ describe('readRecent', () => {
     const out = await readRecent();
     expect(out).toEqual([]);
   });
+
+  it('AE Polish #5: drops v1 events w/ poisoned actions:"not-array" instead of crashing /api/stats', async () => {
+    zRange.mockResolvedValueOnce([
+      {
+        score: 1,
+        member: JSON.stringify({
+          v: 1,
+          nonce: 'n',
+          ts: 1,
+          activityId: 't3_a',
+          runName: 'r',
+          checkName: 'c',
+          triggered: true,
+          actions: 'not-an-array',
+        }),
+      },
+      {
+        score: 2,
+        member: JSON.stringify({
+          v: 1,
+          nonce: 'n2',
+          ts: 2,
+          activityId: 't3_b',
+          runName: 'r',
+          checkName: 'c',
+          triggered: true,
+          actions: [{ kind: 'remove', ok: true }],
+        }),
+      },
+    ]);
+    const out = await readRecent();
+    expect(out).toHaveLength(1);
+    expect(out[0]?.activityId).toBe('t3_b');
+  });
+
+  it('AE Polish #5: drops v1 events w/ malformed action items (missing kind field)', async () => {
+    zRange.mockResolvedValueOnce([
+      {
+        score: 1,
+        member: JSON.stringify({
+          v: 1,
+          nonce: 'n',
+          ts: 1,
+          activityId: 't3_bad',
+          runName: 'r',
+          checkName: 'c',
+          triggered: true,
+          actions: [{ ok: true }],
+        }),
+      },
+    ]);
+    const out = await readRecent();
+    expect(out).toHaveLength(0);
+  });
 });

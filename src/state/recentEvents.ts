@@ -98,20 +98,59 @@ export async function readRecent(sub?: string): Promise<RecentEvent[]> {
  * today; the seam exists to claim the spot — and to make an unexpected `v`
  * loud (throw → caller logs + drops the row) rather than silently spreading
  * the wrong shape downstream.
+ *
+ * AE Polish #5: previously `case 1` returned `obj as unknown as RecentEvent`
+ * w/ no field validation. A poisoned member like `{v:1, actions:"not-array"}`
+ * propagated to statsRollup.ts:51 `for (const a of e.actions)` which throws
+ * on iteration of a non-iterable + brings down /api/stats. Now each field
+ * is type-checked before the cast; bad members get dropped + logged like
+ * any other parse failure (parsed.member is logged at the caller in
+ * readRecent's catch).
  */
+function isValidRecentEventShape(obj: Record<string, unknown>): boolean {
+  if (typeof obj.nonce !== 'string') return false;
+  if (typeof obj.ts !== 'number') return false;
+  if (typeof obj.activityId !== 'string') return false;
+  if (typeof obj.runName !== 'string') return false;
+  if (typeof obj.checkName !== 'string') return false;
+  if (typeof obj.triggered !== 'boolean') return false;
+  if (!Array.isArray(obj.actions)) return false;
+  for (const a of obj.actions) {
+    if (!a || typeof a !== 'object') return false;
+    const ao = a as Record<string, unknown>;
+    if (typeof ao.kind !== 'string') return false;
+    if (typeof ao.ok !== 'boolean') return false;
+  }
+  return true;
+}
+
 function migrate(raw: unknown): RecentEvent | null {
   if (raw == null || typeof raw !== 'object') return null;
   const obj = raw as Record<string, unknown>;
   switch (obj.v) {
     case 1:
+      if (!isValidRecentEventShape(obj)) {
+        throw new Error(
+          'migrate(): v1 event failed shape validation (poisoned member dropped)'
+        );
+      }
       return obj as unknown as RecentEvent;
-    case undefined:
+    case undefined: {
       // Pre-v1 event written before schema versioning existed — stamp v:1 + nonce.
-      return {
+      // AE Polish #5: validate the post-stamping shape, not the raw — defensive
+      // against pre-v1 events that already had a malformed `actions`.
+      const stamped = {
         ...(obj as Omit<RecentEvent, 'v' | 'nonce'>),
-        v: 1,
+        v: 1 as const,
         nonce: typeof obj.nonce === 'string' ? obj.nonce : crypto.randomUUID(),
       };
+      if (!isValidRecentEventShape(stamped as unknown as Record<string, unknown>)) {
+        throw new Error(
+          'migrate(): pre-v1 event failed shape validation after stamping'
+        );
+      }
+      return stamped;
+    }
     default:
       throw new Error(`migrate(): unknown RecentEvent version ${String(obj.v)}`);
   }
