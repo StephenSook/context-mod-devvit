@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.4 ships the full Phase 1+2+3+4 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 is already approved unlisted; final v0.6.x source re-uploads pre-submission. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
+I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.7 ships the full Phase 1+2+3+4 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 is already approved unlisted; final v0.6.x source re-uploads pre-submission. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
 
 App Directory: https://developers.reddit.com/apps/cm-devvit
 Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 594 tests, CI green)
@@ -45,7 +45,7 @@ The concept model is preserved:
 
 If your wiki config worked under PRAW CM, it copies over with a handful of one-time renames (`condition:` → `combinator:` on runs/checks/ruleSets, `criteria:` → `filter:` on author rules, `body:` → `template:` on comment actions, `testOn:` → `target:` + `patterns:[]` → `pattern:""` on regex rules, top-level `named_rules` → `namedRules` camelCase, wiki path renamed to `botconfig/contextmod` to keep the wiki namespace clean against other Devvit apps). The full diff is documented in `docs/migration-compatibility.md`.
 
-## What ships in v0.6.4
+## What ships in v0.6.7
 
 - **Phase 1**: rule engine — regex / author / ruleSet rules + named rules + filters + Mustache + run state machine with a 100-iter safety break against circular goto. NOT combinator added in Wave AE for upstream parity.
 - **Phase 2**: 7 MVP actions + handleActivity orchestrator + URL-dedupe `repost` rule (promoted up from Phase 4 because the atomic SET NX cleanup made it dead-simple to ship). 8th action `distinguish` added in Wave AE for upstream parity (bot comments get the [M] tag + optional sticky).
