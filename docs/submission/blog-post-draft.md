@@ -1,10 +1,10 @@
 # ContextMod is back: a Devvit Web port for the post-PRAW era
 
-> **For Stephen — paste this into dev.to / hashnode / Substack + edit in own voice per D10 (no AI-tone words: powerful, sophisticated, seamless, leverage, robust, cutting-edge, intuitive, amazing, easily, simply, effortlessly, transform). Expected cut: ~30%. Replace 1-2 phrases per section so it doesn't read as a single voice. Drop the "what I built" pre-amble if you want to lead with the operator hook.**
+> **For Stephen — paste this into dev.to / hashnode / Substack + edit in own voice per D10 (no AI-tone words: powerful, sophisticated, seamless, leverage, robust, cutting-edge, intuitive, amazing, easily, simply, effortlessly, transform). Expected cut: ~30%. Replace 1-2 phrases per section so it doesn't read as a single voice. Drop the "what I built" pre-amble if you want to lead with the operator hook.** <!-- AITONE_IGNORE -->
 
 ## TL;DR
 
-I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.7 ships the full Phase 1+2+3+4 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 is already approved unlisted; final v0.6.x source re-uploads pre-submission. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
+I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.7 ships the full Phase 1+2+3+4+4.7 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 approved unlisted (installable today); cm-devvit@0.2.6 (v0.6.7 source) submitted for App Directory re-review 2026-05-19 (`npm run launch` shipped T-8, 6 days early). If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
 
 App Directory: https://developers.reddit.com/apps/cm-devvit
 Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 828 tests, CI green)
@@ -87,7 +87,7 @@ Quick notes that might save you time:
 
 ## What's next
 
-- Re-upload v0.6.x source to Reddit App Directory at T-2 (May 25) — review SLA 1-7 days fits inside the 5/27 deadline.
+- v0.6.x source re-upload SHIPPED 2026-05-19 (T-8, 6 days early). Devvit cm-devvit@0.2.6 in re-review — SLA 1-7 days fits inside the 5/27 deadline.
 - Reach the 15+ original CM operators with the migration tool now that the porting tax is `node scripts/migrate.mjs your-config.yaml`.
 - Hackathon judging period after May 27 18:00 PT deadline.
 - Post-submission: LSH multi-index on top of the v1 image-hash store (currently O(N) Hamming scan at 500 entries — measured ~30-50ms per query in Vinh's spike).

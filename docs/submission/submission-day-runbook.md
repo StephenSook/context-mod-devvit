@@ -39,12 +39,10 @@ Phase 1+2+3+4 all live as of 2026-05-18, so the synthetic-data fallback is no lo
 
 ## T-3 days (May 24)
 
-- [ ] **Confirm Phase 1+2 status with Vinh** — does `handleActivity` → rule pipeline → mod action work end-to-end against a real test post in `r/cm_devvit_test`?
-  - **Yes** → proceed with live-data demo recording May 24-26
-  - **No** → execute synthetic-data fallback from `demo-video-runbook.md`
-- [ ] **Pin Devvit playtest version** if anything bumped during the week — run `npx devvit upload --bump minor`
+- [x] **Phase 1+2+3+4+4.7 ALL SHIPPED + live-verified** on `r/contextmod_vinh_dev` 2026-05-18 (Vinh commit `0bd59aa`). Synthetic-data fallback is OBSOLETE — live demo path confirmed end-to-end. Test sub `r/cm_devvit_test` is the recording venue.
+- [ ] **Pin Devvit playtest version** if anything bumped post-launch — run `npx devvit upload --bump minor` (only if Stephen ships code patches between T-8 launch and T-3)
 
-## T-2 days (May 18) — Demo recording day
+## T-2 days (May 25) — Demo recording day
 
 - [ ] **Pre-flight `demo-video-runbook.md` checklist** — OBS scenes pre-positioned, Audacity mic set, captions written, Geist font installed system-wide for ffmpeg subtitles filter
 - [ ] **Record OBS clips per `demo-video-script.md` beat sheet** — 60s hard cap
@@ -52,7 +50,7 @@ Phase 1+2+3+4 all live as of 2026-05-18, so the synthetic-data fallback is no lo
 - [ ] **ffmpeg stitch + caption bake + final encode** per runbook
 - [ ] **Upload to YouTube as unlisted** — title `ContextMod Devvit Web port — 60-second demo`, paste URL into a temp file for May 27 paste
 
-## T-1 day (May 19)
+## T-1 day (May 26)
 
 - [ ] **Ping SampleOfNone for Helper Nomination permission** (Discord, 30s) — "would you be cool if I nominated you on my Devpost helper-nomination field + cited r/piercing as a named community in the writeup?" 24h window. If she declines or doesn't reply by T-0 morning, fall back to FoxxMD per `devpost-form-cheat-sheet.md` alternate text.
 - [ ] **Submit Reddit developer satisfaction survey** at [forms.gle/d9jY3szEzRzmKPwL8](https://forms.gle/d9jY3szEzRzmKPwL8) — free entry to the $200 Feedback Award pool (×10 winners). Topics drafted in `devpost-form-cheat-sheet.md` Step 4. Independent of the project Devpost form.

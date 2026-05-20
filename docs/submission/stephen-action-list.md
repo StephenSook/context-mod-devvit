@@ -43,32 +43,9 @@ Three reasons Claude doesn't touch these:
 
 ## T-6 — 2026-05-21
 
-### Action 1 — Ping Vinh on Phase 0.10 image-blockhash spike status (30s)
+### Action 1 — Phase 0.10 image-blockhash status (RESOLVED 2026-05-18)
 
-**Why now:** spike was GO/NO-GO Day 0–2 per `PLAN.md`. We're past that. Phase 4 image-hash repost detection in the demo storyline depends on the answer. No pressure on Vinh — just need to know whether to keep it in the 5/18 demo or cut.
-
-**Channel:** Discord DM or PLAN.md notes column on Phase 0.10 card.
-
-**Three draft variants — pick the tone:**
-
-```
-[discord-casual]
-hey, quick check on phase 0.10 image-blockhash spike — still in scope or should I cut phase 4 image-hash from the demo storyline? trying to plan by 5/18, no rush on the answer
-```
-
-```
-[plan-md-formal]
-@vinh — phase 0.10 image-blockhash spike status? need to know by 5/18 whether to keep phase 4 image-hash in demo or cut. no rush, just want to plan the storyline.
-```
-
-```
-[super-short]
-phase 0.10 spike status? deciding demo storyline 5/18
-```
-
-Selection guidance: if Discord chat has been flowing already, use casual. If communication has been sparse, super-short reads as respectful-of-time. PLAN.md-formal stays in the kanban audit trail.
-
-**Verify:** Vinh replies within 24h with one of (a) "still working on it," (b) "feasible, will land," (c) "blocked, cut it." Any of the three unblocks the demo plan.
+**Resolved:** Phase 0.10 spike landed clean GO (Vinh commits `00feca5` + `19e94f0`) → Phase 4.7 image-hash repost SHIPPED v0.6.0 2026-05-18 + hardened through v0.6.7. No ping needed. This action is preserved here for audit trail; T-6 (May 21) is now buffer time.
 
 ### Other admin
 
@@ -89,12 +66,10 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ## T-3 — 2026-05-24
 
-### Action 1 — Confirm Phase 1+2 status with Vinh
-- **What to ask:** "Is `handleActivity` → config load → `runRun` → `runCheck` → `runRule` → action handler → `events:recent` ZSET push executing end-to-end on a real `r/cm_devvit_test` post submission?"
-- **If yes:** proceed with the live-data demo recording May 17–19.
-- **If no:** execute synthetic-data fallback per [`demo-video-runbook.md`](./demo-video-runbook.md) "Fallback if Phase 1 slips" section. VO swap is documented; the truth caption at 36s is non-negotiable.
-- **Verify:** post a test submission in `r/cm_devvit_test` titled "free crypto giveaway scam" — see if the regex spam-filter rule fires + an event row surfaces on the Observatory dashboard in real time.
-- **Time:** 5–10 min (Discord/Slack ping + test post)
+### Action 1 — Confirm Phase 1+2 status with Vinh (RESOLVED 2026-05-16/18)
+- **Resolved:** Phase 1+2+3+4+4.7 ALL SHIPPED + live-verified on `r/contextmod_vinh_dev` 2026-05-18 (Vinh commit `0bd59aa`). Live-data demo path confirmed end-to-end; synthetic-data fallback is obsolete. Test sub `r/cm_devvit_test` is the recording venue.
+- **Pre-record verify:** post a test submission in `r/cm_devvit_test` titled "free crypto giveaway scam" — see if the regex spam-filter rule fires + an event row surfaces on the Observatory dashboard in real time.
+- **Time:** 2 min (test post, no ping needed)
 
 ### Action 2 — Pin Devvit playtest version (only if something bumped)
 - **Run:** `npx devvit upload --bump minor`

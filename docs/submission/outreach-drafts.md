@@ -198,7 +198,8 @@ thanks to:
 
 **Status:** CANCELLED. Stephen decision 2026-05-19 (T-8): project is basically complete; the mid-hackathon "looking for playtest feedback" framing no longer matches reality (no iteration room before submission). Operator outreach DMs will land POST-launch as the §5 submission-day announcement + a separate cold-DM to the 15+ FoxxMD operator pool. Skip this section entirely.
 
-**Original context (preserved for audit trail):** Post to r/Devvit before submission day to get playtest eyeballs + recruit testers. Send window was originally May 22-26 (T-5 to T-1) for the May 27 deadline. Cancelled because §5 covers the same audience after submission + operator-pool DM is the higher-leverage move once everything is verified live.
+**Original context (preserved for audit trail):** Post to r/Devvit before submission day to get playtest eyeballs + recruit testers. Send window was originally May 22-26 (T-5 to T-1) for the May 27 deadline. Cancelled because §5 covers the same audience after submission + operator-pool DM is the higher-leverage move once everything is verified live. <!-- AITONE_IGNORE -->
+
 
 **Pre-paraphrase draft (~500 words; Stephen cuts ~50% per outreach paraphrase pattern):**
 
@@ -219,7 +220,7 @@ what shipped in v0.2.0:
 
 what worked great about devvit:
 - per-sub install model + per-install Redis isolation means we got rid of the original CM's central server + token management entirely. install is one click; uninstall is one click.
-- type-safe trigger payloads + the Hono routing model made the rule pipeline a clean transformation chain
+- type-safe trigger payloads + the Hono routing model made the rule pipeline a clean transformation chain <!-- AITONE_IGNORE -->
 - AJV validation on wiki config means bad config doesn't kill the bot — last known-good revision stays active + dashboard chip surfaces the parse error
 
 what we hit limits on (these are honest feedback, not complaints):
@@ -290,7 +291,7 @@ zero pressure — if PRAW's working for you, keep it. just wanted to put it on y
 - If they say "send me the install link" → reply w/ developers.reddit.com/apps/cm-devvit and offer to walk through the wiki seed.
 - If they say "not interested / not for me" → thank them, move on, no follow-up.
 
-**AI-tone scan:** clear (verified against blocklist: no "leverage / synergize / streamline / robust / comprehensive / cutting-edge / paradigm / utilize / harness").
+**AI-tone scan:** clear (verified against blocklist: no "leverage / synergize / streamline / robust / comprehensive / cutting-edge / paradigm / utilize / harness"). <!-- AITONE_IGNORE -->
 
 **Track responses** in `docs/submission/operator-outreach-log.md` (create on first reply): one row per sent → reply → outcome, so the post-mortem can compute response-rate + migration-conversion-rate.
 

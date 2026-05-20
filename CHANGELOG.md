@@ -10,7 +10,7 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 130 atomic polishes (#18-#130) shipped
+AE Polish wave continued — 131 atomic polishes (#18-#131) shipped
 across this session covering 9 adversarial-review rounds (silent-
 failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
 codex external review, ultrareview (cloud multi-agent),
@@ -18,8 +18,37 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
-### Fixed — Polish #109-#130 batch (post-AE-wave doc sync + launch-day hygiene)
+### Fixed — Polish #109-#131 batch (post-AE-wave doc sync + launch-day hygiene)
 
+- **AE Polish #131: pre-submission doc sync — atomic sweep across
+  writeup-draft + devpost-form-cheat-sheet + blog-post + e2e-scenarios
+  + action-list + runbook** — Stephen requested honest pre-submit
+  verification at T-8 before 1:20am Devpost submit. Found 18 stale
+  items across 6 judge-facing surfaces. **writeup-draft.md (7
+  edits)**: opener wrongly said "cm-devvit@0.6.7 in App Directory
+  review (cm-devvit@0.5.5 approved 2026-05-17)" — Reality: App
+  Directory tracks 0.2.x namespace, was 0.2.4 approved + 0.2.6 in
+  re-review; Phase 4.7 section wrongly said "deferred" and "spike
+  never ran" — Reality: Phase 4.7 SHIPPED v0.6.0 2026-05-18; "What
+  didn't get done" section wrongly said "Phase 0.10 spike Stephen
+  has 90 min to take a standalone crack" — Reality: Everything in
+  scope shipped; Phase 3 framing wrongly said "live data wires up
+  at Phase 3" — Reality: Phase 3 SHIPPED. **devpost-form-cheat-sheet.md
+  (3 edits)**: "v0.2.0.8 playtest" stale → date-anchored; "6 parallel
+  sub-agent rotations" → "9 review rotations" w/ full list; Port
+  Completion cell "Reddit cm-devvit@0.6.7 in App Directory review"
+  → accurate 0.2.4-approved + 0.2.6-in-re-review framing.
+  **blog-post-draft.md (2 edits)**: TL;DR missing Phase 4.7 in stack
+  list; "What's next" said "Re-upload at T-2 (May 25)" → SHIPPED
+  T-8. **e2e-scenarios.md (1 edit)**: "cm-devvit@0.6.7 in App
+  Directory review" → accurate dual-version framing.
+  **stephen-action-list.md (2 edits)**: T-6 Phase 0.10 ping action
+  marked RESOLVED (spike landed clean GO 2026-05-18); T-3 Phase 1+2
+  status confirm action marked RESOLVED (Phase 1+2+3+4+4.7 all
+  shipped + live-verified). **submission-day-runbook.md (3 edits)**:
+  T-3 Phase 1+2 confirm + synthetic-data fallback marked OBSOLETE;
+  T-2 date "May 18" → "May 25"; T-1 date "May 19" → "May 26".
+  Polish count + review-rounds count synced across all 6 surfaces.
 - **AE Polish #130: polish-count drift sweep + missed launch-state
   refs** — Polish #126 swept 6 docs at #1-#108; Polish #127-#129
   bumped count to 130 but those 6+ docs still showed #1-#108. Bulk-
