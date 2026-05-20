@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { computeBlockhash, hammingDistance } from '../../src/image/hash';
+import { computeBlockhash, hammingDistance, asBlockHash } from '../../src/image/hash';
 
 function solidColorFrame(width: number, height: number, r: number, g: number, b: number) {
   const rgba = new Uint8Array(width * height * 4);
@@ -61,6 +61,56 @@ describe('hammingDistance', () => {
   });
 
   it('throws on length mismatch (defense against drift in hash format)', () => {
-    expect(() => hammingDistance('abc', 'abcd')).toThrow(/length mismatch/);
+    expect(() => hammingDistance('abc' as unknown as string, 'abcd' as unknown as string)).toThrow(
+      /length mismatch/
+    );
+  });
+});
+
+// AE Polish #102: cover the asBlockHash trust-boundary validator that
+// Polish #94 introduced. pr-test-analyzer flagged: the validator's
+// length-only AND charset-only throw paths are both uncovered. Without
+// the charset guard, a corrupt 64-char NON-HEX entry (e.g. `'z'.repeat
+// (64)`) would round-trip through isValidImageHashEntry's catch (the
+// catch returns false, dropping the entry — that's correct), but a
+// regression dropping the regex check while keeping the length check
+// would silently re-admit non-hex bytes which parseInt('z', 16) reads
+// as NaN downstream in hammingDistance.
+describe('asBlockHash (Polish #94 trust-boundary validator)', () => {
+  it('accepts a valid 64-hex-char string', () => {
+    const raw = '0123456789abcdef'.repeat(4); // exactly 64 hex chars
+    expect(() => asBlockHash(raw)).not.toThrow();
+    expect(asBlockHash(raw)).toBe(raw);
+  });
+
+  it('accepts uppercase hex (case-insensitive)', () => {
+    const raw = 'ABCDEF0123456789'.repeat(4);
+    expect(() => asBlockHash(raw)).not.toThrow();
+  });
+
+  it('throws on length-too-short (63 chars)', () => {
+    expect(() => asBlockHash('a'.repeat(63))).toThrow(/64 hex chars/);
+  });
+
+  it('throws on length-too-long (65 chars)', () => {
+    expect(() => asBlockHash('a'.repeat(65))).toThrow(/64 hex chars/);
+  });
+
+  it('throws on empty string (length-zero edge case)', () => {
+    expect(() => asBlockHash('')).toThrow(/64 hex chars/);
+  });
+
+  it('Polish #102 HIGH gap: throws on 64 NON-hex chars (charset check)', () => {
+    // 64 z's — passes length check, fails regex. Pre-Polish-#102 had
+    // no direct test for the charset-only failure path. Without this
+    // guard, parseInt('z', 16) returns NaN inside hammingDistance and
+    // produces silent wrong distances.
+    expect(() => asBlockHash('z'.repeat(64))).toThrow(/64 hex chars/);
+  });
+
+  it('Polish #102 HIGH gap: throws on mixed hex+non-hex (single bad char)', () => {
+    // 63 valid hex + 1 invalid → regex catches the single drift.
+    const raw = '0'.repeat(63) + 'g';
+    expect(() => asBlockHash(raw)).toThrow(/64 hex chars/);
   });
 });

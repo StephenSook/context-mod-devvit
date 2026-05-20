@@ -207,4 +207,28 @@ describe('imageHashStore.recordHash', () => {
     const r = await findSimilar('a'.repeat(64), 8, 'test_sub');
     expect(r).toBeNull();
   });
+
+  // AE Polish #102: pr-test-analyzer HIGH gap. Polish #94 BlockHash
+  // brand added a charset check via asBlockHash inside
+  // isValidImageHashEntry. A corrupt 64-char NON-hex entry would
+  // previously slip through the length-only validator and reach
+  // hammingDistance's parseInt('z', 16) which returns NaN — silently
+  // wrong distance calculation. The Polish #94 try/catch around
+  // asBlockHash drops the bad entry. This regression pins that path
+  // so a refactor dropping the regex while keeping the length check
+  // would now fail loudly.
+  it('Polish #102: findSimilar skips entries with 64-char non-hex hash (charset corruption)', async () => {
+    store.set(
+      KEY,
+      JSON.stringify([
+        // 64 z's — passes length, fails charset. asBlockHash throws,
+        // isValidImageHashEntry catches and returns false, entry dropped.
+        { postId: 't3_corrupt_charset', hash: 'z'.repeat(64), ts: Date.now() },
+        // Good entry below to verify findSimilar still finds it.
+        { postId: 't3_good', hash: 'a'.repeat(64), ts: Date.now() },
+      ])
+    );
+    const r = await findSimilar('a'.repeat(64), 8, 'test_sub');
+    expect(r?.entry.postId).toBe('t3_good');
+  });
 });
