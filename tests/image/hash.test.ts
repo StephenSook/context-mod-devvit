@@ -82,11 +82,12 @@ describe('hammingDistance', () => {
 // Polish #94 introduced. pr-test-analyzer flagged: the validator's
 // length-only AND charset-only throw paths are both uncovered. Without
 // the charset guard, a corrupt 64-char NON-HEX entry (e.g. `'z'.repeat
-// (64)`) would round-trip through isValidImageHashEntry's catch (the
-// catch returns false, dropping the entry — that's correct), but a
-// regression dropping the regex check while keeping the length check
-// would silently re-admit non-hex bytes which parseInt('z', 16) reads
-// as NaN downstream in hammingDistance.
+// (64)`) would round-trip through isValidImageHashEntry's `isBlockHash`
+// predicate (Polish #107 — pre-#107 was `asBlockHash` throw caught by
+// try/catch; both drop the entry, predicate just skips the try/catch
+// cost). A regression dropping the regex check while keeping the length
+// check would silently re-admit non-hex bytes which parseInt('z', 16)
+// reads as NaN downstream in hammingDistance.
 describe('asBlockHash (Polish #94 trust-boundary validator)', () => {
   it('accepts a valid 64-hex-char string', () => {
     const raw = '0123456789abcdef'.repeat(4); // exactly 64 hex chars
