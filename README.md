@@ -24,7 +24,9 @@ Built for the [Reddit Mod Tools and Migrated Apps Hackathon](https://mod-tools-m
 
 ContextMod evaluates new posts and comments against a flexible, mod-defined rule engine and takes moderation actions when checks trigger. Each rule + action set is defined in a JSON5 config (loaded from your sub's wiki), composable with named rules, filters, and Mustache-templated action messages.
 
-The Devvit port preserves the rule/check/action concept model that mods of [r/mealtimevideos](https://reddit.com/r/mealtimevideos) (60K weekly visitors), [r/piercing](https://reddit.com/r/piercing) (600K visitors, 12K contributors), and 15+ other communities already know — while solving the central-server bottleneck that capped CM's adoption on the original PRAW infrastructure. With Devvit's per-subreddit install model, every mod team can install their own instance.
+The Devvit port preserves the rule/check/action concept model that 15+ existing CM operator communities already know (deployments range from 10K to 1M+ subscribers across general-interest and NSFW subs), while solving the central-server bottleneck that capped CM's adoption on the original PRAW infrastructure. With Devvit's per-subreddit install model, every mod team can install their own instance.
+
+> **Note on community attribution**: per FoxxMD's Discord guidance 2026-05-20, mod-tool documentation deliberately avoids naming specific subreddits or moderators using ContextMod. The asymmetric nature of spam-fighting means revealing the toolset to adversaries shifts the balance away from defenders. Operator counts are kept aggregate.
 
 ## Quick start (for moderators)
 
@@ -339,7 +341,7 @@ Why does Reddit need a port of CM when AutoMod already exists? Because AutoMod h
 | Documented threat model | ❌ | ❌ | ✅ STRIDE inventory: 15 cataloged threats + mitigations + 4 residual risks ([`THREAT-MODEL.md`](./THREAT-MODEL.md)) |
 | Rate-limited AI calls | N/A | N/A | ✅ Redis fixed-window 30/hour/sub + 3-state circuit breaker w/ smart-failure classification — prevents quota burn on bad keys or transient outages |
 
-**Best-of-both posture:** ContextMod-Devvit doesn't replace AutoMod — both coexist on the same sub. AutoMod handles the fast regex pass; ContextMod handles the *context* part (history, composition, audit trail). Mods of [r/mealtimevideos](https://reddit.com/r/mealtimevideos) (60K weekly visitors) and [r/piercing](https://reddit.com/r/piercing) (600K visitors) already run upstream CM alongside AutoMod for exactly this reason.
+**Best-of-both posture:** ContextMod-Devvit doesn't replace AutoMod, both coexist on the same sub. AutoMod handles the fast regex pass; ContextMod handles the *context* part (history, composition, audit trail). Upstream CM operators already pair CM alongside AutoMod for exactly this reason.
 
 ## Credits
 
