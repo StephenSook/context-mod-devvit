@@ -4,7 +4,7 @@
 **Build:** `npm run dev:web` (vite build → mock-server.cjs) — port 5174
 **Target:** `http://127.0.0.1:5174/?demo=1` (synthetic-data mode)
 **Tool:** Lighthouse CLI **v13.3.0** (`npx lighthouse`, headless Chrome) — replaces prior inline-axe-style measurement
-**Build version:** v0.6.7 + AE Polish #18–#62
+**Build version:** v0.6.7 + AE Polish #18–#108
 
 > Earlier capture in this doc's history used the browser's native `performance.getEntriesByType()` + inline axe-style checker. That methodology underreported Cumulative Layout Shift (CLS) — without Lighthouse's throttled CPU + Slow 4G simulation, the FCP→LCP gap was sub-200ms and the conditional renders never had time to shift. The CLI run uses Lighthouse's standard mobile emulation (Moto G4, 4x CPU slowdown, 1.6 Mbps down / 750 Kbps up, 150ms RTT) which surfaced the real CLS issue.
 

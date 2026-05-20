@@ -7,7 +7,7 @@
 I ported FoxxMD's ContextMod — the rule-engine moderation bot a generation of subreddit mods built workflows around — from PRAW to Reddit's Devvit Web platform. **v0.6.7 ships the full Phase 1+2+3+4 stack live-verified on `r/contextmod_vinh_dev`.** Reddit cm-devvit@0.2.4 is already approved unlisted; final v0.6.x source re-uploads pre-submission. If you mod a sub that ran upstream CM before the 2023 paid Data API tier broke the economics, this gives you the same rule + check + action concept model with zero hosting, zero tokens, and per-install Redis isolation. One-click install. Built for the Reddit Mod Tools and Migrated Apps Hackathon 2026.
 
 App Directory: https://developers.reddit.com/apps/cm-devvit
-Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 594 tests, CI green)
+Repo: https://github.com/StephenSook/context-mod-devvit (MIT, 828 tests, CI green)
 Permission: https://github.com/FoxxMD/context-mod/issues/152
 
 ## The hook
