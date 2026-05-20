@@ -10,13 +10,148 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 52 atomic polishes (#18-#80) shipped across
-this session covering 5 adversarial-review rounds (silent-failure-
-hunter, code-reviewer, gemini-agent (×2), codex-rescue, vercel:
-performance-optimizer, type-design-analyzer) plus brain-dump audit
-work.
+AE Polish wave continued — 108 atomic polishes (#18-#108) shipped
+across this session covering 8 adversarial-review rounds (silent-
+failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
+codex external review, vercel:performance-optimizer, type-design-
+analyzer, comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
+Explore wide-grep) plus brain-dump audit work.
 
-### Fixed — Polish #76-#80 batch (gemini brutal-audit P0/P1 integration)
+### Fixed — Polish #87-#108 batch (post-Polish-#86 hardening + final review chain)
+
+- **AE Polish #108: scrub 2 cosmetic items caught by final code-
+  reviewer** — pr-review-toolkit:code-reviewer flagged BlockHash cast
+  shape mismatch (`as unknown as string` → `as unknown as BlockHash`)
+  in hammingDistance test + stale "asBlockHash throws" comment in
+  imageHashStore charset-corruption test (post-Polish-#107 uses
+  isBlockHash predicate, no try/catch).
+- **AE Polish #107: drop try/catch on hot path via new `isBlockHash`
+  predicate** — gemini brutal-audit P2-1. Added boolean-returning
+  predicate sibling to `asBlockHash` (same shape check, no throw
+  overhead). isValidImageHashEntry now uses the predicate instead
+  of try/catch around asBlockHash — ~2-3× faster on findSimilar's
+  hot path (up to 500 calls per Redis read on viral burst). HEX_REGEX
+  hoisted to module scope. 8 new isBlockHash tests + behavior-parity
+  assertion. 820 → 828 tests green.
+- **AE Polish #106: README AI cache key shape fix** — gemini P2-3.
+  README Fetch Domains row claimed cache key was `cm:ai:cache:{hash}`;
+  real shape (src/state/keys.ts) is `cm:{sub}:explain:cache:{eventHash}`.
+  Fixed: matches code + adds "auto-invalidates on event change"
+  detail from the explainCache docstring.
+- **AE Polish #105: docs sync 777 → 820 tests + Polish range #1-#86
+  → #1-#104** — gemini P1-1 + P1-2. After Polish #62-#104 wave, 5
+  judge-facing surfaces drifted on test count + polish range
+  (README badge + README:61 + PLAN.md:75 + docs/STATUS.md:69 +
+  ROADMAP.md:32). Single sed sweep + commit; verified the 820 count
+  live from `npm test --silent -- --run`.
+- **AE Polish #104: OnboardingTour reposition Simulate as demo
+  highlight** — gemini P2-4. Step 2 tour body framed mod-menu
+  entries as "first three drive day-to-day, the rest enable AI" —
+  that mis-rank ed Simulate (demo money shot per docs/STATUS.md ⭐).
+  Reframed: day-to-day → Simulate (highlight) → AI features.
+- **AE Polish #103: harden CLS smoke with `data-cm-cls-isolated`
+  sentinel** — pr-test-analyzer M1 + Gemini P2-2. The Polish #98
+  CLS smoke test queried `style.contain === 'layout'` via brittle
+  div-scan. A future refactor moving `contain: layout` to a Tailwind
+  utility class would silently pass the runtime fix but break the
+  inline-style selector. Added `data-cm-cls-isolated="recent"`
+  sentinel attr to the recent-actions container + updated test to
+  query by attr + assert the inline style is still active.
+- **AE Polish #102: cover asBlockHash trust-boundary throws + non-
+  hex regression** — pr-test-analyzer HIGH H1 + H2. The asBlockHash
+  validator's length-only AND charset-only throw paths were both
+  uncovered. A regression dropping the regex check while keeping
+  the length check would have silently passed every test + let a
+  corrupt 64-char NON-hex entry reach hammingDistance's
+  parseInt('z', 16) = NaN. 7 new asBlockHash tests + 1
+  imageHashStore charset-corruption regression.
+- **AE Polish #101: scrub new comment-rot from Polish #92-#100
+  wave** — comment-analyzer 2nd pass. 6 HIGH/MEDIUM stale line
+  refs scrubbed across 5 files (app.test.tsx, api-auth.test.ts,
+  lighthouse doc, imageHashStore tense, recentEvents v0.5.x →
+  Phase 2.3). Replaced numeric refs with symbolic refs.
+- **AE Polish #100: Lighthouse CLI verification re-run** — verified
+  Polish #94 BlockHash brand + #95 README changes didn't regress
+  CLS. Performance 84 → 81 (run-to-run variance), CLS 0.04 → 0.057
+  (both Good band <0.1), TBT 0 → 60 ms (noise).
+- **AE Polish #99: OnboardingTour bump "Three" mod-menu entries to
+  "Six"** — first-touch UX surface. Tour step 2 claimed 3 mod-menu
+  entries; devvit.json declares 6 (Reload config, View recent, Test
+  rules, Simulate rule against history, Explain a rule with AI,
+  Set OpenAI API key). Updated count + expanded the listing.
+- **AE Polish #98: App.tsx structural CLS smoke for Polish #62
+  invariant** — pr-test-analyzer gap. Polish #62 CLS fix (0.328 →
+  0.04) had no test pinning the structural invariant. CLS isn't
+  unit-testable but the structure IS: StatsRow + Sparkline heading
+  must mount at first paint (during initialLoad, BEFORE fetch
+  resolves). 3 new smoke tests; regression to `{stats &&
+  <StatsRow />}` would now fail.
+- **AE Polish #97: EmptyState.test.tsx cover Polish #84 clipboard-
+  failure UX** — pr-test-analyzer flagged EmptyState.tsx had NO
+  test file. Polish #84 (clipboard-perm-denied UX) was entirely
+  uncovered. 9 new tests cover success/failure/2s-reset/unmount/
+  rapid-second-click branches.
+- **AE Polish #96: RunResult tagged sub-union via type-design-
+  analyzer #3** — pre-Polish RunResult had 3 independently-optional
+  correlated fields (`terminated` / `lastCheckName` /
+  `missingGotoTarget`) that permitted invalid states. Tagged union
+  enforces correlation: terminated=undefined → no other termination
+  fields; iteration-limit → lastCheckName required; goto-missing →
+  BOTH required. TS narrowing now exhaustive at handleActivity's
+  termination logger.
+- **AE Polish #95: README Fetch Domains sync w/ devvit.json + fix
+  blockhash size** — pre-Polish README listed 4 reddit-image
+  domains, missing `api.openai.com` from devvit.json. Plus
+  "64-bit blockhash" claim (actual is 256-bit/64-hex). Added 5th
+  row + fixed bit count.
+- **AE Polish #94: brand BlockHash via type-design-analyzer #4** —
+  256-bit blockhash returned by `computeBlockhash` was typed
+  `string`. Branded as `BlockHash = string & { __blockHash: unique
+  symbol }`. New `asBlockHash` trust-boundary validator. `findSimilar`
+  + `hammingDistance` parameters narrowed. `isValidImageHashEntry`
+  uses asBlockHash at the Redis trust boundary.
+- **AE Polish #93: fill 6 coverage gaps caught by pr-test-analyzer**
+  — api.ts sync-throw path, recentEvents trim-fail, configStore
+  regex-cache reset, imageHashStore non-array JSON, authorHistory
+  del-fail. 6 new regression tests.
+- **AE Polish #92: fix 3 lying-test patterns caught by pr-test-
+  analyzer** — runAction Polish #82 tests stubbed `reserveAction`
+  with a BARE STRING (`'tok_xyz'`); production destructures
+  `const { token } = reservation`. Tests passed on `token:
+  undefined` because they only asserted `commitAction.
+  toHaveBeenCalled()`. Plus 2 lying-test names (normalize "throws
+  on" that doesn't throw; authorHistory "thundering-herd suppression
+  intent" that didn't test concurrency).
+- **AE Polish #91: scrub hardcoded line refs across recent polish
+  commits** — comment-analyzer 1st pass. 6 HIGH stale line refs
+  scrubbed across configStore.ts, runAction.ts, types.ts,
+  regexCache.ts, imageHashStore.ts, scheduler.ts. Replaced numeric
+  refs with symbol names / "above" / "below" patterns.
+- **AE Polish #90: pin AJV validation for all 12 example configs**
+  — Stephen explicit "make sure everything in GitHub is good."
+  examples/*.json5 ship as docs; no test gated the README claim
+  against parseConfig(). NEW tests/config/examples.test.ts. CAUGHT
+  REAL SHIPPED BUG: `examples/repost-image-watch.json5` used
+  JS-style string concat (`"a" + "b"`) which JSON5 doesn't support;
+  mods pasting would get a wiki-config parse failure. Fixed.
+- **AE Polish #89: clean GitHub-surface stale refs + AI-tone hits**
+  — walked root-doc surface (API.md, ARCHITECTURE.md, CONTRIBUTING.md,
+  DESIGN.md, PRIVACY.md, ROADMAP.md, SECURITY.md, THREAT-MODEL.md,
+  data-retention.md, NOTICES.md). Fixed ARCHITECTURE.md:95
+  "ecosystem" trigger, ROADMAP.md:32 stale phase ref,
+  THREAT-MODEL.md:145 "as of v0.3.1 release" → v0.6.7 w/ transparent
+  transitive-vulns note.
+- **AE Polish #88: demo-script rehearsal checklist + Vinh co-narrator
+  + match dashboard labels** — Stephen explicit "me + Vinh will use
+  this for recording." Added 7-item pre-record checklist + Vinh
+  co-narrator section for 90s alt cut (Phase 4.7 + author-history
+  beats) + matched dashboard label "Mod time saved (est.)" exactly.
+- **AE Polish #87: README restructure — extract status tables to
+  docs/STATUS.md** — Stephen flagged the two 50-line status tables
+  cluttered the README. Created docs/STATUS.md w/ full audit trail
+  (shipped phases, mod-UX features, adversarial-review waves,
+  per-component ship state, test+CI snapshot, cut+deferred). README
+  collapsed to tight 3-paragraph summary + link.
 
 - **AE Polish #80: drop "co-pilot" AI-tone trigger** — gemini P1-11.
   README hero + 2 social-card meta descriptions used "rule-engine
