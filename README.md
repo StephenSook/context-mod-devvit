@@ -296,7 +296,7 @@ Mod config is JSON5 stored at `r/<your-sub>/wiki/botconfig/contextmod`. Minimum 
 - **Check** — a group of Rules combined with `AND` or `OR`. When triggered, executes its Actions.
 - **Rule** — a single boolean predicate (`regex`, `author`, `history`, `attribution`, `recentActivity`, `repost`, plus composite `ruleSet`). Upstream `mhs` rule cut from Devvit port per PR #96 — see Phase FAQ.
 - **Filter** — `authorIs` / `itemIs` clauses that gate Rule/Check/Action execution by author + item attributes.
-- **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
+- **Action** — side-effect (`remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`, `distinguish`). Action content supports [Mustache](https://mustache.github.io/) templating with `{{item.*}}`, `{{author.*}}`, `{{rules.<name>.data.*}}` context.
 - **Named rules** — declare a rule once with `name:`, reference by string elsewhere — DRY composition.
 
 The canonical AJV schema lives at `src/schema/app.schema.json` (shipped Phase 1, 2026-05-16). See also the original [context-mod docs](https://github.com/FoxxMD/context-mod/tree/master/docs/subreddit-configuration) for concept-level reference — concepts identical, surface trimmed per [migration guide](#migration-guide-for-existing-contextmod-operators).
@@ -380,7 +380,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 - ✅ `Run` / `Check` / `Rule` / `Action` concept model + `postBehavior` flow control (`next` / `nextRun` / `stop` / `goto:`) — typed + scaffolded
 - ✅ Filters: `authorIs` / `itemIs` with the canonical criteria set (name, age, karma, flair, isMod, isContributor, verified, shadowBanned, removed, approved, locked, score, age, title, isSelf, over18, depth, op) — typed + scaffolded
 - ✅ Rules: `regex` (multi-field target), `author`, `ruleSet` (AND/OR composition) — live evaluation shipped Phase 1
-- ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair` — handlers shipped Phase 2 with Reddit-API signatures verified live + Mustache markdown sanitizer (escapeMarkdown default per Codex H4)
+- ✅ Actions: `remove`, `approve`, `lock`, `comment`, `report`, `ban`, `userFlair`, `distinguish` — 8 handlers shipped Phase 2 + Wave AE (distinguish for upstream parity, post-Polish #53) with Reddit-API signatures verified live + Mustache markdown sanitizer (escapeMarkdown default per Codex H4) + ThingId-branded ids (Polish #81)
 - ✅ Named rules + composition by name reference — resolver shipped Phase 1
 - ✅ Wiki-based config + 5-min refresh cron + manual `Reload config` menu action — shipped Phase 3 (`loadFromWiki()` short-circuits on unchanged wiki revisionId)
 - ✅ Per-action idempotency primitives (`cm:proc` 24h + `cm:action:pending` 5m owner-token + `cm:action:done` 7d) — shipped Phase 0.6 + Codex CRITICAL hardened (commitAction retries done-write 3x + lease compare-and-delete)
