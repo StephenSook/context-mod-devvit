@@ -1435,7 +1435,7 @@ Wave Z — final brain-dump completion. After v0.4.0 Stephen requested explicit 
 - **Z3-X52 Lighthouse script** — `scripts/lighthouse.sh` for local manual runs.
 - **Z4-X58 light-mode MVP** — ThemeToggle in Header (Sun/Moon icon); data-theme="light" CSS-vars swap; localStorage persisted.
 - **Z4-X65 social preview SVG** — `assets/social-preview.svg` 1280x640. `scripts/set-social-preview.sh` for the SVG→PNG→upload chain.
-- **Z4-X54 WCAG AA pass** — audit confirmed 36 aria-* attributes across all interactive components; every `<button>` has aria-label/expanded/pressed. Combined w/ X55 reduced-motion + X53 axe-core CI = comprehensive AA.
+- **Z4-X54 WCAG AA pass** — audit confirmed 36 aria-* attributes across all interactive components; every `<button>` has aria-label/expanded/pressed. Combined w/ X55 reduced-motion + X53 axe-core CI = full AA coverage.
 
 ### Tests
 
@@ -1714,7 +1714,7 @@ Sprint sprint. Vinh shipped Phase 1+2+3 backend in a single day; Stephen shipped
 ### Changed
 
 - **Mustache.escape now defaults to escapeMarkdown** (`src/core/template.ts`, Codex H4 hardening). Raw `{{item.title}}` no longer re-enables u/-ping or `[click](evil)` injection. Triple-stash `{{{...}}}` bypass for explicitly-raw moderator-authored fields. Action templates updated to treat Safe field aliases as identical to raw.
-- **Global config.dryRun is authoritative** (`src/core/runAction.ts`, Codex H1 hardening). Per-action `dryRun: false` can no longer demote a globally-safe config to live; only ELEVATE to dry-run.
+- **Global config.dryRun is authoritative** (`src/core/runAction.ts`, Codex H1 hardening). Per-action `dryRun: false` can no longer demote a globally-safe config to live; only PROMOTE a live config to dry-run.
 - **configStore.publish allocates rev via atomic INCR** (`src/state/configStore.ts` + new `src/state/keys.ts:cfgRevCounter`, Codex H2 hardening). Closes the read-modify-write race that let concurrent publishers silently overwrite each other's rev.
 - **handleActivity accepts optional `ConfigSnapshot` param** (`src/core/handleActivity.ts`, Codex H3 hardening). Triggers pass the pre-read snapshot through so a publish between trigger normalization and rule execution cannot split a single event across revs.
 - **forms `/test-rules-submit` routes via normalizePost/normalizeComment** (`src/routes/forms.ts`, Codex session HIGH-1). Was hand-building Author with all defaults, which silently disagreed with live moderation for author-aware rules.
