@@ -200,8 +200,20 @@ export default function App() {
         {/* AE Polish #62 part-4: `contain: layout` isolates layout effects
             inside this subtree so any residual reflow (e.g. event-row swap
             from skeleton → real) doesn't bubble up to CLS attribution at the
-            document root. Vercel perf-optimizer review recommendation. */}
-        <div className="flex-1 min-h-0 mt-2 flex flex-col" style={{ contain: 'layout' }}>
+            document root. Vercel perf-optimizer review recommendation.
+
+            AE Polish #103: `data-cm-cls-isolated="recent"` is a sentinel
+            attribute the Polish #98 CLS smoke test queries by — keeps the
+            test stable across CSS-class refactors (a future change moving
+            `contain: layout` to a Tailwind utility class would silently
+            pass the runtime CLS fix but break the inline-style selector).
+            If you remove the `contain: layout` style, also remove this
+            attribute + update tests/client/app.test.tsx. */}
+        <div
+          className="flex-1 min-h-0 mt-2 flex flex-col"
+          style={{ contain: 'layout' }}
+          data-cm-cls-isolated="recent"
+        >
           <div className="flex items-baseline justify-between px-5 pb-2">
             <h2 className="text-[11px] tracking-[0.18em] uppercase text-bone-300 font-medium">
               recent{' '}

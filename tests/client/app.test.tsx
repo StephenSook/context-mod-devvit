@@ -211,16 +211,18 @@ describe('App.tsx Polish #98 — CLS structural smoke (Polish #62 invariant)', (
     expect(container.textContent).toMatch(/hourly\s+actions\s*·\s*24h/i);
   });
 
-  it('Polish #62: recent-actions container carries `contain: layout` style', () => {
+  it('Polish #62 + Polish #103: recent-actions container has CLS-isolation sentinel + contain:layout', () => {
     fetchRecentSafe.mockReturnValue(new Promise(() => {}));
     fetchStatsSafe.mockReturnValue(new Promise(() => {}));
     const { container } = render(<App />);
-    // The container's `style.contain = "layout"` isolates internal
-    // reflow from CLS attribution. A regression dropping this style
-    // would re-allow event-row swap to bubble.
-    const recentContainer = Array.from(container.querySelectorAll('div')).find(
-      (d) => d.style.contain === 'layout'
-    );
+    // AE Polish #103 (pr-test-analyzer M1 + Gemini P2-2): query by
+    // sentinel data-attribute (stable across CSS-class refactors) AND
+    // verify the inline `contain: layout` style is still present. The
+    // sentinel survives a hypothetical move-to-Tailwind-class refactor;
+    // the style check ensures the runtime CLS isolation is actually
+    // active today.
+    const recentContainer = container.querySelector('[data-cm-cls-isolated="recent"]');
     expect(recentContainer).toBeTruthy();
+    expect((recentContainer as HTMLElement).style.contain).toBe('layout');
   });
 });
