@@ -174,3 +174,53 @@ describe('App.tsx demo branch (Polish #34)', () => {
     });
   });
 });
+
+// AE Polish #98: structural CLS smoke for Polish #62. Polish #62
+// closed CLS=0.328 (POOR) -> 0.04 (GOOD) by rendering StatsRow with
+// `stats ?? ZERO_STATS` so the 4-card grid mounts at first paint
+// instead of after the /api/stats fetch resolves. CLS is a runtime
+// measurement (no unit test can compute it), but the STRUCTURAL
+// invariant that makes the fix work IS testable: StatsRow + its
+// stat-card labels must be in the DOM during initialLoad, BEFORE
+// any state mutation, so the layout is reserved.
+//
+// A regression to `{stats && <StatsRow />}` would pass every other
+// test (the eventual render shape is identical) but silently
+// re-introduce the 0.322 CLS attribution. This smoke pins the
+// invariant.
+describe('App.tsx Polish #98 — CLS structural smoke (Polish #62 invariant)', () => {
+  it('Polish #62: StatsRow stat-card labels render at first paint (before fetch resolves)', () => {
+    // Make fetches NEVER resolve so initialLoad stays true throughout.
+    fetchRecentSafe.mockReturnValue(new Promise(() => {}));
+    fetchStatsSafe.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<App />);
+    // All four stat-card labels MUST be in the DOM during initialLoad.
+    // Pre-Polish-#62 they only appeared after stats resolved.
+    expect(container.textContent).toMatch(/actions today/i);
+    expect(container.textContent).toMatch(/mod time saved/i);
+    expect(container.textContent).toMatch(/active rules/i);
+    expect(container.textContent).toMatch(/top rule/i);
+  });
+
+  it('Polish #62: hourly-actions sparkline heading renders at first paint', () => {
+    fetchRecentSafe.mockReturnValue(new Promise(() => {}));
+    fetchStatsSafe.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<App />);
+    // The Sparkline area is wrapped in a minHeight:36 reserve so the
+    // text->SVG swap can't shift. Heading must be present from t=0.
+    expect(container.textContent).toMatch(/hourly\s+actions\s*·\s*24h/i);
+  });
+
+  it('Polish #62: recent-actions container carries `contain: layout` style', () => {
+    fetchRecentSafe.mockReturnValue(new Promise(() => {}));
+    fetchStatsSafe.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<App />);
+    // The container's `style.contain = "layout"` isolates internal
+    // reflow from CLS attribution. A regression dropping this style
+    // would re-allow event-row swap to bubble.
+    const recentContainer = Array.from(container.querySelectorAll('div')).find(
+      (d) => d.style.contain === 'layout'
+    );
+    expect(recentContainer).toBeTruthy();
+  });
+});
