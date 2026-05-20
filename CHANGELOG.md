@@ -18,6 +18,19 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Fixed: Polish #133 (em-dash gap close in ai-tone scanner)
+
+- **AE Polish #133: close em-dash gap in ai-tone scanner**:
+  `scripts/check-ai-tone.sh` BLOCKLIST array catches 20 prose-marketing
+  words but ignored em-dash (U+2014), the single most reliable AI-tone
+  tell that ChatGPT and Claude both reach for constantly. Added separate
+  em-dash detection pass after the word blocklist scan, emits `[em-dash]`
+  prefixed hits with line numbers + file paths, counts toward exit-1 in
+  `--strict` mode same as word hits. Locked rule via project memory
+  `[[no-em-dash-in-copy]]` plus global mirror in `~/.claude/CLAUDE.md`
+  "AI-tone hygiene" section. Stephen explicit 2026-05-20: "save to your
+  memory so we're not doing this anymore."
+
 ### Fixed — Polish #109-#132 batch (post-AE-wave doc sync + launch-day hygiene)
 
 - **AE Polish #132: address gemini fresh-eyes audit findings on

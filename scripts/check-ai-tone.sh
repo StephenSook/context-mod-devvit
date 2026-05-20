@@ -24,7 +24,7 @@
 set -eo pipefail
 set -u
 
-# Blocklist — alphabetical
+# Blocklist (alphabetical)
 BLOCKLIST=(
   amazing
   comprehensive
@@ -47,6 +47,12 @@ BLOCKLIST=(
   transform
   unlocked
 )
+
+# Em-dash detection (locked 2026-05-20 per no-em-dash-in-copy memory).
+# U+2014 in prose is the single most reliable AI-tone tell. Default mode prints
+# hits as a separate section so the word-blocklist scan stays unchanged; strict
+# mode counts em-dash hits toward exit-1 just like blocklist hits.
+EMDASH_CHAR=$'\xe2\x80\x94'
 
 # Build alternation. We use BSD-compatible word-edge anchors instead of \b
 # (which is POSIX-undefined and varies between GNU/BSD grep). [[:<:]] / [[:>:]]
@@ -129,15 +135,46 @@ for p in "${SCAN_PATHS[@]}"; do
   done < <(printf '%s\n' "$out")
 done
 
+# Em-dash pass (separate from word blocklist so output stays readable).
+emdash_hits=0
+for p in "${SCAN_PATHS[@]}"; do
+  set +e
+  out=$(grep -nF "$EMDASH_CHAR" "$p" 2>&1)
+  rc=$?
+  set -e
+  case $rc in
+    0) ;;
+    1) continue ;;
+    *)
+      echo "ERROR (em-dash scan) scanning $p (rc=$rc): $out" >&2
+      emdash_hits=$((emdash_hits + 1))
+      continue
+      ;;
+  esac
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    if echo "$line" | grep -qF '<!-- AITONE_IGNORE -->'; then
+      continue
+    fi
+    echo "[em-dash] $line"
+    emdash_hits=$((emdash_hits + 1))
+  done < <(printf '%s\n' "$out")
+done
+
 echo ""
-if [ "$hits" -eq 0 ]; then
-  echo "✓ no AI-tone blocklist hits across ${#SCAN_PATHS[@]} file(s)"
+if [ "$hits" -eq 0 ] && [ "$emdash_hits" -eq 0 ]; then
+  echo "✓ no AI-tone hits across ${#SCAN_PATHS[@]} file(s) (blocklist + em-dash both clean)"
   exit 0
 fi
 
-echo "⚠ ${hits} AI-tone blocklist hit(s) across ${#SCAN_PATHS[@]} file(s)"
-echo ""
-echo "  Blocklist: ${BLOCKLIST[*]}"
+if [ "$hits" -gt 0 ]; then
+  echo "⚠ ${hits} AI-tone blocklist hit(s) across ${#SCAN_PATHS[@]} file(s)"
+  echo "  Blocklist: ${BLOCKLIST[*]}"
+fi
+if [ "$emdash_hits" -gt 0 ]; then
+  echo "⚠ ${emdash_hits} em-dash (U+2014) hit(s) across ${#SCAN_PATHS[@]} file(s)"
+  echo "  Substitutes: period, colon, comma, parens, hyphen, or restructure. See [[no-em-dash-in-copy]] memory."
+fi
 echo ""
 echo "  False-positive escape: add '<!-- AITONE_IGNORE -->' on the same line."
 
