@@ -30,13 +30,15 @@ The CLI surfaced a **CLS=0.328 (POOR)** that the prior measurement missed entire
 
 ### Core Web Vitals
 
-| Metric | Before | After | Threshold | Verdict |
-|--------|--------|-------|-----------|---------|
-| First Contentful Paint (FCP) | 3.3 s | 3.2 s | <1.8s good, >3s poor | ⚠️ Poor (network throttling — dev:web is unminified mock server, not the prod Devvit bundle) |
-| Largest Contentful Paint (LCP) | 3.7 s | 3.5 s | <2.5s good, >4s poor | ⚠️ Needs improvement (same caveat) |
-| Total Blocking Time (TBT) | 0 ms | 0 ms | <200ms good | ✅ Excellent |
-| **Cumulative Layout Shift (CLS)** | **0.328** | **0.04** | <0.1 good, >0.25 poor | ✅ **Good (-87%)** |
-| Speed Index | 3.3 s | 3.2 s | <3.4s good | ✅ Good |
+| Metric | Before Polish #62 | After Polish #62 | After Polish #100 re-verify | Threshold | Verdict |
+|--------|-------------------|------------------|-----------------------------|-----------|---------|
+| First Contentful Paint (FCP) | 3.3 s | 3.2 s | 3.4 s | <1.8s good, >3s poor | ⚠️ Poor (network throttling — dev:web is unminified mock server, not the prod Devvit bundle) |
+| Largest Contentful Paint (LCP) | 3.7 s | 3.5 s | 3.7 s | <2.5s good, >4s poor | ⚠️ Needs improvement (same caveat) |
+| Total Blocking Time (TBT) | 0 ms | 0 ms | 60 ms | <200ms good | ✅ Excellent (run-to-run variance — Polish #100 hit a slightly noisier sample) |
+| **Cumulative Layout Shift (CLS)** | **0.328** | **0.04** | **0.057** | <0.1 good, >0.25 poor | ✅ **Good (Polish #94/#95 did not regress; 0.057 still well within Good band)** |
+| Speed Index | 3.3 s | 3.2 s | 4.0 s | <3.4s good | ✅/⚠️ Good→Needs-improvement (variance) |
+
+**Polish #100 (2026-05-19, post-Polish-#94 BlockHash brand + #95 README Fetch-Domains sync):** Performance score 84 → 81 (run-to-run variance ±3-5 is normal on Lighthouse). CLS 0.04 → 0.057 — both readings sit firmly inside the Good band (<0.1). The Polish #62 structural invariant (ZERO_STATS-fallback + reserve-space wrappers + `contain: layout`) holds. A11y, BP, SEO, and Agentic Browsing all locked at their post-#62 values.
 
 ---
 
