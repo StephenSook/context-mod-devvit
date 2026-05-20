@@ -121,7 +121,7 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard + 
 
 ### Gaps vs upstream (explicitly cut)
 
-- `mhs` (ModerateHateSpeech toxicity classifier): explicitly cut. Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out. Available in upstream ContextMod's PRAW build; not available in the Devvit port. Documented honestly rather than worked around.
+- `mhs` (ModerateHateSpeech toxicity classifier): explicitly cut. Reddit's `reddit/devvit-docs` PR #96 (2026-05-08) locked the HTTP fetch policy's AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside that carve-out. Available in upstream ContextMod's PRAW build; not available in the Devvit port. Documented honestly rather than worked around. Independent corroboration from Magnes in cm-devvit Discord 2026-05-20: "MHS doesn't work anymore it seems. On their website too, like you can't make new accounts or see your API data, regenerate your API key, seems to bug out." So the cut is twice-justified: (a) Reddit's allowlist excludes it AND (b) the upstream MHS service itself is broken right now (operators can't even provision new keys). A Connection-refused screenshot from the MHS endpoint was attached to Magnes' note.
 - `RepeatActivityRule`, `SentimentRule`, full `RepostRule` w/ YouTube: explicitly cut. Sentiment needs NLP libs that don't bundle in Devvit; YouTube API exceeds scope.
 - `DispatchAction` (defer-and-replay): cut; not load-bearing for MVP, defer to v2 if operators ask.
 - Multi-bot orchestration (CM's "shared streams" pattern). Devvit's per-sub install model replaces this architecturally.
@@ -132,6 +132,20 @@ The concept model + rule semantics + wiki-config publish pipeline + dashboard + 
 **Yes, for nearly the entire upstream MVP.** As of v0.6.7 (2026-05-18) the port covers: regex/author/ruleSet rules, all 7 MVP actions, Mustache action templates with markdown sanitization, named-rule composition, atomic wiki-config publish + 5-min refresh cron + manual reload, mod-menu dry-run rule tester, per-effect idempotency (5-min pending + 7d done w/ retry-safe commits), Phase 4 history/attribution/recentActivity author-history rules + URL-dedupe repost, AI rule explainer + AI event summary, Observatory dashboard w/ live ZSET data + 24h sparkline + per-event drill-down + mod activity attribution + config rev diff viewer + hard-mute (wired into runCheck v0.6.7 AE CRITICAL #4), mute/unmute, keyboard shortcuts, filter chips, mobile-responsive, light-mode toggle, onboarding tour.
 
 Subs using upstream CM specifically for hate-speech filtering will need to keep running the upstream PRAW build: the Devvit `mhs` port is cut per PR #96 (HTTP fetch policy AI-provider allowlist restricted to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside the carve-out). Everything else from upstream ContextMod (regex / author / ruleSet / history / attribution / recentActivity / repost URL-dedupe / imageRepost perceptual-blockhash) ports faithfully: see the "Gaps vs upstream (explicitly cut)" section above for the full cut list with rationale.
+
+### Reddit policy note: ban-action on sub-association history (March 19, 2026)
+
+Per [piunikaweb](https://piunikaweb.com/2026/03/06/reddit-disable-auto-ban-features-saferbot-hive-protect/) reporting and confirmed by Magnes in cm-devvit Discord 2026-05-20: "Reddit recently removed hive-protector's ban ability (IIRC); I think it still can do everything else though. Big difference between wholesale banning and just removing a comment, so it would be understandable if they don't mind the latter. I still use CM to flag and remove based on user history." Reddit's policy effective March 19, 2026 restricts bots from auto-banning users based on subreddit-association history (a Reddit team member reportedly cited one community banning over 70,000 users solely for posting in r/Conservative as the kind of "guilt-by-association" enforcement they're cutting).
+
+What this means for ContextMod operators:
+
+- The `ban` action API call (`reddit.banUser`) is NOT API-level disabled. `src/actions/ban.ts` continues to work via `@devvit/reddit`.
+- The `remove`, `report`, `comment`, `lock`, `userFlair` actions remain unaffected for all rule kinds.
+- For `history`, `attribution`, `recentActivity` rules (Phase 4) that scan a user's cross-sub history, Reddit's policy recommends `remove` or `report` for moderation, NOT `ban`. Magnes' own usage pattern confirms this: "I still use CM to flag and remove based on user history."
+- ContextMod's action handler chain (`src/core/runAction.ts:204-256` non-retryable 4xx classifier) treats any 403/Forbidden from `reddit.banUser` as a non-retryable error: the dashboard surfaces a red row with the error message rather than silently retrying or quietly failing. So if Reddit ever moves to API-level enforcement, mods see the failure immediately.
+- The supplied example configs in `examples/` use `remove` for history-based detection (`history-fresh-low-karma.json5`, `attribution-drive-by-self-promo.json5`, `recent-activity-cross-sub.json5`) to align with current Reddit policy.
+
+This is honest documentation, not a workaround: ContextMod is built to be used responsibly within Reddit's evolving policy boundaries.
 
 ### Build journal (first-person per D10: Stephen to rewrite)
 

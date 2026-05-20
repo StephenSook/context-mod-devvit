@@ -18,6 +18,49 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Docs: Polish #137 (Reddit ban-policy note + MHS cut corroboration; Magnes Discord feedback)
+
+- **AE Polish #137: document Reddit's March 19, 2026 ban-on-sub-association
+  policy + add MHS-service-dead corroboration to cut rationale**: Magnes
+  flagged in cm-devvit Discord 2026-05-20: "Reddit recently removed
+  hive-protector's ban ability (IIRC); I think it still can do everything
+  else though. Big difference between wholesale banning and just removing
+  a comment, so it would be understandable if they don't mind the latter.
+  I still use CM to flag and remove based on user history." Also: "MHS
+  doesn't work anymore it seems. On their website too, can't make new
+  accounts or regenerate API keys. Seems to bug out."
+
+  Independent corroboration via WebSearch + piunikaweb 2026-03-06 article:
+  Reddit's policy effective March 19, 2026 restricts mod bots from
+  auto-banning users based on subreddit-association history. SaferBot
+  auto-ban completely disabled; Hive-Protect auto-ban disabled but
+  report/remove/comment retained.
+
+  What this means for ContextMod:
+  - `reddit.banUser` is NOT API-level disabled. `src/actions/ban.ts`
+    still works for non-history rule kinds (regex, author, ruleSet).
+  - For history-class rules (`history`, `attribution`, `recentActivity`),
+    Reddit's policy recommends `remove` / `report`, NOT `ban`. Magnes'
+    own usage pattern aligns: "flag and remove based on user history."
+  - `runAction.ts:204-256` non-retryable 4xx classifier already surfaces
+    any 403/Forbidden from `reddit.banUser` as a red row on the
+    dashboard. If Reddit moves to API-level enforcement later, mods see
+    the failure immediately — no silent retry, no quiet failure.
+  - All three Phase 4 example configs (`history-fresh-low-karma`,
+    `attribution-drive-by-self-promo`, `recent-activity-cross-sub`)
+    already use `remove` / `report` for history-based detection,
+    independently verified via grep.
+
+  Writeup §3 updates: (a) MHS cut rationale strengthened with Magnes
+  corroboration that the upstream service itself is broken (twice-
+  justified cut: Reddit allowlist excludes it AND service is bug-out).
+  (b) New "Reddit policy note: ban-action on sub-association history
+  (March 19, 2026)" subsection under §3 explaining the policy scope,
+  what works vs what's recommended, and the existing error-surfacing
+  in case Reddit moves to API enforcement.
+
+  No source changes. Pure documentation honesty.
+
 ### Added: Polish #136 (YAML config support; FoxxMD Discord feedback)
 
 - **AE Polish #136: runtime YAML config parsing alongside JSON5**:
