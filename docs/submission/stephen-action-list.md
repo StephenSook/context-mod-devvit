@@ -41,7 +41,7 @@ Three reasons Claude doesn't touch these:
 
 ---
 
-## T-6 — 2026-05-14 (today)
+## T-6 — 2026-05-21
 
 ### Action 1 — Ping Vinh on Phase 0.10 image-blockhash spike status (30s)
 
@@ -76,7 +76,7 @@ Beyond the Vinh ping, today is a Claude-side workday — solo artifacts (MEMORY.
 
 ---
 
-## T-5 — 2026-05-15
+## T-5 — 2026-05-22
 
 **No user-only actions pending.** Both originally-scheduled items are resolved early:
 
@@ -87,7 +87,7 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ---
 
-## T-3 — 2026-05-17
+## T-3 — 2026-05-24
 
 ### Action 1 — Confirm Phase 1+2 status with Vinh
 - **What to ask:** "Is `handleActivity` → config load → `runRun` → `runCheck` → `runRule` → action handler → `events:recent` ZSET push executing end-to-end on a real `r/cm_devvit_test` post submission?"
@@ -103,7 +103,7 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ---
 
-## T-2 — 2026-05-18 — Demo recording day
+## T-2 — 2026-05-25 — Demo recording + `npm run launch`
 
 ### Action 1 — Pre-flight `demo-video-runbook.md` checklist
 - OBS scenes pre-positioned (App Directory / wiki / dashboard `?demo=1` / mod menu)
@@ -130,7 +130,7 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ---
 
-## T-1 — 2026-05-19
+## T-1 — 2026-05-26
 
 ### Action 1 — Ping SampleOfNone for Helper Nomination permission (30s)
 - **Channel:** Discord same thread (the May 12-14 conversation)
