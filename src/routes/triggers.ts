@@ -16,11 +16,14 @@
  *      double-fire. Fail-CLOSED on Redis error (returns false → skip).
  *   4. Normalize the V2 payload + dispatch to handleActivity.
  *
- * Kill switch: handled via the per-event firstSeen idempotency guard above
- * (Redis-backed) + mod-menu Reload-config which can publish a
- * `{ dryRun: true }` global override that suppresses all live actions
- * without code redeploy. Reddit-side, mods can uninstall the app from
- * the App Directory to fully disable.
+ * Kill switch: mod-menu Reload-config publishes a `{ dryRun: true }`
+ * global override that suppresses all live actions without code redeploy
+ * (src/core/runAction.ts global-dryRun gate is authoritative per Codex H1
+ * hardening). Reddit-side, mods can uninstall the app from the App
+ * Directory to fully disable. NOTE: the firstSeen guard above is per-event
+ * idempotency dedup against Devvit's at-least-once retry of the SAME event
+ * — it does NOT prevent NEW events from processing, so it is NOT a kill
+ * switch.
  */
 
 import { Hono } from 'hono';
