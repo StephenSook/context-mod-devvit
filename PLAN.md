@@ -109,7 +109,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | 🟡 IN REVIEW 2026-05-16 | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Terms + Privacy + Description filled on Dev Portal. **Version 0.2.0 submitted for review** 2026-05-16 — Reddit gates "Creates custom posts" + http fetch. Email-on-approval expected within 1–7d. Track status at https://developers.reddit.com/apps/cm-devvit/app-versions. |
+| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | 🟡 IN REVIEW (v0.6.7 currently; v0.2.0 first-submit 2026-05-16, v0.5.5 approved 2026-05-17 unlisted, v0.6.7 re-uploaded 2026-05-19 pending final review) | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Terms + Privacy + Description filled on Dev Portal. Reddit gates "Creates custom posts" + http fetch. Email-on-approval per re-submit (typically 1–7d). Track status at https://developers.reddit.com/apps/cm-devvit/app-versions. Final `npm run launch` (Stephen, T-2 = 2026-05-25) publishes v0.6.x as the source the judges install. |
 | 6.2 | Devpost submission filed | devpost.com | **Stephen** | ⬜ | 6.1 | Before May 27 6 PM PT |
 
 ---
