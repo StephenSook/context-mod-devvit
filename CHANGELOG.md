@@ -18,6 +18,25 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Fixed: Polish #140 (bake `--public` into npm run launch script default)
+
+- **AE Polish #140: launch script now publishes as public by default**:
+  prior `launch` script ran `... && devvit publish` with no flag. Per
+  `devvit publish --help`, the default visibility is `unlisted`, so
+  shipping via `npm run launch` was silently producing unlisted submissions.
+  SampleOfNone flagged in cm-devvit Discord 2026-05-20: "publish the
+  app as public, otherwise nobody can install it." Polish #140 bakes
+  `--public` into the script so future `npm run launch` invocations
+  submit for public review by default. If a future operator wants an
+  intentionally-unlisted submission, drop the flag manually or run
+  `devvit publish` directly.
+
+  Companion to Polish #127 (launch-script dedupe, shipped 71bcb9e
+  2026-05-19) and Polish #135 (mod-auth gates verified 2026-05-20).
+  Three-part fix to the launch pipeline now complete: deduped
+  (no double upload) + tested (full type-check + lint + test) +
+  public (default visibility for production submissions).
+
 ### Docs: Polish #139 (production smoke evidence for Polish #135 mod-auth fix)
 
 - **AE Polish #139: Polish #135 verified in real Devvit production**:
