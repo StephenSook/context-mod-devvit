@@ -18,6 +18,30 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Docs: Polish #139 (production smoke evidence for Polish #135 mod-auth fix)
+
+- **AE Polish #139: Polish #135 verified in real Devvit production**:
+  Saved two browser-network-panel screenshots from the live smoke test
+  on `r/cm_devvit_test` (private sub, `cm-devvit@0.2.7` installed via
+  `npx devvit install r/cm_devvit_test cm-devvit@latest`).
+
+  Non-mod identity (approved user, not moderator):
+  `docs/screenshots/polish-135-non-mod-403.png`. Every polled endpoint
+  returns 403: `/api/recent`, `/api/stats`, `/api/mod-activity`. Dashboard
+  renders empty-state placeholders. No mod-action data leaked.
+
+  Mod identity (u/CowSufficient3840): `docs/screenshots/polish-135-mod-200.png`.
+  Same endpoints all return 200 with real payloads. Dashboard renders
+  real stats, rule-stats table, and recent-actions feed.
+
+  Closes codex-rescue RANK 5 BLOCKER (production smoke unverified) and
+  the gemini-agent CRITICAL+HIGH `/api/recent` + `/api/stats` audit
+  findings with real-Reddit-environment evidence. SampleOfNone Discord
+  directive ("test that the mod dashboard is really mod only") satisfied.
+
+  Updated `docs/submission/foxxmd-discord-feedback-response.md` with a
+  new "Production smoke evidence" section + linked both screenshots.
+
 ### Docs: Polish #137 (Reddit ban-policy note + MHS cut corroboration; Magnes Discord feedback)
 
 - **AE Polish #137: document Reddit's March 19, 2026 ban-on-sub-association

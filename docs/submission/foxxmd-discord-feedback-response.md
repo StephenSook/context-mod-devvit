@@ -87,6 +87,18 @@ If Stephen wants to close any remaining ambiguity, codex-rescue recommended aski
 | `fd2e014` | #135: `/api/recent` + `/api/stats` mod-auth gates | `src/routes/api.ts`, `tests/routes/api-auth.test.ts`, `CHANGELOG.md` | 830 green (+2 net) |
 | `71be33a` | #136: runtime YAML config support | `src/core/config.ts`, `tests/core/config.test.ts`, `examples/starter-config.yaml`, `examples/README.md`, `package.json`, `package-lock.json`, `CHANGELOG.md` | 838 green (+8 net) |
 | `7ec390f` | #137: Reddit ban-policy + MHS-corroboration docs | `docs/submission/writeup-draft.md`, `CHANGELOG.md` | no source change, 838 green |
+| `5bc2f8e` | #138: this response plan doc | `docs/submission/foxxmd-discord-feedback-response.md` | no source change, 838 green |
+| (Polish #139) | #139: production smoke evidence | `docs/screenshots/polish-135-{non-mod-403,mod-200}.png` + this section | no source change, 838 green |
+
+## Production smoke evidence (Polish #139)
+
+Polish #135 verified in real Devvit runtime on `r/cm_devvit_test` after `cm-devvit@0.2.7` was installed via `npx devvit install r/cm_devvit_test cm-devvit@latest` on 2026-05-20.
+
+**Non-mod identity** (approved-user-but-not-mod throwaway loading the Observatory custom post): see [`docs/screenshots/polish-135-non-mod-403.png`](../screenshots/polish-135-non-mod-403.png). Network panel filtered to `api` shows every polled endpoint returning **403** (`/api/recent`, `/api/stats`, `/api/mod-activity`, repeated across the polling cycle). Dashboard renders empty-state placeholders: `ACTIONS TODAY: 0`, `ACTIVE RULES: 0`, "No rule firings yet", "mod activity feed unav…". No real mod-action data leaked.
+
+**Mod identity** (u/CowSufficient3840 loading the same post): see [`docs/screenshots/polish-135-mod-200.png`](../screenshots/polish-135-mod-200.png). Same endpoints all return **200** with real payloads. Dashboard renders real stats (`ACTIVE RULES: 1`, `TOP RULE: r…`), real rule-stats table (`repost-watch / url-…`), real recent-actions feed (`url-dedupe-30d 1`), and the polling cycle is healthy.
+
+Closes the codex-rescue RANK 5 BLOCKER "Connection refused root-cause" item and the gemini-agent CRITICAL+HIGH `/api/recent` + `/api/stats` audit findings. SampleOfNone Discord directive ("test that the mod dashboard is really mod only") satisfied with production evidence.
 
 ## Memory writes
 
