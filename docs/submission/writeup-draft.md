@@ -77,7 +77,7 @@ What CAN be defended (every number citation-traceable in [`pillar-5-numbers.md`]
 - **466 hours/day of moderation labor measured across 21,500 active mods in 126 subreddits** — Li, Hecht, Chancellor (ICWSM 2022). At $20/hr median that's $3.4M/yr unpaid in the measured population. Linear-scaled to Reddit's stated 60K active mods: **~$9.5M/yr in volunteer-labor-equivalent value** (flag this as scaling math).
 - **73% of mod actions are already performed by bots** — same paper.
 - ContextMod adds a **second axis** to the bot stack: AutoMod is regex-only; CM adds context-gathering (author history, sub-distribution, image-hash repost) that today only humans can do.
-- **Per-action user-history checks take ~5-10 minutes manually**. If CM-class bots offload 1 incremental hour per mod per week beyond AutoMod's reach, the labor-equivalent value offloaded is **60K × 52 × $20 ≈ $62.4M/yr at full capture** — even 10% capture is $6M+/yr.
+- **Per-action user-history checks take ~5-10 minutes manually** (Li 2022 + Wright 2022). No published study measures the per-mod-per-week labor offloaded by CM-class tools; per [`pillar-5-numbers.md`](./pillar-5-numbers.md) §11 + line 248 "DO NOT INVENT" rule, this draft cites only the measured Li 2022 baseline ($3.4M/yr) and the §B-scaled $9.5M/yr (Reddit's stated ~60K mod base). Polish #73 deleted the prior "60K × 52 × $20 ≈ $62.4M/yr" extrapolation that self-violated the doc's own rule.
 
 ### Sookra Pillar alignment
 

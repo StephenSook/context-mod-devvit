@@ -226,7 +226,7 @@ Paste from [`writeup-draft.md`](./writeup-draft.md) Section 1, including the dee
 
 ### Project Impact (required, judges-only)
 
-Paste from [`writeup-draft.md`](./writeup-draft.md) Section 2, including the deepened Time savings math ($9.5M scaled / $62.4M addressable / $6M+ conservative capture) and the rewritten Sookra Pillar alignment box.
+Paste from [`writeup-draft.md`](./writeup-draft.md) Section 2. Use the conservative framing in [`pillar-5-numbers.md`](./pillar-5-numbers.md) §11 (measured $3.4M/year Li 2022 baseline + §B-scaled $9.5M/year at Reddit's ~60K mod base). Polish #73 deleted the fabricated $62.4M TAM math (self-violation of pillar-5-numbers.md line 248's "DO NOT INVENT specific time-savings figures" rule). Do NOT paste any larger figure than $9.5M without a citation that didn't exist when this hackathon shipped.
 
 ### Is this a new app or a migrated app?
 
