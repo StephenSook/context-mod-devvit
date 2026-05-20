@@ -1,6 +1,6 @@
 # Migration compatibility — upstream ContextMod → Devvit port
 
-> For operators already running FoxxMD's PRAW-era [ContextMod](https://github.com/FoxxMD/context-mod): this document tells you exactly which rules, actions, filters, and config keys carry over, which are deferred, and which were explicitly cut. **No surprises in your wiki config.**
+> For operators already running FoxxMD's PRAW-era [ContextMod](https://github.com/FoxxMD/context-mod): this document tells you exactly which rules, actions, filters, and config keys carry over and which were explicitly cut. **No surprises in your wiki config.**
 
 **Last reviewed:** 2026-05-17 (v0.2.0).
 **Upstream version sampled:** master branch at the time of the Devvit port (FoxxMD's last release was Nov 2022).
@@ -10,7 +10,7 @@
 
 ## Quick answer
 
-If your current wiki config uses **regex rules + author criteria + named rules + filters + Mustache-templated actions + URL-dedupe repost**, your config copies across with **minor renames** as of Devvit-port v0.2.0 (Phase 1+2+3 shipped 2026-05-16, in Reddit App Directory review). The Phase 4 stretch rules (`history` / `attribution` / `recentActivity`) land post-hackathon; image-mode repost (Phase 4.7) is deferred. If you use `mhs`, that's cut per Reddit's PR #96 — keep running upstream PRAW for hate-speech filtering.
+If your current wiki config uses **regex rules + author criteria + named rules + filters + Mustache-templated actions + URL-dedupe repost + history / attribution / recentActivity author-history rules + image-mode repost**, your config copies across with **minor renames** as of Devvit-port v0.6.7 (Phase 1+2+3+4+4.7 ALL shipped 2026-05-18, in Reddit App Directory review). If you use `mhs`, that's cut per Reddit's PR #96 — keep running upstream PRAW for hate-speech filtering.
 
 **Schema renames you'll apply to your wiki config (one-time):**
 - `condition:` → `combinator:` on runs / checks / ruleSets
@@ -34,10 +34,10 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 | `ruleSet` (AND/OR composition) | ✅ **Ported (Phase 1)** | Rename: `combinator: 'AND' \| 'OR'` (was `condition:`) + `rules: []`. Nested ruleSets supported. `postBehavior: 'next' \| 'stop' \| 'goto:<run-name>'` honored (`'continue'` upstream → `'next'` Devvit). |
 | `namedRules` (declare-once, ref-by-name) | ✅ **Ported (Phase 1)** | Top-level `namedRules: { <name>: <rule> }` (camelCase, was `named_rules:` upstream). Reference from any check via `{ kind: 'ruleSet', name: '<name>' }`. |
 | `repost` (URL mode) | ✅ **Ported (Phase 2)** | URL sha256 + Redis `cm:repost:url:{hash}` w/ SET NX semantics for atomicity (Codex C1), 30-day TTL. Promoted from Phase 4 by Codex hardening pass. |
-| `history` | 🚧 **Deferred to Phase 4** | Cache-backed (`cm:author:{name}` hash, 1h TTL). Same criteria surface as upstream: submissionCount / commentCount / linkKarma / commentKarma / accountAge. |
-| `attribution` | 🚧 **Deferred to Phase 4** | Same domain-frequency criteria as upstream. |
-| `recentActivity` | 🚧 **Deferred to Phase 4** | Same per-sub thresholds + window criteria as upstream. |
-| `repost` (image mode) | ⏸ **Deferred (Phase 4.7)** | Pure-JS perceptual blockhash + multi-band LSH in Redis. Day-0 GO/NO-GO spike not run pre-hackathon; revisit post-submission. |
+| `history` | ✅ **Ported (Phase 4, 2026-05-18)** | Cache-backed (`cm:author:{name}` hash, 1h TTL, per-author lock to prevent cache-miss thundering herd — Polish #77). Same criteria surface as upstream: submissionCount / commentCount / linkKarma / commentKarma / accountAge. |
+| `attribution` | ✅ **Ported (Phase 4, 2026-05-18)** | Same domain-frequency criteria as upstream. |
+| `recentActivity` | ✅ **Ported (Phase 4, 2026-05-18)** | Same per-sub thresholds + window criteria as upstream. |
+| `repost` (image mode) | ✅ **Ported (Phase 4.7, 2026-05-18)** | Pure-JS perceptual blockhash (`upng-js` + `jpeg-js` + `blockhash-core`) on preview.redd.it variants. 256-bit hash, configurable Hamming threshold (default 8 of 256). Per-sub lock around findSimilar+recordHash (Polish #61) prevents the read-modify-write race on concurrent duplicate posts. Multi-band LSH is the post-MVP scale optimization, deferred. |
 | `repost` (YouTube mode) | ✂️ **Cut** | YouTube Data API quota model doesn't fit Devvit's fetch policy. Upstream PRAW build keeps it. |
 | `mhs` (ModerateHateSpeech HTTP fetch) | ✂️ **Cut 2026-05-13** | Reddit PR #96 (2026-05-08) locked HTTP fetch policy AI-provider allowlist to OpenAI + Gemini only; `api.moderatehatespeech.com` falls outside. Subs using upstream `mhs` for hate-speech filtering: keep running upstream PRAW. See [`devvit-app-settings.md`](./submission/devvit-app-settings.md). |
 | `sentiment` | ✂️ **Cut** | NLP libs (compromise, sentiment) don't bundle cleanly in Devvit's 30s execution window + 500MB bundle cap. Upstream PRAW build keeps it. |
@@ -108,7 +108,7 @@ If your current wiki config uses **regex rules + author criteria + named rules +
 
 Concretely, if you're FoxxMD-instance-class (running upstream CM today against r/mealtimevideos or similar):
 
-1. **Your wiki config copies over with one-time renames.** Open `r/<your-sub>/wiki/contextmod` → copy → apply the schema renames listed in the Quick Answer at top → paste into the new install's `r/<sub>/wiki/botconfig/contextmod` path. Delete any `mhs` / `dispatch` / `message` / `modnote` / `usernote` / `sentiment` / `repeatActivity` blocks. Phase 4 rules (`history`, `attribution`, `recentActivity`) stay in config but won't fire until Phase 4 ships post-hackathon — that's fine; they're no-ops, not errors. URL-dedupe `repost` works today.
+1. **Your wiki config copies over with one-time renames.** Open `r/<your-sub>/wiki/contextmod` → copy → apply the schema renames listed in the Quick Answer at top → paste into the new install's `r/<sub>/wiki/botconfig/contextmod` path. Delete any `mhs` / `dispatch` / `message` / `modnote` / `usernote` / `sentiment` / `repeatActivity` blocks. Phase 4 author-history rules (`history`, `attribution`, `recentActivity`) AND Phase 4.7 image-hash repost work today (shipped 2026-05-18). URL-dedupe `repost` (Phase 2) works today.
 2. **Your central server gets retired** after migration. The Devvit install handles polling, rate limiting, storage, and rule eval per-sub.
 3. **Your reason-chain audit log** (which sub did X to author Y because rule Z) is now visible in-product via the Observatory dashboard (custom post). No more grep-the-Discord-webhook.
 4. **Your operator-tier features** (cross-sub aggregate, multi-bot orchestration, dispatch-and-replay) **don't exist** in the Devvit port today. If you need them, keep running upstream alongside. The two coexist — each install is isolated.
