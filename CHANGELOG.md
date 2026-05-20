@@ -10,7 +10,7 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 129 atomic polishes (#18-#129) shipped
+AE Polish wave continued — 130 atomic polishes (#18-#130) shipped
 across this session covering 9 adversarial-review rounds (silent-
 failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
 codex external review, ultrareview (cloud multi-agent),
@@ -18,8 +18,18 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
-### Fixed — Polish #109-#129 batch (post-AE-wave doc sync + launch-day hygiene)
+### Fixed — Polish #109-#130 batch (post-AE-wave doc sync + launch-day hygiene)
 
+- **AE Polish #130: polish-count drift sweep + missed launch-state
+  refs** — Polish #126 swept 6 docs at #1-#108; Polish #127-#129
+  bumped count to 130 but those 6+ docs still showed #1-#108. Bulk-
+  bumped to #1-#130 across PLAN.md:75, STATUS.md:47+:69, migration-
+  from-upstream-cm.md:7, lighthouse-2026-05-19.md:7, submission-day-
+  runbook.md:9, stephen-action-list.md:12, devpost-form-cheat-sheet.md
+  :3+:109+:316. Also caught one missed Polish #129 stale ref —
+  devpost-form-cheat-sheet.md:109 still said "Final v0.6.7 source
+  re-upload at T-2 (May 25)" → rewrote to "shipped 2026-05-19 (T-8,
+  6 days early); Devvit cm-devvit@0.2.6 submitted for re-review".
 - **AE Polish #129: doc-sweep mark `npm run launch` DONE across 6
   surfaces** — after Polish #127 shipped launch 6 days early (T-8
   instead of planned T-2), 6 judge-facing surfaces still framed

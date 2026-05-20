@@ -4,7 +4,7 @@
 >
 > Full compatibility matrix (every rule kind, action, filter, config key — what's ported / deferred / cut) lives in [`docs/migration-compatibility.md`](./migration-compatibility.md). This doc is the action-list.
 
-**Last reviewed:** 2026-05-19 (v0.6.7 — full Wave W/X/Y/Z/AA/AB/AC/AD/AE hardening + Vinh's Phase 4 history/attribution/recentActivity rules SHIPPED 2026-05-18 + Phase 4.7 image-hash repost SHIPPED v0.6.0 2026-05-18 + AE Polish #1–#108 closed).
+**Last reviewed:** 2026-05-19 (v0.6.7 — full Wave W/X/Y/Z/AA/AB/AC/AD/AE hardening + Vinh's Phase 4 history/attribution/recentActivity rules SHIPPED 2026-05-18 + Phase 4.7 image-hash repost SHIPPED v0.6.0 2026-05-18 + AE Polish #1–#130 closed).
 
 ---
 
