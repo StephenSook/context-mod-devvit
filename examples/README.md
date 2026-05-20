@@ -1,6 +1,12 @@
-# ContextMod Devvit — example configs
+# ContextMod Devvit: example configs
 
-Twelve working JSON5 configs that match the shipped Phase 1+2+3+4+4.7 AJV schema. Ready to paste into `r/<your-sub>/wiki/botconfig/contextmod` after install.
+Twelve working JSON5 configs plus one YAML example, all matching the shipped Phase 1+2+3+4+4.7 AJV schema. Ready to paste into `r/<your-sub>/wiki/botconfig/contextmod` after install.
+
+## Format: JSON5 or YAML
+
+Polish #136 added YAML support per FoxxMD Discord feedback 2026-05-20: "cm also supports yaml which is what most mods use since it's the same syntax as automod." Existing CM operators can paste their AutoMod-style YAML configs directly into the wiki page without converting first. The parser auto-detects format by sniffing the first non-whitespace character: `{` or `[` means JSON5 (flow style), anything else means YAML (block style).
+
+See [`starter-config.yaml`](./starter-config.yaml) for the YAML equivalent of [`starter-config.json5`](./starter-config.json5). Both files parse to the same AppConfig.
 
 ## By difficulty tier
 

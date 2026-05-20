@@ -1,5 +1,19 @@
 /**
- * Config loader. JSON5 → AJV-validate → typed `AppConfig`.
+ * Config loader. JSON5 or YAML → AJV-validate → typed `AppConfig`.
+ *
+ * Format support:
+ * - JSON5 (FoxxMD upstream supported it, Devvit port shipped it first)
+ * - YAML (FoxxMD Discord 2026-05-20: "cm also supports yaml which is what
+ *   most mods use since it's the same syntax as automod"). Polish #136
+ *   added YAML alongside JSON5 so existing CM operators can paste their
+ *   existing AutoMod-style YAML configs directly into the wiki page
+ *   without converting first.
+ *
+ * Detection strategy: sniff first non-whitespace character. `{` or `[`
+ * means flow-style JSON5; anything else means YAML. On detected-format
+ * parse failure, fall back to the other parser so a leading-comment
+ * JSON5 file (e.g. `// header\n{...}`) or a quoted-scalar YAML file
+ * still parses correctly.
  *
  * Step 1.7's named-rule expansion runs here too so the engine only ever sees
  * a flat rule graph (Step 1.9 dispatcher doesn't need to know about `named:`
@@ -12,6 +26,7 @@
 
 import Ajv, { type ErrorObject } from 'ajv';
 import JSON5 from 'json5';
+import YAML from 'js-yaml';
 import schema from '../schema/app.schema.json' with { type: 'json' };
 import type { AppConfig } from '../shared/types';
 import { expandNamedRules } from './namedRules';
@@ -20,22 +35,87 @@ import { computeNeedsAuthorEnrichment } from '../shared/normalize';
 export type AjvError = ErrorObject;
 
 export type ParseResult =
-  | { ok: true; config: AppConfig }
+  | { ok: true; config: AppConfig; format: 'json5' | 'yaml' }
   | { ok: false; errors: AjvError[] | string };
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const validate = ajv.compile<AppConfig>(schema);
 
-export function parseConfig(json5Text: string): ParseResult {
-  let raw: unknown;
+function sniffFormat(text: string): 'json5' | 'yaml' {
+  const trimmed = text.trimStart();
+  return trimmed.startsWith('{') || trimmed.startsWith('[') ? 'json5' : 'yaml';
+}
+
+function tryJson5(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
   try {
-    raw = JSON5.parse(json5Text);
+    return { ok: true, value: JSON5.parse(text) };
   } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+function tryYaml(text: string): { ok: true; value: unknown } | { ok: false; error: string } {
+  try {
+    // js-yaml v4 default schema: CORE_SCHEMA (no !!js/* unsafe types).
+    // YAML.load returns undefined for empty document, which AJV will
+    // reject as not-an-object; that's the right behavior here.
+    return { ok: true, value: YAML.load(text) };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
+export function parseConfig(text: string): ParseResult {
+  const detected = sniffFormat(text);
+  // Try detected format first. On failure, try the other so leading-comment
+  // edge cases (e.g. `# yaml-style header\n{...}` or `// json5-header\nkey: val`)
+  // still parse via the correct backend.
+  let raw: unknown;
+  let format: 'json5' | 'yaml';
+  if (detected === 'json5') {
+    const j = tryJson5(text);
+    if (j.ok) {
+      raw = j.value;
+      format = 'json5';
+    } else {
+      const y = tryYaml(text);
+      if (y.ok) {
+        raw = y.value;
+        format = 'yaml';
+      } else {
+        return { ok: false, errors: `JSON5 parse error: ${j.error}` };
+      }
+    }
+  } else {
+    const y = tryYaml(text);
+    if (y.ok) {
+      raw = y.value;
+      format = 'yaml';
+    } else {
+      const j = tryJson5(text);
+      if (j.ok) {
+        raw = j.value;
+        format = 'json5';
+      } else {
+        return { ok: false, errors: `YAML parse error: ${y.error}` };
+      }
+    }
+  }
+
+  // YAML.load returns string / number / null / array for non-object inputs
+  // (e.g. `"this is not json"` parses as a bare string scalar). JSON5.parse
+  // can also return primitive values. The config schema requires an object
+  // at root; surface that as a parse error (string envelope) rather than an
+  // AJV failure (array envelope) so callers get a readable message.
+  if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) {
     return {
       ok: false,
-      errors: `JSON5 parse error: ${(err as Error).message}`,
+      errors: `${format === 'yaml' ? 'YAML' : 'JSON5'} root must be an object, got ${
+        raw === null ? 'null' : Array.isArray(raw) ? 'array' : typeof raw
+      }`,
     };
   }
+
   if (!validate(raw)) {
     return { ok: false, errors: validate.errors ?? [] };
   }
@@ -54,5 +134,5 @@ export function parseConfig(json5Text: string): ParseResult {
     };
   }
   expanded.needsAuthorEnrichment = computeNeedsAuthorEnrichment(expanded);
-  return { ok: true, config: expanded };
+  return { ok: true, config: expanded, format };
 }

@@ -1,0 +1,39 @@
+# ContextMod Devvit: starter config (YAML format).
+#
+# Polish #136 added YAML support per FoxxMD Discord feedback 2026-05-20:
+# "cm also supports yaml which is what most mods use since it's the same
+# syntax as automod." Existing CM operators can paste their AutoMod-style
+# YAML configs directly into the wiki page without converting first.
+#
+# This is the YAML equivalent of starter-config.json5. The parser auto-
+# detects format (sniffs first non-whitespace char) so either file format
+# works in `r/<sub>/wiki/botconfig/contextmod`.
+#
+# Reference: ../README.md "Config schema" + ../src/schema/app.schema.json.
+
+# SAFETY: ships behind dryRun:true. Actions are SIMULATED. The Observatory
+# dashboard shows what would have happened with a 'dry-run' badge instead
+# of executing. Watch for ~1 day on your sub, then flip to false when
+# comfortable that the regex doesn't false-positive on legit threads.
+dryRun: true
+
+runs:
+  - name: spam-removal
+    checks:
+      - name: crypto-giveaway
+        combinator: OR
+        # Don't fire on posts authored by mods or approved contributors.
+        filters:
+          authorIs:
+            isMod: false
+            isContributor: false
+        rules:
+          - kind: regex
+            name: scam-words
+            pattern: 'crypto|giveaway|scam|free\s+nft'
+            flags: i
+        actions:
+          - kind: remove
+            isSpam: true
+          - kind: comment
+            template: 'Hi {{author.name}}, your post "{{item.title}}" was removed as suspected spam. Mod team will review on appeal.'

@@ -18,6 +18,45 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Added: Polish #136 (YAML config support; FoxxMD Discord feedback)
+
+- **AE Polish #136: runtime YAML config parsing alongside JSON5**:
+  FoxxMD (creator of upstream PRAW ContextMod) flagged in cm-devvit
+  Discord 2026-05-20: "I'm not sure how well existing CM mods will be
+  able to use this. Yes cm does support json5 but it also supports yaml
+  which is what most mods use since it's the same syntax as automod."
+  Upstream CM is dual-format; the port shipped JSON5-only, forcing
+  existing operators to convert their AutoMod-style YAML configs before
+  they could install. Polish #136 closes that gap.
+
+  Implementation: `src/core/config.ts` `parseConfig()` now sniffs the
+  first non-whitespace character to detect format (`{` or `[` means
+  JSON5, anything else means YAML), tries the detected parser first,
+  falls back to the other on parse failure so leading-comment edge
+  cases (e.g., `// header\n{...}` or `# header\nkey: val`) still parse
+  via the right backend. ParseResult success now carries a `format:
+  'json5' | 'yaml'` discriminator. Object-shape guard added so YAML
+  bare-string inputs (e.g., `parseConfig('this is not json')` which
+  YAML parses to the string scalar `'this is not json'`) surface a
+  readable parse-error string instead of an AJV array of validation
+  errors.
+
+  Dep: `js-yaml@^4.1.1` promoted from `devDependencies` to
+  `dependencies` (was previously runtime-only in
+  `scripts/migrate-upstream-config.mjs`).
+
+  New example: [`examples/starter-config.yaml`](./examples/starter-config.yaml),
+  YAML equivalent of `starter-config.json5`. Both files parse to the
+  same AppConfig. Examples README updated to advertise YAML support.
+
+  7 new test cases in `tests/core/config.test.ts` covering: AutoMod-
+  style YAML block mapping, malformed YAML error with format prefix,
+  JSON5 sniff returns `format: 'json5'`, YAML with `#` comment header,
+  cross-format equivalence (same config in JSON5 and YAML produces
+  identical AppConfig), YAML bare-string with readable error, YAML
+  array at root with readable error, namedRules expansion inside a
+  YAML config. 838 tests green (+8 net).
+
 ### Fixed: Polish #135 (CRITICAL — mod-only dashboard for ungated data endpoints; SampleOfNone Discord feedback)
 
 - **AE Polish #135: gate `/api/recent` and `/api/stats` behind `requireModerator`**:
