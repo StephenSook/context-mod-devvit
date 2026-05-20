@@ -22,7 +22,7 @@
 
 import { redis } from '@devvit/web/server';
 import { K } from './keys';
-import { hammingDistance, asBlockHash, type BlockHash } from '../image/hash';
+import { hammingDistance, isBlockHash, type BlockHash } from '../image/hash';
 
 const MAX_ENTRIES = 500;
 const DEFAULT_TTL_SEC = 30 * 86_400;
@@ -55,17 +55,16 @@ function isValidImageHashEntry(e: unknown): e is ImageHashEntry {
   if (!e || typeof e !== 'object') return false;
   const o = e as Record<string, unknown>;
   if (typeof o.postId !== 'string' || o.postId.length === 0) return false;
-  if (typeof o.hash !== 'string') return false;
   if (typeof o.ts !== 'number' || !Number.isFinite(o.ts)) return false;
-  // AE Polish #94: validate the BlockHash shape at the Redis trust
-  // boundary. asBlockHash throws on mismatch (64 hex chars required);
-  // wrap in try so the validator stays a `is`-predicate returning bool
-  // rather than throwing.
-  try {
-    asBlockHash(o.hash);
-  } catch {
-    return false;
-  }
+  // AE Polish #107: gemini brutal-audit P2-1 — use the boolean
+  // `isBlockHash` predicate instead of the try/catch around `asBlockHash`.
+  // Same shape check (64 hex chars), no try/catch cost on the hot path.
+  // findSimilar invokes this per-entry inside its loop (up to MAX_ENTRIES
+  // per call on a viral image-post burst); V8 try/catch overhead is
+  // ~2-3x vs inline boolean check even on the happy path. The predicate
+  // also subsumes the `typeof o.hash !== 'string'` check above so we
+  // drop the redundant guard.
+  if (!isBlockHash(o.hash)) return false;
   return true;
 }
 

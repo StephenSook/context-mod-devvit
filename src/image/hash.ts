@@ -27,13 +27,39 @@ const HEX_LEN = (BITS * BITS) / 4; // 64 hex chars
  */
 export type BlockHash = string & { readonly __blockHash: unique symbol };
 
+// Shape-check regex hoisted to module scope so the inline
+// `isBlockHash` predicate doesn't recompile per call. `isValidImageHashEntry`
+// invokes it per-entry inside `findSimilar`'s loop (up to MAX_ENTRIES=500
+// per call on a viral burst); module-level keeps the hot path tight.
+const HEX_REGEX = /^[0-9a-fA-F]+$/;
+
+/**
+ * Boolean predicate — true iff `raw` matches the BlockHash shape
+ * (64 hex chars). Use inside validators that need a `s is BlockHash`
+ * type guard without paying the try/catch cost of asBlockHash's throw.
+ *
+ * AE Polish #107: gemini brutal-audit P2-1 cleanup. Pre-Polish
+ * `isValidImageHashEntry` wrapped `asBlockHash` in try/catch to coerce
+ * the throw into a boolean — that path runs PER ENTRY inside
+ * `findSimilar`'s loop and `recordHash`'s filter (up to 500 calls per
+ * Redis read on a viral image-post burst). V8 try/catch overhead is
+ * ~2-3x vs an inline boolean check even on the happy path. This
+ * predicate version is the inline path; `asBlockHash` still exists for
+ * trust-boundary callers that want the descriptive throw.
+ */
+export function isBlockHash(raw: unknown): raw is BlockHash {
+  return typeof raw === 'string' && raw.length === HEX_LEN && HEX_REGEX.test(raw);
+}
+
 /**
  * Construct a BlockHash from a string. Throws if the input doesn't
  * match the 64-hex-char shape — use at the trust boundary (Redis
- * read path) where the producer is opaque.
+ * read path) where the producer is opaque AND the caller wants the
+ * descriptive error message. For boolean-only predicates (no error
+ * detail needed), prefer `isBlockHash` to avoid the try/catch cost.
  */
 export function asBlockHash(raw: string): BlockHash {
-  if (raw.length !== HEX_LEN || !/^[0-9a-fA-F]+$/.test(raw)) {
+  if (raw.length !== HEX_LEN || !HEX_REGEX.test(raw)) {
     throw new Error(
       `BlockHash shape invalid: expected ${HEX_LEN} hex chars, got ${raw.length} chars (sample: ${raw.slice(0, 16)}...)`
     );

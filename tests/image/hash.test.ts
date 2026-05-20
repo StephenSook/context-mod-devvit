@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { computeBlockhash, hammingDistance, asBlockHash } from '../../src/image/hash';
+import { computeBlockhash, hammingDistance, asBlockHash, isBlockHash } from '../../src/image/hash';
 
 function solidColorFrame(width: number, height: number, r: number, g: number, b: number) {
   const rgba = new Uint8Array(width * height * 4);
@@ -112,5 +112,62 @@ describe('asBlockHash (Polish #94 trust-boundary validator)', () => {
     // 63 valid hex + 1 invalid → regex catches the single drift.
     const raw = '0'.repeat(63) + 'g';
     expect(() => asBlockHash(raw)).toThrow(/64 hex chars/);
+  });
+});
+
+// AE Polish #107: gemini brutal-audit P2-1 cleanup. `isBlockHash` is
+// the boolean predicate sibling of `asBlockHash` — same shape check,
+// no try/catch cost. Used by isValidImageHashEntry inside findSimilar's
+// hot loop (up to MAX_ENTRIES=500 per Redis read).
+describe('isBlockHash (Polish #107 hot-path predicate)', () => {
+  it('returns true for a valid 64-hex string', () => {
+    expect(isBlockHash('0123456789abcdef'.repeat(4))).toBe(true);
+  });
+
+  it('returns true for uppercase hex (case-insensitive)', () => {
+    expect(isBlockHash('ABCDEF0123456789'.repeat(4))).toBe(true);
+  });
+
+  it('returns false for length 63', () => {
+    expect(isBlockHash('a'.repeat(63))).toBe(false);
+  });
+
+  it('returns false for length 65', () => {
+    expect(isBlockHash('a'.repeat(65))).toBe(false);
+  });
+
+  it('returns false for empty string', () => {
+    expect(isBlockHash('')).toBe(false);
+  });
+
+  it('returns false for 64 non-hex chars (charset check)', () => {
+    expect(isBlockHash('z'.repeat(64))).toBe(false);
+  });
+
+  it('returns false for non-string inputs (number, null, undefined, object)', () => {
+    expect(isBlockHash(123)).toBe(false);
+    expect(isBlockHash(null)).toBe(false);
+    expect(isBlockHash(undefined)).toBe(false);
+    expect(isBlockHash({ hash: 'a'.repeat(64) })).toBe(false);
+  });
+
+  it('Polish #107 perf intent: predicate path matches asBlockHash decision (no behavior drift)', () => {
+    // For every input, isBlockHash(x) === true must imply asBlockHash(x)
+    // doesn't throw, and vice versa. Sample-tested across the matrix.
+    const cases = [
+      { input: 'a'.repeat(64), expected: true },
+      { input: 'a'.repeat(63), expected: false },
+      { input: 'z'.repeat(64), expected: false },
+      { input: '', expected: false },
+    ];
+    for (const { input, expected } of cases) {
+      expect(isBlockHash(input)).toBe(expected);
+      // asBlockHash agreement: throws iff isBlockHash returns false.
+      if (expected) {
+        expect(() => asBlockHash(input)).not.toThrow();
+      } else {
+        expect(() => asBlockHash(input)).toThrow();
+      }
+    }
   });
 });
