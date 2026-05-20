@@ -10,12 +10,84 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 108 atomic polishes (#18-#108) shipped
-across this session covering 8 adversarial-review rounds (silent-
+AE Polish wave continued — 127 atomic polishes (#18-#127) shipped
+across this session covering 9 adversarial-review rounds (silent-
 failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
-codex external review, vercel:performance-optimizer, type-design-
-analyzer, comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
+codex external review, ultrareview (cloud multi-agent),
+vercel:performance-optimizer, type-design-analyzer,
+comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
+
+### Fixed — Polish #109-#127 batch (post-AE-wave doc sync + launch-day hygiene)
+
+- **AE Polish #127: de-duplicate `npm run launch` chain — drop redundant
+  upload** — observed during 2026-05-19 T-8 launch of v0.6.7 → Devvit
+  0.2.6. `launch` chained `npm run deploy && devvit publish` but `deploy`
+  already runs `devvit upload` and `publish` does its own upload-then-
+  submit, so every launch uploaded the bundle twice and bumped Reddit's
+  server-side counter from 0.2.4 → 0.2.5 (orphan) → 0.2.6 (submitted).
+  Collapsed `launch` to `gates + devvit publish` directly; `deploy`
+  untouched (still serves the playtest workflow).
+- **AE Polish #126: sweep 6 stale count/range pockets missed by Polish
+  #105** — ultrareview bug_001 + post-pass cleanup. PLAN.md "86 polishes
+  (Polish #1–#108)" → "108"; stephen-action-list "35 polishes shipped"
+  → "108"; submission-day-runbook "Polish #1–#35" → "Polish #1–#108";
+  devpost-form-cheat-sheet "9/9 tests passing" → "828 tests passing";
+  blog-post-draft "594 tests" → "828 tests"; lighthouse doc "Polish
+  #18–#62" → "Polish #18–#108".
+- **AE Polish #125: README.md add imageRepost to Concept-model Rule
+  kinds list** — ultrareview bug_003. Polish #112 sync'd line 301
+  (Action list w/ distinguish) but missed parallel Rule list at line
+  299: `(regex, author, history, attribution, recentActivity, repost,
+  imageRepost, plus composite ruleSet)`.
+- **AE Polish #124: align devvit + @devvit/start to 0.12.24 + Vite-8
+  engines floor** — ultrareview bug_002. `@devvit/web` was 0.12.24 but
+  `devvit` + `@devvit/start` lagged at 0.12.23, producing dual
+  `@devvit/shared-types@0.12.23` + `@0.12.24` in lockfile. Bumped both
+  to 0.12.24; `engines.node` `^20.19.0 || >=22.12.0` to match Vite 8's
+  declared floor.
+- **AE Polish #123: `triggers.ts` kill-switch docstring correction —
+  firstSeen is dedup, not disable** — ultrareview bug_004. Polish #116
+  wrongly listed firstSeen as a kill switch. firstSeen is per-event
+  idempotency dedup against same-event retries, NOT new-event disable.
+  Authoritative kill switches: mod-menu Reload-config publishing
+  `{dryRun: true}` + Reddit App Directory uninstall.
+- **AE Polish #122: ROADMAP polish range #1-#88 → #1-#108** — single-
+  line drift fix found in pre-launch read-through.
+- **AE Polish #121: `migration-from-upstream-cm.md` sync v0.4.0 → v0.6.7
+  + Phase 4 SHIPPED** — version + status pockets stale by 3 versions.
+- **AE Polish #120: hash test header for Polish #107 transition** —
+  Polish #102 header referenced `asBlockHash` throw; post-Polish-#107
+  uses `isBlockHash` predicate (no try/catch).
+- **AE Polish #119: stephen-action-list per-section T-N dates synced to
+  T-0 = 2026-05-27** — drift between top-level T-N and per-section T-N.
+- **AE Polish #118: CHANGELOG backfill 22 missing Polish #87-#108
+  entries** — drift between commit log and CHANGELOG. Verified per-
+  polish text against commit messages.
+- **AE Polish #117: writeup-draft.md chip count + polish total + Phase
+  4.7 references sync** — submission docs polish range bump.
+- **AE Polish #116: 3 stale comments caught by Codex P2 batch** — kill-
+  switch docstring (later refined by Polish #123), 2 misc comment-rot
+  in `src/`.
+- **AE Polish #115: PLAN.md 6.1 bump from v0.2.0 to v0.6.7 in-review** —
+  status-table drift.
+- **AE Polish #114: `migration-from-upstream-cm` Phase 4 + Phase 4.7
+  rules as Ported** — status drift; Phase 4 fully shipped, Phase 4.7
+  imageRepost added.
+- **AE Polish #113: blog-post-draft.md v0.6.4 → v0.6.7** — version
+  reference drift.
+- **AE Polish #112: 8th action distinguish + Phase 4.7 shipped to README
+  + cheat-sheet** — Action list completion + Phase 4.7 ship-state.
+- **AE Polish #111: paste-instructions remove live "62.4M" subscriber
+  claim** — Reddit OAuth quota panic-protection; never paste live numbers
+  into demo instructions.
+- **AE Polish #110: bulk sweep test-count + polish-range across 9 surface
+  docs** — README badge + STATUS + ROADMAP + PLAN + cheat-sheet +
+  writeup + outreach + action-list + lighthouse synced to 820 tests /
+  Polish #1-#104.
+- **AE Polish #109: scrub 2 AI-tone scanner hits — "ELEVATE" +
+  "comprehensive"** — Stephen no-AI-slop rule. Tone-scanner caught 2
+  hits in docs.
 
 ### Fixed — Polish #87-#108 batch (post-Polish-#86 hardening + final review chain)
 
