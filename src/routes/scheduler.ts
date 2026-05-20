@@ -2,10 +2,15 @@
  * Cron handlers for ContextMod. Every handler MUST acquireLock() at the top
  * to prevent overlapping invocations.
  *
- * Shipped: /refresh-config (5-min wiki pull + republish), /stats-rollup
- * (hourly snapshot of events:recent50 aggregations for fast /api/stats).
- * Stubs (not wired yet): /image-hash-worker (on-demand blockhash for
- * repost-image mode, gated on Phase 4.7 spike).
+ * Shipped:
+ *   - /refresh-config (5-min wiki pull + republish)
+ *   - /stats-rollup (hourly snapshot of events:recent50 aggregations for
+ *     fast /api/stats)
+ *   - /image-hash-worker (on-demand blockhash backfill for imageRepost
+ *     rule, shipped 2026-05-18 alongside Phase 4.7 — the standard
+ *     trigger flow already hashes on arrival via runImageRepostRule;
+ *     this worker is for the rare case where a mod adds the imageRepost
+ *     rule AFTER posts have been processed)
  */
 
 import { Hono } from 'hono';

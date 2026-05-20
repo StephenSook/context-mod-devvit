@@ -16,8 +16,11 @@
  *      double-fire. Fail-CLOSED on Redis error (returns false → skip).
  *   4. Normalize the V2 payload + dispatch to handleActivity.
  *
- * Kill switch deferred — Ctrl+C on the playtest terminal IS the kill switch
- * for playtest. Revisit before any `devvit publish --public`.
+ * Kill switch: handled via the per-event firstSeen idempotency guard above
+ * (Redis-backed) + mod-menu Reload-config which can publish a
+ * `{ dryRun: true }` global override that suppresses all live actions
+ * without code redeploy. Reddit-side, mods can uninstall the app from
+ * the App Directory to fully disable.
  */
 
 import { Hono } from 'hono';

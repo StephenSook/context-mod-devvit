@@ -56,7 +56,7 @@ Aggregate counters for the dashboard stat cards.
 
 **Auth:** open.
 
-**Response 200:** `{ "counters": { ... } }` — production currently returns empty pending Phase 4 stats-rollup wire-up. Demo returns the seeded `DEMO_STATS` fixture.
+**Response 200:** `{ "counters": { actionsToday, timeSavedMin, activeRules, topRule, hourlyActions24h, ... } }` — production reads the hourly stats-rollup snapshot at `cm:stats:snapshot:{sub}` written by the `stats-rollup` cron (`src/state/statsRollup.ts`), falling back to compute-on-fly when the snapshot is absent (fresh install, post-clear). Polish #38 added the client-shape fields the Observatory dashboard reads (`actionsToday` / `timeSavedMin` / `activeRules` / `topRule` / `hourlyActions24h`) — the prior server-only shape (`total`/`lastHour`/`today`) never landed in the dashboard. Demo returns the seeded `DEMO_STATS` fixture.
 
 ---
 
