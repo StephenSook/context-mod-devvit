@@ -513,7 +513,18 @@ describe('GET /api/recent happy path (Polish #27)', () => {
     expect(readRecent).not.toHaveBeenCalled();
   });
 
-  it('non-demo: resolves sub + calls readRecent + strips server-only v/nonce fields', async () => {
+  it('Polish #135: rejects non-mod with 403 and does NOT call readRecent (SampleOfNone-flagged leak fix)', async () => {
+    requireModeratorMock.mockResolvedValue(NON_MOD);
+    const res = await getJson('/recent');
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string; events: unknown[] };
+    expect(body.error).toMatch(/not a moderator/i);
+    expect(body.events).toEqual([]);
+    expect(readRecent).not.toHaveBeenCalled();
+  });
+
+  it('non-demo: mod-auth + readRecent + strips server-only v/nonce fields', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
     // stripServerFields drops `v` (schema version) and `nonce` (storage-only)
     // before wire-emit so client never sees those internals.
     readRecent.mockResolvedValueOnce([
@@ -540,24 +551,32 @@ describe('GET /api/recent happy path (Polish #27)', () => {
     expect(readRecent).toHaveBeenCalledWith('r_test');
   });
 
-  it('W12: surfaces sub-context loss as 503 w/ error message + empty events', async () => {
-    getCurrentSubreddit.mockRejectedValueOnce(new Error('ECONNRESET'));
+  it('Polish #135: requireModerator transient 503 propagates (sub-context loss path now subsumed under mod gate)', async () => {
+    // Polish #135 removed the inline getCurrentSubreddit try/catch in
+    // favor of routing all sub resolution through requireModerator. The
+    // helper has its own transient classifier that returns 503 on
+    // ECONNRESET / 5xx / timeout / rate-limit. Pin that path here.
+    requireModeratorMock.mockResolvedValue({
+      ok: false as const,
+      status: 503 as const,
+      error: 'mod check transient failure (retry in ~30s): ECONNRESET',
+    });
     const res = await getJson('/recent');
     expect(res.status).toBe(503);
     const body = (await res.json()) as { error: string; events: unknown[] };
-    expect(body.error).toMatch(/subreddit context unavailable/i);
-    expect(body.error).toContain('ECONNRESET');
+    expect(body.error).toMatch(/transient/i);
     expect(body.events).toEqual([]);
+    expect(readRecent).not.toHaveBeenCalled();
   });
 
   // AE Polish #93: gap caught by pr-test-analyzer. The Polish #68
   // defensive wrap on `readRecent` (api.ts try/catch around the helper
-  // call) had no test — only the sibling getCurrentSubreddit-rejection
+  // call) had no test, only the sibling getCurrentSubreddit-rejection
   // path was covered. A regression removing the try/catch wrap would
   // pass all prior tests but produce Hono's HTML 500 page when readRecent
   // throws synchronously.
   it('Polish #68: 503 + structured body when readRecent throws synchronously', async () => {
-    getCurrentSubreddit.mockResolvedValueOnce({ name: 'r_test' });
+    requireModeratorMock.mockResolvedValue(AS_MOD);
     readRecent.mockImplementationOnce(() => {
       throw new Error('sync boom — key construction blew up');
     });
@@ -582,7 +601,18 @@ describe('GET /api/stats happy path (Polish #27)', () => {
     expect(getCurrentSubreddit).not.toHaveBeenCalled();
   });
 
-  it('non-demo: returns snapshot counters from readStatsSnapshot', async () => {
+  it('Polish #135: rejects non-mod with 403 and does NOT call readStatsSnapshot (SampleOfNone-flagged leak fix)', async () => {
+    requireModeratorMock.mockResolvedValue(NON_MOD);
+    const res = await getJson('/stats');
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { error: string; counters: unknown };
+    expect(body.error).toMatch(/not a moderator/i);
+    expect(body.counters).toEqual({});
+    expect(readStatsSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('non-demo: mod-auth + readStatsSnapshot returns snapshot counters', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
     // Polish #38: snapshot now includes BOTH legacy server fields
     // (total/today/lastHour) AND client-shape fields (actionsToday/
     // timeSavedMin/activeRules/topRule/hourlyActions24h). Without the
@@ -614,18 +644,23 @@ describe('GET /api/stats happy path (Polish #27)', () => {
     expect(readStatsSnapshot).toHaveBeenCalledWith('r_test');
   });
 
-  it('W12: surfaces sub-context loss as 503', async () => {
-    getCurrentSubreddit.mockRejectedValueOnce(new Error('ETIMEDOUT'));
+  it('Polish #135: requireModerator transient 503 propagates', async () => {
+    requireModeratorMock.mockResolvedValue({
+      ok: false as const,
+      status: 503 as const,
+      error: 'mod check transient failure (retry in ~30s): ETIMEDOUT',
+    });
     const res = await getJson('/stats');
     expect(res.status).toBe(503);
     const body = (await res.json()) as { error: string };
-    expect(body.error).toMatch(/subreddit context unavailable/i);
+    expect(body.error).toMatch(/transient/i);
+    expect(readStatsSnapshot).not.toHaveBeenCalled();
   });
 
   // AE Polish #93: Polish #68 wrap for /api/stats had no test (only
   // sibling getCurrentSubreddit path was covered).
   it('Polish #68: 503 + structured body when readStatsSnapshot throws synchronously', async () => {
-    getCurrentSubreddit.mockResolvedValueOnce({ name: 'r_test' });
+    requireModeratorMock.mockResolvedValue(AS_MOD);
     readStatsSnapshot.mockImplementationOnce(() => {
       throw new Error('sync boom — fallback compute hit unexpected state');
     });

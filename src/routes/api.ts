@@ -38,34 +38,35 @@ api.get('/recent', async (c) => {
     return c.json({ events: demoEvents() });
   }
 
-  // W12: surface Reddit-context loss as 503 (consistent with /config-history
-  // + /mod-activity siblings). Previously returned events:[] (200) which
-  // made dashboard unable to distinguish dead engine vs idle sub — judges
-  // see "no events" and assume the bot isn't running.
-  let subName: string | undefined;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.error('cm/api/recent', 'could not resolve current sub', { err });
-    return c.json({ error: `subreddit context unavailable: ${msg}`, events: [] }, 503);
-  }
+  // Polish #135: mod-auth gate on the primary dashboard data endpoint.
+  // SampleOfNone (r/piercing mod, 600K subs) flagged in Discord 2026-05-20:
+  // "hackathon apps trip over [dashboard-visible-to-non-mods]." Audit confirmed
+  // /api/recent returned the last-50 mod-action ring buffer (runName, checkName,
+  // per-event actions[].kind, matchedRule, runPath, matchedSubstring,
+  // wouldHaveCalled) to any Reddit user who could load the custom-post iframe.
+  // Devvit's `permissions.reddit.scope: "moderator"` is a request-token scope
+  // for what the app may call, NOT a viewer gate. The custom post itself is
+  // served to anyone who can see the parent Reddit post. Defense-in-depth via
+  // requireModerator is mandatory at handler level, same as the W2 fixes
+  // already applied to /api/config-history + /api/mod-activity + /api/muted-rules.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ error: auth.error, events: [] }, auth.status);
 
   // AE Polish #68: silent-failure-hunter MEDIUM finding. readRecent's
   // OWN try/catch on the zRange returns [] on Redis failure, but its
-  // inner JSON.parse / migrate() in `readRecent` catches per-row failures
-  // — and a SYNCHRONOUS throw (e.g. malformed key, key argument
+  // inner JSON.parse / migrate() in `readRecent` catches per-row failures,
+  // and a SYNCHRONOUS throw (e.g. malformed key, key argument
   // construction blow-up) that happens BEFORE entering readRecent's
-  // try would propagate up here. Hono's default 500 response is HTML
-  // — client extractServerError would surface "Unexpected token <"
+  // try would propagate up here. Hono's default 500 response is HTML,
+  // so client extractServerError would surface "Unexpected token <"
   // noise instead of an actionable error. Wrap defensively so even
   // an unexpected throw produces a clean 503 + structured error body.
   let events;
   try {
-    events = await readRecent(subName);
+    events = await readRecent(auth.sub);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error('cm/api/recent', 'readRecent threw — returning 503', { err: msg, sub: subName });
+    log.error('cm/api/recent', 'readRecent threw — returning 503', { err: msg, sub: auth.sub });
     return c.json({ error: `events unavailable: ${msg}`, events: [] }, 503);
   }
   return c.json({ events: events.map(stripServerFields) });
@@ -378,16 +379,16 @@ api.get('/stats', async (c) => {
     log.info('cm/api/stats', 'demo=1 — serving synthetic fixtures (not real rollup)');
     return c.json({ counters: DEMO_STATS });
   }
+  // Polish #135: mod-auth gate. Sibling fix to /api/recent above. Stats
+  // payload leaks `topRule` (rule name) + `hourlyActions24h` histogram
+  // (per-sub mod-action volume over time) to any non-mod viewer of the
+  // custom-post iframe. Same SampleOfNone-flagged class of bug.
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ error: auth.error, counters: {} }, auth.status);
+
   // Y1-X7: real counters. Reads cm:stats:snapshot:{sub} (written hourly by
   // the stats-rollup cron). Falls back to compute-on-fly when the snapshot
   // is absent (first install, post-clear).
-  let subName: string | undefined;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    log.error('cm/api/stats', 'subreddit context unavailable', { err });
-    return c.json({ counters: {}, error: 'subreddit context unavailable' }, 503);
-  }
   // AE Polish #68: same defense-in-depth as /api/recent above. Wrap
   // readStatsSnapshot so any unexpected throw (Redis call setup,
   // pre-try synchronous error, JSON.parse blowing up at the fallback
@@ -395,10 +396,10 @@ api.get('/stats', async (c) => {
   // HTML 500 (which client extractServerError can't parse).
   let stats;
   try {
-    stats = await readStatsSnapshot(subName);
+    stats = await readStatsSnapshot(auth.sub);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error('cm/api/stats', 'readStatsSnapshot threw — returning 503', { err: msg, sub: subName });
+    log.error('cm/api/stats', 'readStatsSnapshot threw — returning 503', { err: msg, sub: auth.sub });
     return c.json({ counters: {}, error: `stats unavailable: ${msg}` }, 503);
   }
   return c.json({ counters: stats });

@@ -18,6 +18,32 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Fixed: Polish #135 (CRITICAL — mod-only dashboard for ungated data endpoints; SampleOfNone Discord feedback)
+
+- **AE Polish #135: gate `/api/recent` and `/api/stats` behind `requireModerator`**:
+  SampleOfNone (r/piercing mod, 600K subs) warned in cm-devvit Discord
+  2026-05-20: "hackathon apps trip over [dashboard-visible-to-non-mods]."
+  Full mod-auth audit via gemini-agent + codex-rescue confirmed both
+  endpoints leaked sensitive payloads to any non-mod viewer of the
+  Observatory custom-post iframe. `/api/recent` returned the last-50
+  mod-action ring buffer (runName, checkName, per-event actions, matchedRule,
+  runPath, matchedSubstring, wouldHaveCalled) — a full audit trail of every
+  rule firing and action taken. `/api/stats` returned `topRule` (rule name)
+  and `hourlyActions24h` (per-sub mod-action histogram). Devvit's
+  `permissions.reddit.scope: "moderator"` setting is a request-token scope
+  for what the app can call, NOT a viewer gate; the custom-post is served
+  to anyone who can see the parent Reddit post. Defense-in-depth via
+  `requireModerator()` mandatory at handler level, same pattern as the
+  existing W2 fixes on `/api/config-history` + `/api/mod-activity` +
+  `/api/muted-rules`. Wave-W audit appears to have stopped one row short
+  of the two primary endpoints. The `?demo=1` branches remain
+  unauthenticated (synthetic fixtures, no real data). Inline
+  `getCurrentSubreddit()` try/catch removed in favor of routing sub
+  resolution through `requireModerator()` (which has its own transient
+  classifier). Added 4 regression tests (rejects-non-mod + transient-503
+  for both endpoints) and updated existing happy-path tests to set the
+  mod-auth mock to `AS_MOD`. 830 tests green (+2 net).
+
 ### Fixed: Polish #134 (em-dash sweep across judge-facing submission docs)
 
 - **AE Polish #134: em-dash sweep across judge-facing submission docs**:
