@@ -9,14 +9,21 @@ const STORAGE_KEY = 'cm-tour-seen-v1';
  */
 let inMemorySeen = false;
 
+// AE Polish #99: tour content alignment. Step 2 previously said "Three
+// mod-menu entries" — accurate at v0.3.x but stale through Wave S+T.
+// devvit.json now declares SIX mod-menu entries (Reload config · View
+// recent actions · Test rules on this item · Simulate rule against
+// history · Explain a rule with AI · Set OpenAI API key). The tour
+// is a first-impression surface — mods who see "Three" then count six
+// in the actual menu read the bot as out-of-sync w/ its own UI.
 const STEPS = [
   {
     title: 'Welcome to ContextMod Observatory',
     body: 'Live mod-action telemetry for your sub. Every remove, comment, lock, and approve fires here within seconds.',
   },
   {
-    title: 'Three mod-menu entries',
-    body: 'In your sub overflow menu: "Reload config from wiki" pulls the latest rules · "View recent actions" opens this dashboard · "Test rules on this item" runs a dry-run against any post or comment.',
+    title: 'Six mod-menu entries',
+    body: 'In your sub overflow menu: "Reload config from wiki" · "View recent actions" · "Test rules on this item" · "Simulate rule against history" · "Explain a rule with AI" · "Set OpenAI API key". The first three drive the day-to-day workflow; the rest enable AI features.',
   },
   {
     title: 'Edit your rules in the sub wiki',
