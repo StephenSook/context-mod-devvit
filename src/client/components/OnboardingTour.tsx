@@ -23,7 +23,13 @@ const STEPS = [
   },
   {
     title: 'Six mod-menu entries',
-    body: 'In your sub overflow menu: "Reload config from wiki" · "View recent actions" · "Test rules on this item" · "Simulate rule against history" · "Explain a rule with AI" · "Set OpenAI API key". The first three drive the day-to-day workflow; the rest enable AI features.',
+    // AE Polish #104: gemini brutal-audit P2-4 — the prior framing
+    // ("first three drive day-to-day, the rest enable AI") mis-ranked
+    // Simulate rule against history. Simulate is the dashboard's demo
+    // money shot (docs/STATUS.md flags it ⭐) — it previews rule impact
+    // on the last 25 posts BEFORE saving wiki, the most-cited mod-UX
+    // win. Reframed: day-to-day → Simulate (highlight) → AI features.
+    body: 'In your sub overflow menu: "Reload config from wiki" · "View recent actions" · "Test rules on this item" · "Simulate rule against history" · "Explain a rule with AI" · "Set OpenAI API key". The first three drive day-to-day moderation; "Simulate rule against history" is the dashboard\'s demo highlight (preview rule impact on the last 25 posts before saving wiki); the last two enable AI features.',
   },
   {
     title: 'Edit your rules in the sub wiki',
