@@ -4,7 +4,7 @@
 >
 > Full compatibility matrix (every rule kind, action, filter, config key — what's ported / deferred / cut) lives in [`docs/migration-compatibility.md`](./migration-compatibility.md). This doc is the action-list.
 
-**Last reviewed:** 2026-05-18 (v0.4.0 — full Wave W/X/Y hardening + Vinh's Phase 4 history/attribution/recentActivity rules shipped).
+**Last reviewed:** 2026-05-19 (v0.6.7 — full Wave W/X/Y/Z/AA/AB/AC/AD/AE hardening + Vinh's Phase 4 history/attribution/recentActivity rules SHIPPED 2026-05-18 + Phase 4.7 image-hash repost SHIPPED v0.6.0 2026-05-18 + AE Polish #1–#108 closed).
 
 ---
 
@@ -109,7 +109,7 @@ Remove these from your config (the AJV schema rejects them):
 | `nicknames` (top-level) | Per-install isolation supersedes |
 | `polling` (top-level) | Devvit triggers replace it |
 
-Phase 4 stretch rules (`history`, `attribution`, `recentActivity`) ARE included in the schema but won't fire until Vinh ships them. They're no-ops, not errors — safe to leave in config.
+Phase 4 author-history rules (`history`, `attribution`, `recentActivity`) AND Phase 4.7 image-hash repost shipped 2026-05-18 — they fire today, no migration tweak needed for those rule kinds. (Pre-2026-05-18 versions of this doc said they were "no-ops"; that's now stale.)
 
 ---
 
@@ -149,4 +149,4 @@ DM `u/CowSufficient3840` on Reddit or open a discussion on [github.com/StephenSo
 
 ---
 
-_Drafted 2026-05-17 for the 15+ operator pool identified in FoxxMD/context-mod#152. Last verified against schema v0.2.0._
+_Drafted 2026-05-17 for the 15+ operator pool identified in FoxxMD/context-mod#152. Last verified against schema v0.6.7 (2026-05-19)._
