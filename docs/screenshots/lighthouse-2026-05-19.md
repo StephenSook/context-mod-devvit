@@ -48,10 +48,10 @@ The CLI surfaced a **CLS=0.328 (POOR)** that the prior measurement missed entire
 
 **Root cause:** Four UI elements rendered conditionally on async data between FCP and LCP, all sitting ABOVE the recent-actions container:
 
-1. `App.tsx:157` — `{stats && <StatsRow stats={stats} />}` — the 4-card metric grid only mounted after `/api/stats` resolved (~100 px tall).
-2. `App.tsx:174-181` — the Sparkline section only rendered the inner element when `stats` arrived (~18 px shift between "not enough data" text and the 36 px Sparkline).
-3. `App.tsx:200` — `{events.length > 0 && <FilterChips />}` — 11-chip filter strip only mounted after `/api/recent` arrived (~50 px on mobile).
-4. `App.tsx:201` — `{events.length > 0 && <EventSearchInput />}` — search input ~36 px, same gate.
+1. `App.tsx` StatsRow render — `{stats && <StatsRow stats={stats} />}` — the 4-card metric grid only mounted after `/api/stats` resolved (~100 px tall).
+2. `App.tsx` Sparkline section — only rendered the inner element when `stats` arrived (~18 px shift between "not enough data" text and the 36 px Sparkline).
+3. `App.tsx` FilterChips render — `{events.length > 0 && <FilterChips />}` — 11-chip filter strip only mounted after `/api/recent` arrived (~50 px on mobile).
+4. `App.tsx` EventSearchInput render — `{events.length > 0 && <EventSearchInput />}` — search input ~36 px, same gate.
 
 Combined, ~200 px of UI appeared above the recent-actions container during the ~400 ms FCP→LCP window, pushing it downward.
 

@@ -226,7 +226,7 @@ describe('POST /api/explain-event (W8)', () => {
     expect(recordFailure).not.toHaveBeenCalled();
     // AD code-review MEDIUM #3: pin the wire shape — internal Result<string>
     // exposes `.value` but the wire envelope MUST stay `{ok, explanation}`
-    // because src/client/components/EventDetails.tsx:139 reads `data.explanation`.
+    // because src/client/components/EventDetails.tsx reads `data.explanation` via setState({loading:false, explanation:data.explanation}).
     const body = await res.json();
     expect(body).toEqual({ ok: true, explanation: 'why' });
   });

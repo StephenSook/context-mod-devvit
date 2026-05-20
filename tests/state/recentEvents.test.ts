@@ -170,11 +170,10 @@ describe('readRecent', () => {
   });
 
   it('AE Polish #16: pre-v1 events (missing v field) are dropped, not back-stamped', async () => {
-    // Pre-v1 back-stamp path was removed 2026-05-18 — v0.5.x is well past
-    // skeleton + every install has written v:1 events since Phase 2.3.
-    // A pre-v1 row in production today would be a corruption signal, not
-    // a legitimate migration case; drop it loudly rather than re-mint
-    // nonces on every read.
+    // Pre-v1 back-stamp path was removed 2026-05-18 — every install since
+    // Phase 2.3 has written v:1-stamped events. A pre-v1 row in production
+    // today would be a corruption signal, not a legitimate migration case;
+    // drop it loudly rather than re-mint nonces on every read.
     zRange.mockResolvedValueOnce([
       {
         score: 1,

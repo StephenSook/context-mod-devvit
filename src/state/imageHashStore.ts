@@ -128,8 +128,10 @@ export async function recordHash(
       try {
         const parsed = JSON.parse(raw) as unknown;
         // Polish #64: drop corrupt entries on every write so the store
-        // self-heals — without this a poisoned entry persists forever
-        // (write paths preserved the array via `.slice(0, MAX_ENTRIES)`).
+        // self-heals — without this a poisoned entry would persist forever
+        // (pre-Polish-#64 the write path preserved the array via `.slice
+        // (0, MAX_ENTRIES)` but ran no shape validation, so a bad member
+        // round-tripped intact).
         if (Array.isArray(parsed)) existing = parsed.filter(isValidImageHashEntry);
       } catch {
         // Corrupt JSON — start fresh.

@@ -89,7 +89,7 @@ describe('App.tsx initialLoad gating (Polish #34)', () => {
     hasSeenTour.mockReturnValue(false); // user has NOT seen tour
     const { container } = render(<App />);
     // OnboardingTour should be suppressed at t=0 even though tourOpen=true
-    // — gated by !initialLoad in App line 256.
+    // — gated by the `!initialLoad` check on the OnboardingTour render in App.tsx.
     expect(container.querySelector('[data-onboarding-tour]')).toBeNull();
     // Tour text shouldn't appear either (defensive — tour might not have
     // a data attribute).
