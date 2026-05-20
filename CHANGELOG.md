@@ -10,7 +10,7 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 127 atomic polishes (#18-#127) shipped
+AE Polish wave continued — 129 atomic polishes (#18-#129) shipped
 across this session covering 9 adversarial-review rounds (silent-
 failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
 codex external review, ultrareview (cloud multi-agent),
@@ -18,8 +18,23 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
-### Fixed — Polish #109-#127 batch (post-AE-wave doc sync + launch-day hygiene)
+### Fixed — Polish #109-#129 batch (post-AE-wave doc sync + launch-day hygiene)
 
+- **AE Polish #129: doc-sweep mark `npm run launch` DONE across 6
+  surfaces** — after Polish #127 shipped launch 6 days early (T-8
+  instead of planned T-2), 6 judge-facing surfaces still framed
+  launch as a pending T-2 action. Marked DONE w/ ✅ + "6 days early"
+  note in ROADMAP.md (Now section), PLAN.md (Remaining for Stephen
+  block + Phase 6.1 cell), writeup-draft.md (pre-submit checklist),
+  stephen-action-list.md (T-8 status + T-2 section header now
+  demo-only), devpost-form-cheat-sheet.md (App Directory status
+  line), submission-day-runbook.md (T-8 status header).
+- **AE Polish #128: backfill CHANGELOG Polish #109-#127 batch + sync
+  v0.6.7 intro** — CHANGELOG drift: existing batch ended at #108 but
+  19 polishes (#109-#127) shipped without entries. Backfilled all 19
+  in commit-chronological-order (newest first); intro paragraph bumped
+  108→127 polishes + 8→9 adversarial-review rounds (added ultrareview
+  cloud multi-agent to the bracketed agent list).
 - **AE Polish #127: de-duplicate `npm run launch` chain — drop redundant
   upload** — observed during 2026-05-19 T-8 launch of v0.6.7 → Devvit
   0.2.6. `launch` chained `npm run deploy && devvit publish` but `deploy`

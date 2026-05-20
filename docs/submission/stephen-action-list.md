@@ -12,7 +12,7 @@ Deadline: **May 27, 2026 18:00 PT** (T-8 from today). Most early-T action items 
 - ✅ **AE wave: 108 polishes shipped** (Polish #1–#108) — auth-fail toast 503-aware, default-config dryRun:true safety, EmptyState snippet schema fix, image decode Content-Length pre-check, shared regex cache + safe-regex on filters, scheduler tests, App.tsx tests, mod-activity tests, demo-fixtures tests, migrations tests, configSource tests, etc.
 - ✅ v0.6.7 tagged + pushed (828 tests, all CI green)
 - ✅ Reddit cm-devvit@0.2.4 approved unlisted (re-upload latest source at T-2)
-- ⏳ **Stephen: `npm run launch` at T-2 (May 25)** — push v0.6.x to Reddit App Directory
+- ✅ **`npm run launch` shipped 2026-05-19 (T-8, 6 days early)** — Devvit v0.2.6 submitted for App Directory review (v0.6.7 source uploaded)
 - ⏳ Demo video recording — Stephen's hands (T-3 to T-1 window)
 - ⏳ Devpost form submit — final action at T-0
 - ⏳ FoxxMD operator outreach — Discord DMs to 15 operators (template + migration tool ready)
@@ -103,7 +103,9 @@ Use the day as buffer time — review writeup-draft, run `./scripts/check-ai-ton
 
 ---
 
-## T-2 — 2026-05-25 — Demo recording + `npm run launch`
+## T-2 — 2026-05-25 — Demo recording (launch ✅ shipped early at T-8)
+
+> ✅ `npm run launch` shipped 2026-05-19 (T-8) — Devvit v0.2.6 submitted for App Directory review. This T-2 section is now demo-recording only.
 
 ### Action 1 — Pre-flight `demo-video-runbook.md` checklist
 - OBS scenes pre-positioned (App Directory / wiki / dashboard `?demo=1` / mod menu)

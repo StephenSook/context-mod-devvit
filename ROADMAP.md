@@ -7,7 +7,7 @@ Where this project goes after the Reddit Mod Tools Hackathon submission. Organiz
 - [ ] **S17** Devpost writeup voice rewrite — strip AI-tone words per D10 voice rules
 - [ ] **S18** Demo video record + YouTube upload (OBS) — T-3 to T-1
 - [ ] **S19** Final Devpost submission click — T-0 (2026-05-27 18:00 PT)
-- [ ] **Stephen final `npm run launch`** — T-2 (2026-05-25) — publishes v0.6.x to Reddit App Directory
+- [x] **Stephen `npm run launch`** — ✅ shipped 2026-05-19 (T-8, 6 days early); Devvit v0.2.6 submitted for App Directory review (was originally planned for T-2 = 2026-05-25)
 - [ ] Final live retest on r/cm_devvit_test once published (smoke-test all 12 example configs render)
 - [ ] Capture remaining scenario screenshots (A/C/D/E + I image-repost + J AI explainer per refreshed `docs/screenshots/CAPTURE-CHECKLIST.md`)
 

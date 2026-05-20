@@ -313,7 +313,7 @@ Pre-submission checklist (run in order):
 - [ ] Demo video YouTube unlisted URL pasted (gated on Wave I recording)
 - [ ] FoxxMD has confirmed `u/ContextModBot` (or correct handle) for Original Bot field
 - [ ] Vinh's Reddit username added to team Reddit-usernames field
-- [x] **cm-devvit@0.2.4 approved unlisted 2026-05-18.** Final `npm run launch` at T-2 (May 25) re-uploads v0.6.7+ source for the latest hardening pass (Phase 4.7 + AE Polish #1–#108) — re-review SLA 1–7 days, fits inside 5/27 deadline. Devpost form can be SUBMITTED before re-review approves (Devpost-submit cutoff is the binding deadline)
+- [x] **cm-devvit@0.2.4 approved unlisted 2026-05-18 → 0.2.6 submitted for re-review 2026-05-19 (`npm run launch` shipped T-8, 6 days early).** Re-upload included v0.6.7 source for the latest hardening pass (Phase 4.7 + AE Polish #1–#108) — re-review SLA 1–7 days, fits inside 5/27 deadline. Devpost form can be SUBMITTED before re-review approves (Devpost-submit cutoff is the binding deadline)
 - [ ] Codex adversarial review on this entire draft (final pass before submit)
 - [ ] Stephen rewrites every paragraph in his own voice (don't sound like AI; Watchful1 lesson)
 - [ ] Preview the project page via Devpost's "Preview" button

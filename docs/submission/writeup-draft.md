@@ -199,6 +199,6 @@ Four non-contract hotfixes shipped as separate atomic commits the same session (
 - [x] Phase 4 history/attribution/recentActivity SHIPPED 2026-05-18 + live-verified
 - [x] Phase 4.7 image-hash repost — explicitly downgraded in writeup (Section 3 "Gaps vs upstream")
 - [ ] Demo video recorded + uploaded to YouTube (unlisted) — Stephen records T-3 to T-1 (May 24-26)
-- [ ] Final `npm run launch` re-uploads v0.6.7 source as new Devvit version — T-2 (May 25)
+- [x] `npm run launch` shipped 2026-05-19 (T-8, 6 days early) — re-uploaded v0.6.7 source as Devvit v0.2.6, submitted for App Directory review
 - [ ] Stephen rewrites every section of this draft in his own voice
 - [ ] Run `./scripts/check-ai-tone.sh --strict` against final pasted text

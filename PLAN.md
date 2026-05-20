@@ -75,7 +75,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 > **Status (2026-05-19 — T-8 from deadline):** Phase 4 (history/attribution/recentActivity) shipped Wave S v0.5.x. Phase 4.7 (imageRepost — pure-JS perceptual blockhash) shipped v0.6.0 2026-05-18 per Stephen's 5/18 GO. AE Critical wave + 108 polishes (Polish #1–#108) closed Tier-1/2/3/4 punch list + 5 adversarial-review rounds (silent-failure-hunter, code-reviewer, gemini-agent ×2, codex-rescue, vercel:performance-optimizer, type-design-analyzer, repo-sentinel). **828 tests green.** Lighthouse CLI v13.3.0: Performance 84, Accessibility 100, Best Practices 100, CLS 0.04 (good). 12 example configs in `examples/`. v0.6.7 published; awaiting Devvit App Directory review. Production npm-audit: 0 vulnerabilities (verified 2026-05-19; full audit shows 36 transitive vulns through `@devvit/*` toolchain — not shipped).
 >
 > **Remaining for Stephen** (T-2 / T-3 / T-0):
-> - T-2 (2026-05-25): final `npm run launch` to push v0.6.x to Reddit
+> - ✅ T-8 (2026-05-19): `npm run launch` shipped — Devvit v0.2.6 submitted for App Directory review (6 days early — was originally planned for T-2 = 2026-05-25)
 > - T-3 to T-1: record demo video (OBS, 60s cap, voice-over per `docs/submission/demo-video-script.md`)
 > - T-0 (2026-05-27 18:00 PT): Devpost submission click
 
@@ -109,7 +109,7 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ⛔ blocked · ✂️
 
 | # | Component | File(s) | Owner | Status | Deps | Notes |
 |---|---|---|---|---|---|---|
-| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | 🟡 IN REVIEW (v0.6.7 currently; v0.2.0 first-submit 2026-05-16, v0.5.5 approved 2026-05-17 unlisted, v0.6.7 re-uploaded 2026-05-19 pending final review) | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Terms + Privacy + Description filled on Dev Portal. Reddit gates "Creates custom posts" + http fetch. Email-on-approval per re-submit (typically 1–7d). Track status at https://developers.reddit.com/apps/cm-devvit/app-versions. Final `npm run launch` (Stephen, T-2 = 2026-05-25) publishes v0.6.x as the source the judges install. |
+| 6.1 | `npx devvit publish --public --bump minor` | terminal | **Stephen** | 🟡 IN REVIEW (v0.6.7 currently; v0.2.0 first-submit 2026-05-16, v0.5.5 approved 2026-05-17 unlisted, v0.6.7 re-uploaded 2026-05-19 pending final review) | All prior | App slug renamed back to `cm-devvit` (commit 77f5ed0). Terms + Privacy + Description filled on Dev Portal. Reddit gates "Creates custom posts" + http fetch. Email-on-approval per re-submit (typically 1–7d). Track status at https://developers.reddit.com/apps/cm-devvit/app-versions. `npm run launch` ✅ shipped 2026-05-19 (T-8, 6 days early) — Devvit v0.2.6 submitted for App Directory review; judges install latest approved version (link is version-agnostic). |
 | 6.2 | Devpost submission filed | devpost.com | **Stephen** | ⬜ | 6.1 | Before May 27 6 PM PT |
 
 ---
