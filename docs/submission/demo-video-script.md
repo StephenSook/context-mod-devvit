@@ -119,7 +119,7 @@ developers.reddit.com/apps/cm-devvit
   - S10 mute rule from dashboard — click mute icon on an event row, rule muted instantly
   - S8 keyboard shortcuts overlay — `?` opens overlay listing bindings
   - S5 AI rule explainer — paste JSON5, get plain-English explanation
-  - **Phase 4.7 image-repost** (v0.6.0) — submit same image twice, second triggers "would have reported" in dashboard. Demo on a 4K JPEG to flex the preview-variant memory optimization (~5MB peak instead of 180MB for full-res). Pure-JS pipeline, no native deps.
+  - **Phase 4.7 image-repost** (shipped v0.6.0, hardened through v0.6.7) — submit same image twice, second triggers "would have reported" in dashboard. Demo on a 4K JPEG to flex the preview-variant memory optimization (~5MB peak instead of 180MB for full-res). Pure-JS pipeline, no native deps. Per-sub findSimilar+recordHash lock added Polish #61 (prevents RMW race on concurrent duplicate posts).
   - **History / Attribution / RecentActivity** (Phase 4 v0.5.x) — author-history-aware rules. Show one of them firing on a fresh-burner profile.
 - **Capture priority:** S1 + V7 are the MONEY SHOTS — get those rock-solid first. Phase 4.7 image-repost is the strongest "we shipped something genuinely new" bonus shot. Everything else is bonus B-roll if pacing has room.
 - **Total runtime: 60.0s.** Trim any beat that overflows. 60.0 is the hard cap because Devpost says judges don't have to watch past that.
