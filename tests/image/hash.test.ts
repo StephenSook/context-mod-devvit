@@ -61,9 +61,20 @@ describe('hammingDistance', () => {
   });
 
   it('throws on length mismatch (defense against drift in hash format)', () => {
-    expect(() => hammingDistance('abc' as unknown as string, 'abcd' as unknown as string)).toThrow(
-      /length mismatch/
-    );
+    // Polish #108: cast lands on BlockHash (the parameter type post-Polish-#94
+    // brand) not bare string so the runtime contract matches what the type
+    // system enforces at src/ callers. Test still exercises the runtime
+    // length-mismatch throw — `'abc' / 'abcd'` are length 3/4 (not 64-hex),
+    // which fail any caller validation before reaching this throw in
+    // production, but the function itself accepts any string-typed input
+    // at runtime since the brand is erased.
+    expect(
+      () =>
+        hammingDistance(
+          'abc' as unknown as import('../../src/image/hash').BlockHash,
+          'abcd' as unknown as import('../../src/image/hash').BlockHash
+        )
+    ).toThrow(/length mismatch/);
   });
 });
 

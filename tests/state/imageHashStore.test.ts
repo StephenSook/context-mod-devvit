@@ -221,8 +221,9 @@ describe('imageHashStore.recordHash', () => {
     store.set(
       KEY,
       JSON.stringify([
-        // 64 z's — passes length, fails charset. asBlockHash throws,
-        // isValidImageHashEntry catches and returns false, entry dropped.
+        // 64 z's — passes length, fails charset. isBlockHash returns
+        // false (Polish #107 — was asBlockHash throw pre-#107),
+        // isValidImageHashEntry rejects the entry.
         { postId: 't3_corrupt_charset', hash: 'z'.repeat(64), ts: Date.now() },
         // Good entry below to verify findSimilar still finds it.
         { postId: 't3_good', hash: 'a'.repeat(64), ts: Date.now() },
