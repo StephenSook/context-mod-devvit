@@ -5,7 +5,7 @@
 > Each scenario = trigger → expected outcome → verification → screenshot target.
 
 **Demo sub:** `r/cm_devvit_test` (Stephen's playtest sub where live captures G/F/H were taken 2026-05-16). Vinh's parallel dev sub `r/contextmod_vinh_dev` runs the package-renamed `contextmod-vinh` build for backend iteration.
-**App version:** v0.6.7 (`cm-devvit@0.6.7`, in Reddit App Directory review; published 2026-05-18). Phase 1 + 2 + 3 + 4 + 4.7 ALL SHIPPED. 758 tests green.
+**App version:** v0.6.7 (`cm-devvit@0.6.7`, in Reddit App Directory review; published 2026-05-18). Phase 1 + 2 + 3 + 4 + 4.7 ALL SHIPPED. 828 tests green.
 **Prerequisites:** App installed on demo sub + `botconfig/contextmod` wiki page seeded with the hackathon-demo config (covered by Scenario G; first install auto-seeds via `onAppInstall` per Phase 3, now safely behind `dryRun: true` per Polish #28).
 
 > **Note on Screenshot targets:** each scenario lists a `Screenshot target:` filename
