@@ -10,7 +10,7 @@ Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7] — 2026-05-19
 
-AE Polish wave continued — 131 atomic polishes (#18-#131) shipped
+AE Polish wave continued — 132 atomic polishes (#18-#132) shipped
 across this session covering 9 adversarial-review rounds (silent-
 failure-hunter ×3, code-reviewer ×2, gemini-agent ×3, codex-rescue,
 codex external review, ultrareview (cloud multi-agent),
@@ -18,8 +18,31 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
-### Fixed — Polish #109-#131 batch (post-AE-wave doc sync + launch-day hygiene)
+### Fixed — Polish #109-#132 batch (post-AE-wave doc sync + launch-day hygiene)
 
+- **AE Polish #132: address gemini fresh-eyes audit findings on
+  pre-submission docs** — dispatched gemini-agent (large-context
+  multi-file pass) post-Polish-#131 for adversarial cross-check +
+  Sookra Methodology pillar coverage audit on writeup-draft + cheat-
+  sheet. Agent found 3 must-fix + 1 tightening: (1) devpost-form-
+  cheat-sheet.md:127 "Phase 4.7 ... Deferred ... spike pending GO/
+  NO-GO" contradicted same doc lines 75/77/109/316 + ground truth
+  (Phase 4.7 SHIPPED v0.6.0 2026-05-18) — rewrote to "SHIPPED v0.6.0
+  2026-05-18" w/ full spike-landed-GO + pure-JS pipeline detail; (2)
+  polish-count drift to #1-#132 across 5 surfaces (devpost-cheat:3,
+  :109, :316, action-list:12, runbook:9, writeup-draft:13, :19,
+  devpost-cheat:296); (3) action-list line 14 "Reddit cm-devvit@0.2.4
+  approved unlisted (re-upload latest source at T-2)" contradicted
+  line 15 "npm run launch shipped 2026-05-19 T-8" — rewrote w/ dual-
+  version framing; (4 tightening) cheat-sheet "What it does" block
+  under-anchored Pillar 3 (no 466hr/60K-mods human-scale stat) —
+  added opener sentence citing Li 2022 ICWSM (466 hr/day measured,
+  73% bot-driven) + 94-upvote anti-AI quote from May 2026 r/modnews
+  to ground the section in Sookra Pillar 3 (human-scale stat) +
+  Pillar 1 (concrete-citation). Gemini false-alarm on NOT combinator
+  verified accurate (`src/core/runCheck.ts:54` + `src/shared/types.ts:160`
+  + `src/rules/ruleset.ts:39` implement NOT combinator per AE
+  Pull-Forward #3).
 - **AE Polish #131: pre-submission doc sync — atomic sweep across
   writeup-draft + devpost-form-cheat-sheet + blog-post + e2e-scenarios
   + action-list + runbook** — Stephen requested honest pre-submit

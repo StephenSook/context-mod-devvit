@@ -6,7 +6,7 @@
 
 ## ⚠️ Status update 2026-05-19 (T-8)
 
-Original runbook was anchored to a May 20 target submission. Reality: Phase 1+2+3+4+4.7 ALL shipped (Vinh + Stephen, see CHANGELOG v0.2.0 through v0.6.7), tests went 223 → 828, Reddit cm-devvit@0.2.4 approved unlisted on 2026-05-18, AE wave shipped Polish #1–#130 (auth-fail toast 503-aware, default-config dryRun:true safety, EmptyState snippet schema fix, image decode Content-Length pre-check, shared regex cache + safe-regex on filters, +scheduler/App/mod-activity/demo-fixtures/migrations/configSource direct unit tests). `npm run launch` ✅ shipped 2026-05-19 (T-8, 6 days early) — Devvit v0.2.6 submitted for App Directory re-review. The "Phase 1 slips" fallback path below is obsolete. Recording window is now T-3 to T-1 (May 24-26). Final Devpost submit at T-0 = May 27.
+Original runbook was anchored to a May 20 target submission. Reality: Phase 1+2+3+4+4.7 ALL shipped (Vinh + Stephen, see CHANGELOG v0.2.0 through v0.6.7), tests went 223 → 828, Reddit cm-devvit@0.2.4 approved unlisted on 2026-05-18, AE wave shipped Polish #1–#132 (auth-fail toast 503-aware, default-config dryRun:true safety, EmptyState snippet schema fix, image decode Content-Length pre-check, shared regex cache + safe-regex on filters, +scheduler/App/mod-activity/demo-fixtures/migrations/configSource direct unit tests). `npm run launch` ✅ shipped 2026-05-19 (T-8, 6 days early) — Devvit v0.2.6 submitted for App Directory re-review. The "Phase 1 slips" fallback path below is obsolete. Recording window is now T-3 to T-1 (May 24-26). Final Devpost submit at T-0 = May 27.
 
 ## Why submit T-2 to T-0 (not last-second)
 
