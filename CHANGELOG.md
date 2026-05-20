@@ -18,6 +18,21 @@ vercel:performance-optimizer, type-design-analyzer,
 comment-analyzer ×3, pr-test-analyzer ×2, repo-sentinel,
 Explore wide-grep) plus brain-dump audit work.
 
+### Fixed: Polish #134 (em-dash sweep across judge-facing submission docs)
+
+- **AE Polish #134: em-dash sweep across judge-facing submission docs**:
+  context-aware Python sweep replaced 91 em-dashes in `writeup-draft.md`
+  (Devpost Tool Overview, Project Impact, Port Completion paste sources)
+  and 78 em-dashes in `devpost-form-cheat-sheet.md` (Helper nomination
+  paste source plus operator scaffolding) with period (sentence break),
+  colon (elaboration), or comma (parenthetical inside parens). Both files
+  now pass `bash scripts/check-ai-tone.sh --strict`. Other 11 submission
+  docs (action-list, runbook, blog-post-draft, demo-video-script,
+  demo-video-runbook, e2e-scenarios, pillar-5-numbers, devvit-app-settings,
+  domain-approval-runbook, outreach-drafts) still carry 393 em-dashes
+  total but those are operator-facing not judge-facing, deferred as
+  non-urgent cleanup.
+
 ### Fixed: Polish #133 (em-dash gap close in ai-tone scanner)
 
 - **AE Polish #133: close em-dash gap in ai-tone scanner**:
