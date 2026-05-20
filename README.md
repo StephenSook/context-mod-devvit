@@ -6,7 +6,7 @@
 > Write your moderation rules once in JSON5. The rule engine (8 rule kinds incl. Phase 4.7 perceptual-blockhash image-repost), 8 action handlers (remove · approve · lock · comment · report · ban · userFlair · distinguish), atomic config publish, dry-run rule tester, AI rule explainer, AI event summary w/ 24h response cache, mod activity feed, config-diff viewer, mute/unmute, full mod-auth gating + per-sub + per-user rate-limiting + circuit-breaker on AI calls, per-event run isolation + wall-clock timeouts, light-mode toggle, and Observatory dashboard all ship live in v0.6.7. Mods install ContextMod once, define what counts as spam / what to remove / what to comment / what users to ban, and the bot handles the rest.
 
 [![CI](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml/badge.svg)](https://github.com/StephenSook/context-mod-devvit/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-777%20passing-brightgreen.svg)](./tests)
+[![Tests](https://img.shields.io/badge/tests-820%20passing-brightgreen.svg)](./tests)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6.svg)](./tsconfig.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Devvit](https://img.shields.io/badge/Devvit-Web-FF4500.svg)](https://developers.reddit.com/docs)
@@ -58,7 +58,7 @@ To stop: `Ctrl-C` in the terminal running `npm run dev:web`.
 
 **Phase 0–4 + 4.7 all shipped.** Rule engine, 8 action handlers (remove / approve / lock / comment / report / ban / userFlair / distinguish), atomic wiki-config publish, dry-run rule tester, AI explainer + event summary, hard-mute, config-diff viewer, mod activity feed, mobile-responsive Observatory dashboard, Phase 4 history-aware rules (history / attribution / recentActivity), Phase 4.7 perceptual-blockhash image-repost.
 
-**Production health (verified 2026-05-19):** 777 tests passing · `tsc --build` clean · `npm run lint` clean · production `npm audit` 0 vulnerabilities · CI green across 8 jobs (validate Node 20/22/24 + ai-tone + Playwright chromium/firefox/webkit + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter). Lighthouse CLI v13.3.0: Performance 84 · Accessibility 100 · Best Practices 100 · CLS 0.04 (good) · TBT 0 ms.
+**Production health (verified 2026-05-19):** 820 tests passing · `tsc --build` clean · `npm run lint` clean · production `npm audit` 0 vulnerabilities · CI green across 8 jobs (validate Node 20/22/24 + ai-tone + Playwright chromium/firefox/webkit + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter). Lighthouse CLI v13.3.0: Performance 84 · Accessibility 100 · Best Practices 100 · CLS 0.04 (good) · TBT 0 ms.
 
 **Cut + deferred:** MHS (ModerateHateSpeech HTTP fetch) cut per Reddit PR #96 (2026-05-08) — HTTP fetch policy AI-provider allowlist excludes ModerateHateSpeech. Subs using upstream CM for hate-speech filtering keep running the original PRAW build.
 

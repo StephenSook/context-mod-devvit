@@ -44,7 +44,7 @@
 | Codex initial | 2 CRITICAL + 10 HIGH | idempotency double-action · dry-run authority · repost SET NX · atomic INCR config publish · read-once invariant · Mustache markdown injection · filter regex try/catch · parsed-config invariant |
 | Wave U code review | 5 BLOCKER + 1 CRITICAL + 11 WARN | Codex + Explore + silent-failure-hunter + test-coverage-analyzer + comment-analyzer (5 parallel sub-agents) |
 | Wave W + X deep review | 30+ atomic fixes | requireModerator on every mutation/cost endpoint · OpenAI rate-limit + circuit-breaker · configStore parse-fail surfacing · structured JSON logger · deep-health probe · `THREAT-MODEL.md` + `API.md` + `PRIVACY.md` + `data-retention.md` · ErrorBoundary · CodeQL workflow · `.devcontainer` |
-| Wave AE Critical + Polish #1–#86 | 70+ findings closed (latest 2026-05-19) | silent-failure-hunter (×2) · code-reviewer · type-design-analyzer · gemini-agent (×2 — pre-AE + brutal-audit) · codex-rescue · vercel:performance-optimizer · repo-sentinel |
+| Wave AE Critical + Polish #1–#104 | 70+ findings closed (latest 2026-05-19) | silent-failure-hunter (×2) · code-reviewer · type-design-analyzer · gemini-agent (×2 — pre-AE + brutal-audit) · codex-rescue · vercel:performance-optimizer · repo-sentinel |
 
 ## Per-component ship state
 
@@ -66,7 +66,7 @@
 
 ## Test + CI snapshot
 
-- **777 tests passing** (Phase 1+2+3+4+4.7 + Step 3.6 + Codex regression + Waves S/T/U/V/W/X/Y/Z/AA/AB/AC/AD/AE hardening + Polish #1-#86)
+- **820 tests passing** (Phase 1+2+3+4+4.7 + Step 3.6 + Codex regression + Waves S/T/U/V/W/X/Y/Z/AA/AB/AC/AD/AE hardening + Polish #1-#104)
 - `tsc --build` clean · `npm run lint` clean
 - **Production npm-audit: 0 vulnerabilities** (devDependencies show 36 transitive vulns via `@devvit/*` SDK; not shipped)
 - CI all-green across 8 jobs: validate (Node 20/22/24) + ai-tone (soft) + e2e Playwright (chromium/firefox/webkit) + CodeQL + Semgrep + axe-core + dependency-cruiser + release-drafter
