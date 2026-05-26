@@ -326,10 +326,10 @@ Why does Reddit need a port of CM when AutoMod already exists? Because AutoMod h
 | Hosting | Built into Reddit, no setup | Self-hosted server + Snoowrap + API tokens | Per-subreddit Devvit install, one click |
 | Rule composition | YAML rules with regex + simple filters + `priority` ordering; no named-rule or ruleSet composition | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control | Composable named rules + ruleSets (AND/OR) + `postBehavior` flow control |
 | Author-history rules | Limited author/account checks (age, karma, flair, post/comment counters); no history-window queries across other subs | Full `author` rule: age, karma, flair, verified, contributor, mod, shadowban, history-window | Full `author` rule + filter system (`authorIs`/`itemIs`) at check level |
-| Image-hash repost detection | ❌ | ✅ (perceptual hash via Python image libs) | 🚧 Phase 4 stretch (pure-JS blockhash in Devvit's 30s window, feasibility spike pending) |
+| Image-hash repost detection | ❌ | ✅ (perceptual hash via Python image libs) | ✅ (pure-JS blockhash, no native deps, 6MB cap + 8s timeout, shipped v0.6.0) |
 | Per-sub data isolation | Shared infrastructure | Operator runs their own instance, isolation depends on hosting | Hard-isolated: each install gets its own Redis namespace, no cross-sub leak |
 | Mobile dashboard | ❌ (modmail only) | ❌ (terminal logs / Discord webhooks) | ✅ Observatory custom post: stat cards + sparkline + event stream, renders on mobile webview |
-| Config surface | YAML in wiki, single source | JSON5 in wiki + named-rule reuse + Mustache action templating | JSON5 in wiki + named-rule reuse + Mustache action templating |
+| Config surface | YAML in wiki, single source | YAML or JSON5 in wiki + named-rule reuse + Mustache action templating | YAML or JSON5 in wiki + named-rule reuse + Mustache action templating (auto-detect via leading-character sniff) |
 | Install model | Auto-on for every sub | Operator-managed central server serving N subs | Per-mod-team install: no shared rate limits, no central bottleneck |
 | Pricing | Free | Heroku/VPS hosting + dev time | Free (Devvit hosts), eligible for Reddit's Developer Funds program |
 | When to use | High-volume regex spam catches | Context-aware rules requiring history + composition | Same as original CM, without the central-server tax |
