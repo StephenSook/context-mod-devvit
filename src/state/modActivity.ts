@@ -18,7 +18,8 @@ export type ModActivityKind =
   | 'simulate-rule'
   | 'explain-rule'
   | 'mute-rule'
-  | 'unmute-rule';
+  | 'unmute-rule'
+  | 'edit-config';
 
 export interface ModActivity {
   ts: number;
@@ -53,6 +54,7 @@ function isValidModActivity(o: unknown): o is ModActivity {
     'explain-rule',
     'mute-rule',
     'unmute-rule',
+    'edit-config',
   ];
   if (!valid.includes(m.kind as ModActivityKind)) return false;
   if (m.detail !== undefined && typeof m.detail !== 'string') return false;

@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const getWikiPage = vi.fn();
+const updateWikiPage = vi.fn();
 const requireModeratorMock = vi.fn();
 const getRecentSample = vi.fn();
 const simulateRule = vi.fn();
 const explainRule = vi.fn();
 const resolveOpenaiKey = vi.fn();
+const publish = vi.fn();
+const logModActivity = vi.fn();
 
 // Named redis fn handles so individual tests can override per-call behavior.
 const redisGet = vi.fn(async () => null);
@@ -14,7 +17,10 @@ const redisIncrBy = vi.fn(async () => 1);
 const redisExpire = vi.fn(async () => undefined);
 
 vi.mock('@devvit/web/server', () => ({
-  reddit: { getWikiPage: (s: string, p: string) => getWikiPage(s, p), updateWikiPage: vi.fn() },
+  reddit: {
+    getWikiPage: (s: string, p: string) => getWikiPage(s, p),
+    updateWikiPage: (o: unknown) => updateWikiPage(o),
+  },
   redis: {
     get: (...args: unknown[]) => redisGet(...args),
     set: (...args: unknown[]) => redisSet(...args),
@@ -28,6 +34,14 @@ vi.mock('../../src/core/recentSample', () => ({ getRecentSample: (s: string) => 
 vi.mock('../../src/core/simulateRule', () => ({ simulateRule: (...a: unknown[]) => simulateRule(...a) }));
 vi.mock('../../src/core/explainRule', () => ({ explainRule: (...a: unknown[]) => explainRule(...a) }));
 vi.mock('../../src/lib/resolveOpenaiKey', () => ({ resolveOpenaiKey: (s: string) => resolveOpenaiKey(s) }));
+vi.mock('../../src/state/configStore', () => ({
+  publish: (...a: unknown[]) => publish(...a),
+  getCurrentRev: vi.fn(),
+  getRecentRevs: vi.fn(),
+}));
+vi.mock('../../src/state/modActivity', () => ({
+  logModActivity: (...a: unknown[]) => logModActivity(...a),
+}));
 
 import { configEditor } from '../../src/routes/configEditor';
 
@@ -190,5 +204,39 @@ describe('GET /raw', () => {
     getWikiPage.mockRejectedValue(new Error('internal error'));
     const r = await get('/raw');
     expect(r.status).toBe(503);
+  });
+});
+
+describe('POST /save', () => {
+  beforeEach(() => {
+    requireModeratorMock.mockResolvedValue(MOD);
+    updateWikiPage.mockReset();
+    publish.mockReset();
+    getWikiPage.mockReset();
+    logModActivity.mockReset();
+  });
+
+  it('rejects an invalid config without writing', async () => {
+    const r = await post('/save', { text: 'runs: "bad"', baseRevisionId: 'rev-1' });
+    expect(r.status).toBe(400);
+    expect(updateWikiPage).not.toHaveBeenCalled();
+  });
+
+  it('409s when the wiki moved since load', async () => {
+    getWikiPage.mockResolvedValue({ content: 'runs: []', revisionId: 'rev-2' });
+    const r = await post('/save', { text: 'runs: []', baseRevisionId: 'rev-1' });
+    expect(r.status).toBe(409);
+    expect(updateWikiPage).not.toHaveBeenCalled();
+  });
+
+  it('saves a valid config and publishes', async () => {
+    getWikiPage.mockResolvedValue({ content: 'old', revisionId: 'rev-1' });
+    updateWikiPage.mockResolvedValue({ revisionId: 'rev-2' });
+    publish.mockResolvedValue(0);
+    const r = await post('/save', { text: 'runs: []', baseRevisionId: 'rev-1' });
+    expect(r.status).toBe(200);
+    expect(updateWikiPage).toHaveBeenCalledOnce();
+    expect(publish).toHaveBeenCalledOnce();
+    expect(r.body).toMatchObject({ ok: true, rev: 0, ruleCount: 0 });
   });
 });

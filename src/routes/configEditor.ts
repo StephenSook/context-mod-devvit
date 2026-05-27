@@ -12,7 +12,7 @@
  */
 
 import { Hono } from 'hono';
-import { reddit } from '@devvit/web/server';
+import { reddit, redis } from '@devvit/web/server';
 import { WIKI_PAGE } from '../core/configSource';
 import { requireModerator } from '../lib/requireModerator';
 import { DEFAULT_CONFIG_YAML } from '../config/default-config';
@@ -23,6 +23,9 @@ import { simulateRule } from '../core/simulateRule';
 import { checkRateLimit } from '../lib/ratelimit';
 import { explainRule } from '../core/explainRule';
 import { resolveOpenaiKey } from '../lib/resolveOpenaiKey';
+import { publish } from '../state/configStore';
+import { K } from '../state/keys';
+import { logModActivity } from '../state/modActivity';
 
 export const configEditor = new Hono();
 
@@ -98,4 +101,79 @@ configEditor.post('/explain', async (c) => {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ ok: false, error: `Explain unavailable: ${msg}` }, 503);
   }
+});
+
+configEditor.post('/save', async (c) => {
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+
+  const { text, baseRevisionId } = await c.req.json<{
+    text?: string;
+    baseRevisionId?: string | null;
+  }>();
+  if (typeof text !== 'string' || text.length > 100_000) {
+    return c.json({ ok: false, error: 'text required (max 100KB)' }, 400);
+  }
+
+  // Gate 1: never write an invalid config to the live moderation wiki.
+  const parsed = parseConfig(text);
+  if (!parsed.ok) return c.json({ ok: false, error: 'config invalid', errors: parsed.errors }, 400);
+
+  // Gate 2: optimistic lock. Re-read the current wiki rev; if it moved since
+  // the editor loaded, refuse so we never silently clobber a concurrent edit.
+  try {
+    const current = await reddit.getWikiPage(auth.sub, WIKI_PAGE);
+    if (baseRevisionId && current.revisionId !== baseRevisionId) {
+      return c.json(
+        {
+          ok: false,
+          error: 'The wiki changed since you opened the editor. Reload to merge.',
+          conflict: true,
+        },
+        409
+      );
+    }
+  } catch (err) {
+    if (!isNotFound(err)) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      return c.json({ ok: false, error: `Could not verify current wiki state: ${errMsg}` }, 503);
+    }
+    // not-found means the wiki page does not exist yet; allow the first-ever create.
+  }
+
+  let written;
+  try {
+    written = await reddit.updateWikiPage({
+      subredditName: auth.sub,
+      page: WIKI_PAGE,
+      content: text,
+      reason: `Edited via ContextMod Observatory by u/${auth.username}`,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.error('cm/api/config/save', 'updateWikiPage failed', { err: msg, sub: auth.sub });
+    return c.json({ ok: false, error: `Wiki write failed: ${msg}` }, 502);
+  }
+
+  const rev = await publish(parsed.config, auth.sub);
+
+  // stamp the new wiki rev so the 5-min cron does not re-publish an identical config (best-effort).
+  try {
+    if (written?.revisionId) await redis.set(K.cfgLastWikiRev(auth.sub), written.revisionId);
+  } catch {
+    /* stamping is best-effort; the cron self-heals next tick */
+  }
+
+  const ruleCount = parsed.config.runs
+    .flatMap((r) => r.checks)
+    .flatMap((ch) => ch.rules).length;
+
+  await logModActivity(auth.sub, {
+    ts: Date.now(),
+    actor: auth.username,
+    kind: 'edit-config',
+    detail: `${ruleCount} rules @ rev ${rev}`,
+  });
+
+  return c.json({ ok: true, rev, ruleCount });
 });
