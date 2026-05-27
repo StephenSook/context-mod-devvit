@@ -26,29 +26,14 @@ import {
 import * as configStore from '../state/configStore';
 import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
 import { explainRule, formatExplainToast } from '../core/explainRule';
-import { settings } from '@devvit/web/server';
-import { setOpenaiKey, getOpenaiKey } from '../state/apiKeyStore';
+import { setOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
 import { type Result, ok, err } from '../lib/result';
 import { log } from '../lib/log';
 import { isTransientOpenaiError } from '../lib/openaiErrors';
-
-/**
- * Wave V hotfix — resolve OpenAI API key with fallback chain:
- *   1. Redis (preferred — set via "ContextMod: Set OpenAI API key" mod menu)
- *   2. Devvit subreddit setting (fallback for mods who prefer settings UI)
- *
- * Devvit CLI for global-scope settings is broken (Unimplemented RPC).
- * Subreddit-scope settings don't allow isSecret. Redis is the cleanest path.
- */
-async function resolveOpenaiKey(sub: string): Promise<string> {
-  const fromRedis = await getOpenaiKey(sub);
-  if (fromRedis) return fromRedis;
-  const fromSettings = ((await settings.get<string>('openai_api_key')) ?? '').trim();
-  return fromSettings;
-}
+import { resolveOpenaiKey } from '../lib/resolveOpenaiKey';
 import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
