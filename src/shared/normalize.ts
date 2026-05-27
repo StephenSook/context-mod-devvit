@@ -240,6 +240,21 @@ async function enrichAuthor(name: string, id: string, needsEnrichment: boolean):
 }
 
 // Public API.
+
+/**
+ * M1: single source of truth for converting a createdAt value (number | Date | string)
+ * to the number | string shape that PostSubmitPayload and CommentSubmitPayload accept.
+ * Previously duplicated in recentSample.ts and forms.ts.
+ */
+export function asPayloadTimestamp(
+  t?: number | Date | string
+): number | string | undefined {
+  if (t == null) return undefined;
+  if (typeof t === 'number') return t;
+  if (typeof t === 'string') return t;
+  return t.getTime();
+}
+
 export interface NormalizedActivity {
   item: Item;
   author: Author;

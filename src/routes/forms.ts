@@ -20,25 +20,24 @@ import { dryRunActivity } from '../core/dryRunActivity';
 import {
   normalizePost,
   normalizeComment,
+  asPayloadTimestamp,
   type PostSubmitPayload,
   type CommentSubmitPayload,
 } from '../shared/normalize';
 import * as configStore from '../state/configStore';
-import { simulateRule, formatSimulationToast, type SimulationSample } from '../core/simulateRule';
+import { simulateRule, formatSimulationToast } from '../core/simulateRule';
+import { getRecentSample } from '../core/recentSample';
 import { explainRule, formatExplainToast } from '../core/explainRule';
 import { setOpenaiKey } from '../state/apiKeyStore';
 import { requireModerator } from '../lib/requireModerator';
 import { checkRateLimit } from '../lib/ratelimit';
 import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreaker';
-import { type Result, ok, err } from '../lib/result';
 import { log } from '../lib/log';
 import { isTransientOpenaiError } from '../lib/openaiErrors';
 import { resolveOpenaiKey } from '../lib/resolveOpenaiKey';
 import type { AppConfig } from '../shared/types';
 
 export const forms = new Hono();
-
-const SIMULATION_SAMPLE_LIMIT = 25;
 
 /**
  * Map requireModerator() failure to user-facing toast text.
@@ -84,13 +83,6 @@ interface FetchedComment {
   score?: number;
   parentId?: string;
   createdAt?: number | Date | string;
-}
-
-function asPayloadTimestamp(t?: number | Date | string): number | string | undefined {
-  if (t == null) return undefined;
-  if (typeof t === 'number') return t;
-  if (typeof t === 'string') return t;
-  return t.getTime();
 }
 
 forms.post('/test-rules-submit', async (c) => {
@@ -249,79 +241,14 @@ forms.post('/simulate-rule-submit', async (c) => {
 
   try {
     const sub = await reddit.getCurrentSubreddit();
-    // Reuse the live AppConfig snapshot for needsAuthorEnrichment decisions
-    // — same enrichment path live rules use, so simulation matches reality.
-    const snapshot = await configStore.getCurrentRev(sub.name);
-    const config: AppConfig = snapshot?.config ?? {
-      runs: [],
-      needsAuthorEnrichment: false,
-    };
-
-    // reddit.getNewPosts returns a Listing; .all() flattens to an array.
-    // AD Tier-1 #1: fetchRecentPostsSafe now returns Result — propagate
-    // reddit-api failure to toast w/ failure phase instead of "fired 0/0".
-    const recentResult = await fetchRecentPostsSafe(sub.name);
-    if (!recentResult.ok) {
-      return c.json({
-        showToast: `Simulation failed (reddit-api): ${recentResult.error}`,
-      });
-    }
-    const recent = recentResult.value;
-    const samples: SimulationSample[] = [];
-    let skipped = 0;
-    let firstSkipError: string | null = null;
-    for (const post of recent) {
-      try {
-        const payload: PostSubmitPayload = {
-          post: {
-            id: post.id,
-            title: post.title,
-            selftext: post.body ?? '',
-            url: post.url ?? '',
-            authorId: post.authorId ?? '',
-            score: post.score ?? 0,
-            isSelf: !!post.url?.includes(sub.name),
-            nsfw: !!post.nsfw,
-            locked: !!post.locked,
-            stickied: !!post.stickied,
-            createdAt: asPayloadTimestamp(post.createdAt),
-          },
-          author: { name: post.authorName ?? '', id: post.authorId ?? '' },
-        } as PostSubmitPayload;
-        const normalized = await normalizePost(payload, config);
-        samples.push({ item: normalized.item, author: normalized.author });
-      } catch (perPostErr) {
-        // AD Tier-1 #2 + HIGH #4: count skipped samples + capture the FIRST
-        // failure message so the toast shows a real cause instead of a
-        // bare "normalize error" the mod can't act on.
-        skipped += 1;
-        if (firstSkipError === null) {
-          firstSkipError =
-            perPostErr instanceof Error ? perPostErr.message : String(perPostErr);
-        }
-        log.warn('cm/forms/simulate-rule-submit', 'skipped sample', { err: perPostErr });
-      }
-    }
-
-    // AD HIGH #3: when every sample failed, simulateRule returns
-    // totalSamples=0 and formatSimulationToast says "No recent posts to
-    // simulate against." That's misleading — there WERE recent posts,
-    // they all failed normalize. Surface the dedicated "aborted" toast
-    // with the first error instead of a contradictory base + suffix.
-    if (recent.length > 0 && skipped === recent.length) {
-      const detail = firstSkipError ? firstSkipError.slice(0, 100) : 'unknown';
-      return c.json({
-        showToast: `Simulation aborted: every sample failed to normalize (first: ${detail})`,
-      });
-    }
-
+    // getRecentSample fetches + caches the last N posts (60 s TTL) so the
+    // future live-impact editor endpoint can reuse the same sample without
+    // re-hitting Reddit on every keystroke. Per-post normalize errors are
+    // logged + skipped inside getRecentSample; reddit-api errors throw so
+    // the outer catch below classifies them as the reddit-api phase.
+    const samples = await getRecentSample(sub.name);
     const result = await simulateRule(ruleJson5, samples, sub.name);
-    const baseToast = formatSimulationToast(result);
-    const suffix =
-      skipped > 0
-        ? ` (${skipped}/${recent.length} skipped — first: ${(firstSkipError ?? '').slice(0, 60)})`
-        : '';
-    return c.json({ showToast: `${baseToast}${suffix}` });
+    return c.json({ showToast: formatSimulationToast(result) });
   } catch (e) {
     // Wave U WARN fix (Codex CR3 #7): prefix toast w/ failure phase so mod
     // knows whether to retry (network/reddit), fix their rule (parse), or
@@ -337,20 +264,6 @@ forms.post('/simulate-rule-submit', async (c) => {
     return c.json({ showToast: `Simulation failed (${phase}): ${msg}` });
   }
 });
-
-interface RedditPostLike {
-  id?: string;
-  title?: string;
-  body?: string;
-  url?: string;
-  authorId?: string;
-  authorName?: string;
-  score?: number;
-  nsfw?: boolean;
-  locked?: boolean;
-  stickied?: boolean;
-  createdAt?: number | Date | string;
-}
 
 /**
  * Wave S Phase S5 — AI rule explainer.
@@ -473,42 +386,3 @@ forms.post('/set-openai-key-submit', async (c) => {
   }
 });
 
-interface RedditListingLike<T> {
-  all?: () => Promise<T[]> | T[];
-}
-
-/**
- * AD Tier-1 bug #1 fix — previously returned `[]` on any failure path, which
- * caused the simulator to report "fired 0/0" indistinguishably from a real
- * "no rule triggers fired" result. Now returns a discriminated Result so the
- * caller can surface the actual failure phase in the toast (judges + mods
- * deserve "Reddit API unavailable — try again" not a silent zero).
- */
-async function fetchRecentPostsSafe(
-  subredditName: string
-): Promise<Result<RedditPostLike[], string>> {
-  try {
-    const redditAny = reddit as unknown as {
-      getNewPosts?: (opts: {
-        subredditName: string;
-        limit: number;
-        pageSize: number;
-      }) => Promise<RedditListingLike<RedditPostLike>>;
-    };
-    if (typeof redditAny.getNewPosts !== 'function') {
-      return err('reddit.getNewPosts unavailable in this Devvit runtime');
-    }
-    const listing = await redditAny.getNewPosts({
-      subredditName,
-      limit: SIMULATION_SAMPLE_LIMIT,
-      pageSize: SIMULATION_SAMPLE_LIMIT,
-    });
-    if (!listing) return err('reddit.getNewPosts returned empty listing');
-    const all = typeof listing.all === 'function' ? await listing.all() : [];
-    return ok(all.slice(0, SIMULATION_SAMPLE_LIMIT));
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    log.warn('cm/forms/simulate-rule-submit', 'fetchRecentPostsSafe failed', { err: e });
-    return err(`reddit-api: ${msg}`);
-  }
-}

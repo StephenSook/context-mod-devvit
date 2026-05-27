@@ -37,6 +37,13 @@ vi.mock('../../src/core/dryRunActivity', () => ({
 vi.mock('../../src/shared/normalize', () => ({
   normalizePost: (...a: unknown[]) => normalizePost(...a),
   normalizeComment: (...a: unknown[]) => normalizeComment(...a),
+  // M1: asPayloadTimestamp moved to shared/normalize — must be included in the mock.
+  asPayloadTimestamp: (t?: number | Date | string): number | string | undefined => {
+    if (t == null) return undefined;
+    if (typeof t === 'number') return t;
+    if (typeof t === 'string') return t;
+    return (t as Date).getTime();
+  },
 }));
 vi.mock('../../src/state/configStore', () => ({
   getCurrentRev: (...a: unknown[]) => getCurrentRev(...a),
