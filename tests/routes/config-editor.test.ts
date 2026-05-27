@@ -47,6 +47,15 @@ describe('POST /validate', () => {
   });
 });
 
+describe('POST /simulate-live', () => {
+  beforeEach(() => { requireModeratorMock.mockResolvedValue(MOD); getRecentSample.mockResolvedValue([]); });
+  it('returns the simulation result', async () => {
+    simulateRule.mockResolvedValue({ ok: true, totalSamples: 25, firedCount: 7, erroredCount: 0, breakdown: [] });
+    const r = await post('/simulate-live', { text: 'runs: []' });
+    expect(r.body).toMatchObject({ ok: true, firedCount: 7, totalSamples: 25 });
+  });
+});
+
 describe('GET /raw', () => {
   beforeEach(() => { getWikiPage.mockReset(); requireModeratorMock.mockReset(); });
 

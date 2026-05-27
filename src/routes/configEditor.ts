@@ -18,6 +18,9 @@ import { requireModerator } from '../lib/requireModerator';
 import { DEFAULT_CONFIG_YAML } from '../config/default-config';
 import { log } from '../lib/log';
 import { parseConfig } from '../core/config';
+import { getRecentSample } from '../core/recentSample';
+import { simulateRule } from '../core/simulateRule';
+import { checkRateLimit } from '../lib/ratelimit';
 
 export const configEditor = new Hono();
 
@@ -50,4 +53,18 @@ configEditor.post('/validate', async (c) => {
   const parsed = parseConfig(text);
   if (parsed.ok) return c.json({ ok: true, format: parsed.format });
   return c.json({ ok: false, errors: parsed.errors });
+});
+
+configEditor.post('/simulate-live', async (c) => {
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  const { text } = await c.req.json<{ text?: string }>();
+  if (typeof text !== 'string' || text.length > 100_000) {
+    return c.json({ ok: false, error: 'text required (max 100KB)' }, 400);
+  }
+  const rl = await checkRateLimit('simulate-live', auth.sub, 120, 60);
+  if (!rl.allowed) return c.json({ ok: false, error: 'Slow down a moment, then keep editing.' }, 429);
+  const samples = await getRecentSample(auth.sub);
+  const result = await simulateRule(text, samples, auth.sub);
+  return c.json(result);
 });
