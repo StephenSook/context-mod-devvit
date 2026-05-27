@@ -66,8 +66,14 @@ configEditor.post('/simulate-live', async (c) => {
   }
   const rl = await checkRateLimit('simulate-live', auth.sub, 120, 60);
   if (!rl.allowed) return c.json({ ok: false, error: 'Slow down a moment, then keep editing.' }, 429);
-  const samples = await getRecentSample(auth.sub);
-  const result = await simulateRule(text, samples, auth.sub);
+  let result;
+  try {
+    const samples = await getRecentSample(auth.sub);
+    result = await simulateRule(text, samples, auth.sub);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ ok: false, error: `Simulation unavailable: ${msg}` }, 503);
+  }
   return c.json(result);
 });
 
@@ -78,12 +84,18 @@ configEditor.post('/explain', async (c) => {
   if (typeof text !== 'string' || text.length > 100_000) {
     return c.json({ ok: false, error: 'text required (max 100KB)' }, 400);
   }
+  // TODO: per-sub circuit breaker (v2); per-user cap is the v1 cost gate.
   const rl = await checkRateLimit('explain', `${auth.sub}:${auth.username}`, 10, 3600);
   if (rl.degraded) return c.json({ ok: false, error: 'Rate-limit subsystem degraded. Retry in ~60s.' }, 503);
   if (!rl.allowed) return c.json({ ok: false, error: `Your limit: ${rl.count}/${rl.max} this hour.` }, 429);
-  const apiKey = await resolveOpenaiKey(auth.sub);
-  if (!apiKey) return c.json({ ok: false, error: 'No OpenAI key set. Use the "Set OpenAI API key" mod menu.' }, 400);
-  const result = await explainRule(text, apiKey);
-  if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
-  return c.json({ ok: true, explanation: result.value });
+  try {
+    const apiKey = await resolveOpenaiKey(auth.sub);
+    if (!apiKey) return c.json({ ok: false, error: 'No OpenAI key set. Use the "Set OpenAI API key" mod menu.' }, 400);
+    const result = await explainRule(text, apiKey);
+    if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+    return c.json({ ok: true, explanation: result.value });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return c.json({ ok: false, error: `Explain unavailable: ${msg}` }, 503);
+  }
 });
