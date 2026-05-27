@@ -64,3 +64,7 @@ export type ApiResult<T> =
   | { ok: true; empty: false; data: T }
   | { ok: true; empty: true }
   | { ok: false; error: string };
+
+export type ConfigRaw = { content: string; revisionId: string | null; isDefaultTemplate: boolean };
+export type SaveResult = { rev: number; ruleCount: number };
+export type SimResult = { totalSamples: number; firedCount: number; erroredCount: number; firstError?: string };
