@@ -56,6 +56,15 @@ describe('POST /simulate-live', () => {
   });
 });
 
+describe('POST /explain', () => {
+  beforeEach(() => { requireModeratorMock.mockResolvedValue(MOD); resolveOpenaiKey.mockResolvedValue('sk-x'); });
+  it('returns the explanation', async () => {
+    explainRule.mockResolvedValue({ ok: true, value: 'This rule removes crypto spam.' });
+    const r = await post('/explain', { text: 'runs: []' });
+    expect(r.body).toMatchObject({ ok: true, explanation: 'This rule removes crypto spam.' });
+  });
+});
+
 describe('GET /raw', () => {
   beforeEach(() => { getWikiPage.mockReset(); requireModeratorMock.mockReset(); });
 

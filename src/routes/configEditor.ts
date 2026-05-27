@@ -21,6 +21,8 @@ import { parseConfig } from '../core/config';
 import { getRecentSample } from '../core/recentSample';
 import { simulateRule } from '../core/simulateRule';
 import { checkRateLimit } from '../lib/ratelimit';
+import { explainRule } from '../core/explainRule';
+import { resolveOpenaiKey } from '../lib/resolveOpenaiKey';
 
 export const configEditor = new Hono();
 
@@ -67,4 +69,21 @@ configEditor.post('/simulate-live', async (c) => {
   const samples = await getRecentSample(auth.sub);
   const result = await simulateRule(text, samples, auth.sub);
   return c.json(result);
+});
+
+configEditor.post('/explain', async (c) => {
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  const { text } = await c.req.json<{ text?: string }>();
+  if (typeof text !== 'string' || text.length > 100_000) {
+    return c.json({ ok: false, error: 'text required (max 100KB)' }, 400);
+  }
+  const rl = await checkRateLimit('explain', `${auth.sub}:${auth.username}`, 10, 3600);
+  if (rl.degraded) return c.json({ ok: false, error: 'Rate-limit subsystem degraded. Retry in ~60s.' }, 503);
+  if (!rl.allowed) return c.json({ ok: false, error: `Your limit: ${rl.count}/${rl.max} this hour.` }, 429);
+  const apiKey = await resolveOpenaiKey(auth.sub);
+  if (!apiKey) return c.json({ ok: false, error: 'No OpenAI key set. Use the "Set OpenAI API key" mod menu.' }, 400);
+  const result = await explainRule(text, apiKey);
+  if (!result.ok) return c.json({ ok: false, error: result.error }, 500);
+  return c.json({ ok: true, explanation: result.value });
 });
