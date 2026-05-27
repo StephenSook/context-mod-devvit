@@ -17,6 +17,7 @@ import { WIKI_PAGE } from '../core/configSource';
 import { requireModerator } from '../lib/requireModerator';
 import { DEFAULT_CONFIG_YAML } from '../config/default-config';
 import { log } from '../lib/log';
+import { parseConfig } from '../core/config';
 
 export const configEditor = new Hono();
 
@@ -39,4 +40,14 @@ configEditor.get('/raw', async (c) => {
     log.error('cm/api/config/raw', 'wiki read failed', { err: msg, sub: auth.sub });
     return c.json({ error: `wiki unavailable: ${msg}` }, 503);
   }
+});
+
+configEditor.post('/validate', async (c) => {
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ ok: false, error: auth.error }, auth.status);
+  const { text } = await c.req.json<{ text?: string }>();
+  if (typeof text !== 'string') return c.json({ ok: false, error: 'text required' }, 400);
+  const parsed = parseConfig(text);
+  if (parsed.ok) return c.json({ ok: true, format: parsed.format });
+  return c.json({ ok: false, errors: parsed.errors });
 });

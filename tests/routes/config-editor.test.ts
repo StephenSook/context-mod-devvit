@@ -2,12 +2,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const getWikiPage = vi.fn();
 const requireModeratorMock = vi.fn();
+const getRecentSample = vi.fn();
+const simulateRule = vi.fn();
+const explainRule = vi.fn();
+const resolveOpenaiKey = vi.fn();
 vi.mock('@devvit/web/server', () => ({
   reddit: { getWikiPage: (s: string, p: string) => getWikiPage(s, p), updateWikiPage: vi.fn() },
-  redis: { get: vi.fn(async () => null), set: vi.fn(async () => 'OK') },
+  redis: { get: vi.fn(async () => null), set: vi.fn(async () => 'OK'), incrBy: vi.fn(async () => 1), expire: vi.fn(async () => undefined) },
   settings: { get: vi.fn() },
 }));
 vi.mock('../../src/lib/requireModerator', () => ({ requireModerator: () => requireModeratorMock() }));
+vi.mock('../../src/core/recentSample', () => ({ getRecentSample: (s: string) => getRecentSample(s) }));
+vi.mock('../../src/core/simulateRule', () => ({ simulateRule: (...a: unknown[]) => simulateRule(...a) }));
+vi.mock('../../src/core/explainRule', () => ({ explainRule: (...a: unknown[]) => explainRule(...a) }));
+vi.mock('../../src/lib/resolveOpenaiKey', () => ({ resolveOpenaiKey: (s: string) => resolveOpenaiKey(s) }));
 
 import { configEditor } from '../../src/routes/configEditor';
 
@@ -18,6 +26,26 @@ async function get(path: string) {
   const res = await configEditor.request(new Request(`http://x${path}`));
   return { status: res.status, body: await res.json() };
 }
+
+async function post(path: string, body: unknown) {
+  const res = await configEditor.request(new Request(`http://x${path}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  }));
+  return { status: res.status, body: await res.json() };
+}
+
+describe('POST /validate', () => {
+  beforeEach(() => { requireModeratorMock.mockResolvedValue(MOD); });
+  it('accepts a valid config', async () => {
+    const r = await post('/validate', { text: 'runs: []' });
+    expect(r.body.ok).toBe(true);
+  });
+  it('reports errors for an invalid config', async () => {
+    const r = await post('/validate', { text: 'runs:\n  kind: badvalue' });
+    expect(r.body.ok).toBe(false);
+    expect(r.body.errors).toBeDefined();
+  });
+});
 
 describe('GET /raw', () => {
   beforeEach(() => { getWikiPage.mockReset(); requireModeratorMock.mockReset(); });
