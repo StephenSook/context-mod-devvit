@@ -29,8 +29,11 @@ import { checkCircuit, recordFailure, recordSuccess } from '../lib/circuitBreake
 import { log } from '../lib/log';
 import { isTransientOpenaiError } from '../lib/openaiErrors';
 import { readStatsSnapshot } from '../state/statsRollup';
+import { configEditor } from './configEditor';
 
 export const api = new Hono();
+
+api.route('/config', configEditor);
 
 api.get('/recent', async (c) => {
   if (c.req.query('demo') === '1') {
