@@ -45,7 +45,9 @@ export function PreviewPane({ text, currentText }: { text: string; currentText: 
       <div role="tablist" className="flex gap-2 px-3 py-2 border-b border-line text-xs">
         <button
           role="tab"
+          id="cm-tab-impact"
           aria-selected={tab === 'impact'}
+          aria-controls="cm-tabpanel"
           onClick={() => setTab('impact')}
           className={`px-2 py-0.5 rounded transition-colors ${tab === 'impact' ? 'text-signal-ok border border-signal-ok/40 bg-signal-ok/10' : 'text-bone-300 hover:text-bone-50'}`}
         >
@@ -53,7 +55,9 @@ export function PreviewPane({ text, currentText }: { text: string; currentText: 
         </button>
         <button
           role="tab"
+          id="cm-tab-explain"
           aria-selected={tab === 'explain'}
+          aria-controls="cm-tabpanel"
           onClick={() => setTab('explain')}
           className={`px-2 py-0.5 rounded transition-colors ${tab === 'explain' ? 'text-signal-ok border border-signal-ok/40 bg-signal-ok/10' : 'text-bone-300 hover:text-bone-50'}`}
         >
@@ -61,7 +65,9 @@ export function PreviewPane({ text, currentText }: { text: string; currentText: 
         </button>
         <button
           role="tab"
+          id="cm-tab-diff"
           aria-selected={tab === 'diff'}
+          aria-controls="cm-tabpanel"
           onClick={() => setTab('diff')}
           className={`px-2 py-0.5 rounded transition-colors ${tab === 'diff' ? 'text-signal-ok border border-signal-ok/40 bg-signal-ok/10' : 'text-bone-300 hover:text-bone-50'}`}
         >
@@ -69,7 +75,13 @@ export function PreviewPane({ text, currentText }: { text: string; currentText: 
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto p-3 text-xs">
+      <div
+        role="tabpanel"
+        id="cm-tabpanel"
+        aria-labelledby={`cm-tab-${tab}`}
+        tabIndex={0}
+        className="flex-1 overflow-auto p-3 text-xs"
+      >
         {tab === 'impact' && <p className="text-bone-200 whitespace-pre-wrap">{impact}</p>}
 
         {tab === 'explain' && (

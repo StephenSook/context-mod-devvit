@@ -1,9 +1,9 @@
 /**
  * ConfigWorkbench — full-screen config editor overlay.
  *
- * Renders ConfigEditor full-width (no preview pane yet; PreviewPane is
- * added in Task 13). Handles load, debounced validation, save, and
- * optimistic-lock conflict detection.
+ * Renders the CodeMirror config editor on the left and a PreviewPane
+ * (Impact / Explain / Diff) on the right. Handles load, debounced
+ * validation, save, and optimistic-lock conflict detection.
  *
  * baseRev-refresh invariant: after a successful save the wiki revisionId
  * is re-fetched (via load()) so a second save in the same session does
@@ -23,11 +23,10 @@ function detectFormat(text: string): 'yaml' | 'json' {
 
 export function ConfigWorkbench({ subreddit, onClose }: { subreddit: string; onClose: () => void }) {
   const [text, setText] = useState('');
-  // loadedText tracks the last-fetched wiki content (Diff baseline).
-  // Updated in load() on initial fetch and after a successful save+reload.
-  // NOT updated by onChange, so the Diff tab always shows unsaved edits
-  // vs the last server state. Cleared to '' right after a save+reload so
-  // the Diff tab is empty when the editor reflects the just-saved content.
+  // Baseline for the Diff tab. Set by load() to the wiki content on
+  // initial load and after a save-triggered reload (so it converges with
+  // `text` and the Diff shows no changes post-save). Never updated on
+  // user edits.
   const [loadedText, setLoadedText] = useState('');
   const [format, setFormat] = useState<'yaml' | 'json'>('yaml');
   const [baseRev, setBaseRev] = useState<string | null>(null);
