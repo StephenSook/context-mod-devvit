@@ -4,7 +4,7 @@ const getWikiPage = vi.fn();
 const updateWikiPage = vi.fn();
 const requireModeratorMock = vi.fn();
 const getRecentSample = vi.fn();
-const simulateRule = vi.fn();
+const simulateFullConfig = vi.fn();
 const explainRule = vi.fn();
 const resolveOpenaiKey = vi.fn();
 const publish = vi.fn();
@@ -31,7 +31,7 @@ vi.mock('@devvit/web/server', () => ({
 }));
 vi.mock('../../src/lib/requireModerator', () => ({ requireModerator: () => requireModeratorMock() }));
 vi.mock('../../src/core/recentSample', () => ({ getRecentSample: (s: string) => getRecentSample(s) }));
-vi.mock('../../src/core/simulateRule', () => ({ simulateRule: (...a: unknown[]) => simulateRule(...a) }));
+vi.mock('../../src/core/simulateRule', () => ({ simulateFullConfig: (...a: unknown[]) => simulateFullConfig(...a) }));
 vi.mock('../../src/core/explainRule', () => ({ explainRule: (...a: unknown[]) => explainRule(...a) }));
 vi.mock('../../src/lib/resolveOpenaiKey', () => ({ resolveOpenaiKey: (s: string) => resolveOpenaiKey(s) }));
 vi.mock('../../src/state/configStore', () => ({
@@ -87,10 +87,24 @@ describe('POST /simulate-live', () => {
     redisIncrBy.mockResolvedValue(1);
   });
 
-  it('returns the simulation result', async () => {
-    simulateRule.mockResolvedValue({ ok: true, totalSamples: 25, firedCount: 7, erroredCount: 0, breakdown: [] });
+  it('runs the full config and returns {ok:true, firedCount, totalSamples}', async () => {
+    // simulateFullConfig is what the route now delegates to after parsing the full config.
+    simulateFullConfig.mockResolvedValue({ ok: true, totalSamples: 25, firedCount: 7, erroredCount: 0, breakdown: [] });
     const r = await post('/simulate-live', { text: 'runs: []' });
     expect(r.body).toMatchObject({ ok: true, firedCount: 7, totalSamples: 25 });
+  });
+
+  it('returns {ok:false} with 200 when the config text is invalid', async () => {
+    // An invalid config (mid-edit) should return {ok:false} with a 200 so the
+    // client treats it as a normal "config invalid" inline status, not an error banner.
+    // Use a YAML root that is a bare string scalar — parseConfig rejects non-object roots.
+    simulateFullConfig.mockClear();
+    const r = await post('/simulate-live', { text: '"this is not a config"' });
+    expect(r.status).toBe(200);
+    expect(r.body.ok).toBe(false);
+    expect(r.body.error).toMatch(/config invalid/);
+    // simulateFullConfig must NOT have been called when the config is unparseable.
+    expect(simulateFullConfig).not.toHaveBeenCalled();
   });
 
   it('returns 400 when text is missing', async () => {
@@ -109,7 +123,7 @@ describe('POST /simulate-live', () => {
 
   it('returns 503 when getRecentSample throws', async () => {
     getRecentSample.mockRejectedValueOnce(new Error('Redis timeout'));
-    simulateRule.mockResolvedValue({ ok: true, totalSamples: 0, firedCount: 0, erroredCount: 0, breakdown: [] });
+    // simulateFullConfig would not be reached since getRecentSample throws first.
     const r = await post('/simulate-live', { text: 'runs: []' });
     expect(r.status).toBe(503);
     expect(r.body.ok).toBe(false);

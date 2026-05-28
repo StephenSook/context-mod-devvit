@@ -19,7 +19,7 @@ import { DEFAULT_CONFIG_YAML } from '../config/default-config';
 import { log } from '../lib/log';
 import { parseConfig } from '../core/config';
 import { getRecentSample } from '../core/recentSample';
-import { simulateRule } from '../core/simulateRule';
+import { simulateFullConfig } from '../core/simulateRule';
 import { checkRateLimit } from '../lib/ratelimit';
 import { explainRule } from '../core/explainRule';
 import { resolveOpenaiKey } from '../lib/resolveOpenaiKey';
@@ -69,10 +69,20 @@ configEditor.post('/simulate-live', async (c) => {
   }
   const rl = await checkRateLimit('simulate-live', auth.sub, 120, 60);
   if (!rl.allowed) return c.json({ ok: false, error: 'Slow down a moment, then keep editing.' }, 429);
+
+  // Parse the full editor config first. A mid-edit invalid config is not an
+  // error in the 4xx sense; the Impact tab shows the parse message while the
+  // mod keeps typing. Return {ok:false} with a 200 so simulateLiveSafe (client)
+  // surfaces it as an inline status string rather than an error banner.
+  const parsed = parseConfig(text);
+  if (!parsed.ok) {
+    return c.json({ ok: false, error: 'config invalid (fix to preview impact)' });
+  }
+
   let result;
   try {
     const samples = await getRecentSample(auth.sub);
-    result = await simulateRule(text, samples, auth.sub);
+    result = await simulateFullConfig(parsed.config, samples, auth.sub);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return c.json({ ok: false, error: `Simulation unavailable: ${msg}` }, 503);

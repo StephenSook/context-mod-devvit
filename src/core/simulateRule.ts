@@ -16,11 +16,19 @@
  * Non-contract: this does NOT call runRun / runCheck / runAction — it bypasses
  * combinators + filters + actions for a focused "would THIS RULE fire on these
  * items" answer. That's the question mods actually ask when prototyping.
+ *
+ * simulateFullConfig (added for /simulate-live fix): evaluates ALL runs in a
+ * caller-supplied AppConfig against a sample set, in dry-run mode, with no
+ * idempotency writes and no real Reddit side-effects. Used by the config-editor
+ * Impact tab so the preview reflects the WHOLE config (not a single extracted rule).
  */
 
-import type { Rule, Item, Author } from '../shared/types';
+import type { Rule, Item, Author, AppConfig, Action } from '../shared/types';
 import { parseConfig } from './config';
 import { runRule } from './runRule';
+import { runRun } from './runRun';
+import { runAction } from './runAction';
+import { runWithTimeout, RunTimeoutError } from '../lib/timeout';
 
 export type SimulationSample = { item: Item; author: Author };
 
@@ -108,6 +116,101 @@ export async function simulateRule(
         firstError = err instanceof Error ? err.message : String(err);
       }
     }
+    if (triggered) firedCount++;
+    breakdown.push({ activityId: sample.item.id, triggered, errored });
+  }
+
+  return {
+    ok: true,
+    totalSamples: samples.length,
+    firedCount,
+    erroredCount,
+    ...(firstError !== undefined ? { firstError } : {}),
+    breakdown,
+  };
+}
+
+/**
+ * Evaluate a caller-supplied AppConfig against a set of samples in full dry-run
+ * mode. Used by the config-editor /simulate-live endpoint so the Impact tab
+ * previews the WHOLE config (runs + checks + actions) rather than a single
+ * extracted rule.
+ *
+ * Dry-run contract:
+ *   - Every action is forced to dryRun: true before dispatch.
+ *   - bypassIdempotency: true skips reserveAction/commitAction Redis writes so
+ *     Impact-tab polls never dirty the idempotency store.
+ *   - No real Reddit side-effects are ever executed.
+ *
+ * firedCount = number of samples where at least one run triggered at least one
+ * action. A sample that triggers multiple runs counts as 1.
+ *
+ * Mirrors the core loop of dryRunActivity but accepts an in-memory AppConfig
+ * instead of reading from configStore, so it evaluates the editor's unsaved
+ * buffer rather than the last-published config.
+ */
+export async function simulateFullConfig(
+  config: AppConfig,
+  samples: SimulationSample[],
+  sub: string
+): Promise<SimulationResult> {
+  let firedCount = 0;
+  let erroredCount = 0;
+  let firstError: string | undefined;
+  const breakdown: SimulationBreakdown[] = [];
+
+  // Use rev 0 for the ActionContext: bypassIdempotency=true means the rev value
+  // is never used in idempotency key generation (reserveAction is skipped).
+  // Pass the in-memory config so dryRun=true propagates as the global gate.
+  const ctxConfig: AppConfig = { ...config, dryRun: true };
+
+  for (const sample of samples) {
+    let triggered = false;
+    let errored = false;
+    try {
+      for (const run of config.runs) {
+        let result: Awaited<ReturnType<typeof runRun>>;
+        try {
+          result = await runWithTimeout(runRun(run, sample.item, sample.author, sub), run.name);
+        } catch (err) {
+          const isTimeout = err instanceof RunTimeoutError;
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(
+            `[cm/simulateFullConfig] runRun ${isTimeout ? 'timed out' : 'threw'} — skipping run:`,
+            run.name,
+            err
+          );
+          if (firstError === undefined) firstError = msg.slice(0, 200);
+          // Count this sample as errored once (even if multiple runs err).
+          errored = true;
+          continue;
+        }
+        if (!result.triggered) continue;
+
+        // At least one run triggered; mark this sample as fired.
+        triggered = true;
+
+        // Dispatch actions in dry-run mode to verify the full pipeline fires
+        // without executing any real Reddit side-effects.
+        for (const action of result.actions) {
+          const forcedDryRun: Action = { ...action, dryRun: true };
+          await runAction(forcedDryRun, {
+            item: sample.item,
+            author: sample.author,
+            subredditName: sub,
+            rev: 0,
+            config: ctxConfig,
+            bypassIdempotency: true,
+          });
+        }
+      }
+    } catch (err) {
+      errored = true;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (firstError === undefined) firstError = msg.slice(0, 200);
+    }
+
+    if (errored) erroredCount++;
     if (triggered) firedCount++;
     breakdown.push({ activityId: sample.item.id, triggered, errored });
   }
