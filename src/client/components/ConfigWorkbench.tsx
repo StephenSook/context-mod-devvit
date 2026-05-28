@@ -13,6 +13,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { ConfigEditor } from './ConfigEditor';
+import { PreviewPane } from './PreviewPane';
 import { fetchConfigRawSafe, validateConfigSafe, saveConfigSafe } from '../lib/api';
 
 function detectFormat(text: string): 'yaml' | 'json' {
@@ -22,6 +23,12 @@ function detectFormat(text: string): 'yaml' | 'json' {
 
 export function ConfigWorkbench({ subreddit, onClose }: { subreddit: string; onClose: () => void }) {
   const [text, setText] = useState('');
+  // loadedText tracks the last-fetched wiki content (Diff baseline).
+  // Updated in load() on initial fetch and after a successful save+reload.
+  // NOT updated by onChange, so the Diff tab always shows unsaved edits
+  // vs the last server state. Cleared to '' right after a save+reload so
+  // the Diff tab is empty when the editor reflects the just-saved content.
+  const [loadedText, setLoadedText] = useState('');
   const [format, setFormat] = useState<'yaml' | 'json'>('yaml');
   const [baseRev, setBaseRev] = useState<string | null>(null);
   const [valid, setValid] = useState<boolean | null>(null);
@@ -39,6 +46,7 @@ export function ConfigWorkbench({ subreddit, onClose }: { subreddit: string; onC
     const r = await fetchConfigRawSafe();
     if (r.ok && !r.empty) {
       setText(r.data.content);
+      setLoadedText(r.data.content);
       setFormat(detectFormat(r.data.content));
       setBaseRev(r.data.revisionId);
       setConflict(false);
@@ -123,8 +131,13 @@ export function ConfigWorkbench({ subreddit, onClose }: { subreddit: string; onC
         </div>
       </header>
 
-      <div className="flex-1 min-h-0">
-        <ConfigEditor value={text} format={format} onChange={onChange} />
+      <div className="flex-1 min-h-0 flex">
+        <div className="flex-1 min-w-0">
+          <ConfigEditor value={text} format={format} onChange={onChange} />
+        </div>
+        <div className="flex-[0_0_40%] min-h-0 overflow-hidden">
+          <PreviewPane text={text} currentText={loadedText} />
+        </div>
       </div>
 
       <footer className="px-4 py-1 text-[11px] text-bone-300 border-t border-line" aria-live="polite">

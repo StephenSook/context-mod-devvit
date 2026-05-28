@@ -9,6 +9,14 @@ vi.mock('../../src/client/lib/api', () => ({
   fetchConfigRawSafe: () => fetchConfigRawSafe(),
   saveConfigSafe: (...a: unknown[]) => saveConfigSafe(...a),
   validateConfigSafe: (...a: unknown[]) => validateConfigSafe(...a),
+  // PreviewPane (now rendered inside ConfigWorkbench) calls these; stub them
+  // so they silently succeed and don't cause unhandled-rejection noise.
+  simulateLiveSafe: async () => ({
+    ok: true,
+    empty: false,
+    data: { totalSamples: 0, firedCount: 0, erroredCount: 0 },
+  }),
+  explainConfigSafe: async () => ({ ok: true, empty: false, data: '' }),
 }));
 
 import { ConfigWorkbench } from '../../src/client/components/ConfigWorkbench';
