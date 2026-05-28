@@ -110,6 +110,36 @@ const server = http.createServer((req, res) => {
         'Mock explanation — dev:web mock-server returns a stub here. In production this is OpenAI gpt-4o-mini via /api/explain-event.',
     });
 
+  // Config editor endpoints — demo/dev stubs so the editor can be opened,
+  // screenshotted, and E2E-tested without a live Devvit install.
+  // GET /api/config/raw: client appends ?demo=1 via demoSuffix(); match on
+  // pathname prefix so the query string does not affect routing.
+  if (req.method === 'GET' && url.pathname.startsWith('/api/config/raw'))
+    return sendJson(res, 200, {
+      content: 'runs:\n  - name: spam-filter\n    checks: []',
+      revisionId: 'demo-rev-1',
+      isDefaultTemplate: false,
+    });
+  // POST endpoints: client sends to /api/config/<x> without ?demo=1
+  // (POSTs never append demoSuffix in api.ts). Match by pathname.
+  if (req.method === 'POST' && url.pathname === '/api/config/validate')
+    return sendJson(res, 200, { ok: true, format: 'yaml' });
+  if (req.method === 'POST' && url.pathname === '/api/config/simulate-live')
+    return sendJson(res, 200, {
+      ok: true,
+      totalSamples: 25,
+      firedCount: 3,
+      erroredCount: 0,
+      breakdown: [],
+    });
+  if (req.method === 'POST' && url.pathname === '/api/config/explain')
+    return sendJson(res, 200, {
+      ok: true,
+      explanation: 'This config removes spam posts that match the rule.',
+    });
+  if (req.method === 'POST' && url.pathname === '/api/config/save')
+    return sendJson(res, 200, { ok: true, rev: 2, ruleCount: 1 });
+
   // Unknown /api/* paths return JSON 404 — not HTML — so the client
   // gets a parseable error instead of crashing on "Unexpected token <".
   if (url.pathname.startsWith('/api/')) {
