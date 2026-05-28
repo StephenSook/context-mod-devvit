@@ -6,15 +6,23 @@
   "additionalProperties": false,
   "required": ["runs"],
   "properties": {
-    "dryRun": { "type": "boolean" },
-    "needsAuthorEnrichment": { "type": "boolean" },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Global dry-run flag: when true, all actions are simulated and logged but never executed."
+    },
+    "needsAuthorEnrichment": {
+      "type": "boolean",
+      "description": "Set at parse time by inspecting rule kinds. Gates the expensive getUserByUsername call."
+    },
     "namedRules": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/definitions/Rule" }
+      "additionalProperties": { "$ref": "#/definitions/Rule" },
+      "description": "Named reusable rules that checks can reference via a NamedRuleRef."
     },
     "runs": {
       "type": "array",
-      "items": { "$ref": "#/definitions/Run" }
+      "items": { "$ref": "#/definitions/Run" },
+      "description": "Ordered list of runs to evaluate against each incoming post or comment."
     }
   },
   "definitions": {
@@ -23,10 +31,14 @@
       "additionalProperties": false,
       "required": ["name", "checks"],
       "properties": {
-        "name": { "type": "string" },
+        "name": {
+          "type": "string",
+          "description": "Unique label for this run, used in logs and goto references."
+        },
         "checks": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Check" }
+          "items": { "$ref": "#/definitions/Check" },
+          "description": "Ordered list of checks evaluated in sequence within this run."
         }
       }
     },
@@ -35,16 +47,27 @@
       "additionalProperties": false,
       "required": ["name", "combinator", "rules"],
       "properties": {
-        "name": { "type": "string" },
-        "combinator": { "enum": ["AND", "OR", "NOT"] },
+        "name": {
+          "type": "string",
+          "description": "Unique label for this check, used in logs and postBehavior goto references."
+        },
+        "combinator": {
+          "enum": ["AND", "OR", "NOT"],
+          "description": "How rules are combined: AND requires all rules to trigger, OR requires any, NOT requires none."
+        },
         "rules": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Rule" }
+          "items": { "$ref": "#/definitions/Rule" },
+          "description": "Rules evaluated together using the check's combinator."
         },
-        "filters": { "$ref": "#/definitions/FilterSpec" },
+        "filters": {
+          "$ref": "#/definitions/FilterSpec",
+          "description": "Optional author and item predicates that gate whether this check runs at all."
+        },
         "actions": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Action" }
+          "items": { "$ref": "#/definitions/Action" },
+          "description": "Actions executed in order when this check triggers."
         },
         "postBehavior": {
           "oneOf": [
@@ -55,7 +78,8 @@
               "required": ["goto"],
               "properties": { "goto": { "type": "string" } }
             }
-          ]
+          ],
+          "description": "What to do after this check: 'next' continues to the next check, 'stop' halts the run, or {goto} jumps to a named check."
         }
       }
     },
@@ -76,35 +100,72 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "pattern"],
+      "description": "Matches a post's title, body, or URL against a regular expression.",
       "properties": {
-        "kind": { "const": "regex" },
-        "name": { "type": "string" },
-        "pattern": { "type": "string" },
-        "flags": { "type": "string" },
-        "target": { "enum": ["title", "body", "url"] }
+        "kind": {
+          "const": "regex",
+          "description": "Identifies this rule as a regex match rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Regular expression source string to match against the target field."
+        },
+        "flags": {
+          "type": "string",
+          "description": "Optional regex flags such as 'i' for case-insensitive or 'm' for multiline."
+        },
+        "target": {
+          "enum": ["title", "body", "url"],
+          "description": "Which field to match against: title, body, or url. Defaults to title."
+        }
       }
     },
     "AuthorRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "filter"],
+      "description": "Triggers based on properties of the post or comment author.",
       "properties": {
-        "kind": { "const": "author" },
-        "name": { "type": "string" },
-        "filter": { "$ref": "#/definitions/AuthorFilter" }
+        "kind": {
+          "const": "author",
+          "description": "Identifies this rule as an author attribute rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "filter": {
+          "$ref": "#/definitions/AuthorFilter",
+          "description": "Author attribute predicates that must be satisfied for this rule to trigger."
+        }
       }
     },
     "RuleSetRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "combinator", "rules"],
+      "description": "Combines nested rules with AND, OR, or NOT logic.",
       "properties": {
-        "kind": { "const": "ruleset" },
-        "name": { "type": "string" },
-        "combinator": { "enum": ["AND", "OR", "NOT"] },
+        "kind": {
+          "const": "ruleset",
+          "description": "Identifies this rule as a nested rule-set combinator."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule set, used in logs."
+        },
+        "combinator": {
+          "enum": ["AND", "OR", "NOT"],
+          "description": "AND requires all nested rules to trigger, OR requires any, NOT requires none."
+        },
         "rules": {
           "type": "array",
-          "items": { "$ref": "#/definitions/Rule" }
+          "items": { "$ref": "#/definitions/Rule" },
+          "description": "Nested rules evaluated together using the combinator."
         }
       }
     },
@@ -112,121 +173,347 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "name"],
+      "description": "Reference to a reusable rule defined in the top-level namedRules map.",
       "properties": {
-        "kind": { "const": "named" },
-        "name": { "type": "string" }
+        "kind": {
+          "const": "named",
+          "description": "Identifies this as a reference to a named rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Key into the top-level namedRules map to look up."
+        }
       }
     },
     "RepostRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind"],
+      "description": "Triggers when the same URL has already been submitted within the configured window.",
       "properties": {
-        "kind":       { "const": "repost" },
-        "name":       { "type": "string" },
-        "windowDays": { "type": "number", "minimum": 1, "maximum": 365 }
+        "kind": {
+          "const": "repost",
+          "description": "Identifies this rule as a URL-deduplication repost rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "windowDays": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "How many days back to check for duplicate URLs. Defaults to 30."
+        }
       }
     },
     "HistoryRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind"],
+      "description": "Triggers based on an author's recent post/comment counts or karma thresholds. Any supplied threshold triggers the rule (OR semantics).",
       "properties": {
-        "kind":             { "const": "history" },
-        "name":             { "type": "string" },
-        "postCountLt":      { "type": "number", "minimum": 0, "maximum": 100 },
-        "postCountGt":      { "type": "number", "minimum": 0, "maximum": 100 },
-        "commentCountLt":   { "type": "number", "minimum": 0, "maximum": 100 },
-        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 },
-        "linkKarmaLt":      { "type": "number" },
-        "linkKarmaGt":      { "type": "number" },
-        "commentKarmaLt":   { "type": "number" },
-        "commentKarmaGt":   { "type": "number" },
-        "windowSec":        { "type": "number", "minimum": 1 }
+        "kind": {
+          "const": "history",
+          "description": "Identifies this rule as an author history rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "postCountLt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent post count is less than this value."
+        },
+        "postCountGt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent post count is greater than this value."
+        },
+        "commentCountLt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent comment count is less than this value."
+        },
+        "commentCountGt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent comment count is greater than this value."
+        },
+        "linkKarmaLt": {
+          "type": "number",
+          "description": "Triggers when the author's link karma is less than this value."
+        },
+        "linkKarmaGt": {
+          "type": "number",
+          "description": "Triggers when the author's link karma is greater than this value."
+        },
+        "commentKarmaLt": {
+          "type": "number",
+          "description": "Triggers when the author's comment karma is less than this value."
+        },
+        "commentKarmaGt": {
+          "type": "number",
+          "description": "Triggers when the author's comment karma is greater than this value."
+        },
+        "windowSec": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Only count posts and comments within the last N seconds. Defaults to unlimited."
+        }
       }
     },
     "AttributionRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "domains", "domainPercent"],
+      "description": "Triggers when a configured fraction of the author's recent posts link to specific domains.",
       "properties": {
-        "kind":          { "const": "attribution" },
-        "name":          { "type": "string" },
-        "domains":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
-        "domainPercent": { "type": "number", "minimum": 0, "maximum": 100 },
-        "minPosts":      { "type": "number", "minimum": 1 },
-        "windowSec":     { "type": "number", "minimum": 1 }
+        "kind": {
+          "const": "attribution",
+          "description": "Identifies this rule as a domain attribution rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "List of domain substrings to match against each post's domain (case-insensitive)."
+        },
+        "domainPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the matching domain percentage of the author's recent posts is at or above this value (0 to 100)."
+        },
+        "minPosts": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Minimum number of recent posts required before evaluating the rule. Defaults to 5."
+        },
+        "windowSec": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Only count posts within the last N seconds. Defaults to unlimited."
+        }
       }
     },
     "RecentActivityRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "subreddits"],
+      "description": "Triggers when the author has posted or commented in specified subreddits above configured thresholds.",
       "properties": {
-        "kind":             { "const": "recentActivity" },
-        "name":             { "type": "string" },
-        "subreddits":       { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 },
-        "postCountGt":      { "type": "number", "minimum": 0, "maximum": 100 },
-        "commentCountGt":   { "type": "number", "minimum": 0, "maximum": 100 },
-        "windowSec":        { "type": "number", "minimum": 1 }
+        "kind": {
+          "const": "recentActivity",
+          "description": "Identifies this rule as a recent subreddit activity rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "subreddits": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "List of subreddit names to check the author's activity in (case-insensitive)."
+        },
+        "postCountGt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent post count in the target subreddits exceeds this value."
+        },
+        "commentCountGt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Triggers when the author's recent comment count in the target subreddits exceeds this value."
+        },
+        "windowSec": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Only count activity within the last N seconds. Defaults to unlimited."
+        }
       }
     },
     "ImageRepostRule": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind"],
+      "description": "Triggers when an image post's perceptual hash is too similar to a recently seen image in the same subreddit.",
       "properties": {
-        "kind":               { "const": "imageRepost" },
-        "name":               { "type": "string" },
-        "hammingThreshold":   { "type": "number", "minimum": 0, "maximum": 256 },
-        "windowDays":         { "type": "number", "minimum": 1, "maximum": 365 }
+        "kind": {
+          "const": "imageRepost",
+          "description": "Identifies this rule as a perceptual image-repost detection rule."
+        },
+        "name": {
+          "type": "string",
+          "description": "Optional label for this rule, used in logs."
+        },
+        "hammingThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 256,
+          "description": "Maximum bit difference between two image hashes to consider them the same image. Defaults to 8."
+        },
+        "windowDays": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "How many days back to check for matching image hashes. Defaults to 30."
+        }
       }
     },
     "FilterSpec": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Optional gate predicates applied before a check's rules run.",
       "properties": {
-        "authorIs": { "$ref": "#/definitions/AuthorFilter" },
-        "itemIs":   { "$ref": "#/definitions/ItemFilter" }
+        "authorIs": {
+          "$ref": "#/definitions/AuthorFilter",
+          "description": "Author predicates that must all match for the check to proceed."
+        },
+        "itemIs": {
+          "$ref": "#/definitions/ItemFilter",
+          "description": "Item predicates that must all match for the check to proceed."
+        }
       }
     },
     "AuthorFilter": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Predicate set evaluated against the post or comment author.",
       "properties": {
-        "nameIn":           { "type": "array", "items": { "type": "string" } },
-        "nameNotIn":        { "type": "array", "items": { "type": "string" } },
-        "flairTextIn":      { "type": "array", "items": { "type": "string" } },
-        "flairTextNotIn":   { "type": "array", "items": { "type": "string" } },
-        "ageMinSec":        { "type": "number" },
-        "ageMaxSec":        { "type": "number" },
-        "linkKarmaMin":     { "type": "number" },
-        "linkKarmaMax":     { "type": "number" },
-        "commentKarmaMin":  { "type": "number" },
-        "commentKarmaMax":  { "type": "number" },
-        "isMod":            { "type": "boolean" },
-        "isContributor":    { "type": "boolean" },
-        "verified":         { "type": "boolean" },
-        "shadowBanned":     { "type": "boolean" }
+        "nameIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the author's username is in this exact-match list."
+        },
+        "nameNotIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the author's username is NOT in this exact-match list."
+        },
+        "flairTextIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the author's flair text is one of these values."
+        },
+        "flairTextNotIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the author's flair text is not one of these values."
+        },
+        "ageMinSec": {
+          "type": "number",
+          "description": "Matches when the author's account age is at least this many seconds."
+        },
+        "ageMaxSec": {
+          "type": "number",
+          "description": "Matches when the author's account age is at most this many seconds."
+        },
+        "linkKarmaMin": {
+          "type": "number",
+          "description": "Matches when the author's link karma is at least this value."
+        },
+        "linkKarmaMax": {
+          "type": "number",
+          "description": "Matches when the author's link karma is at most this value."
+        },
+        "commentKarmaMin": {
+          "type": "number",
+          "description": "Matches when the author's comment karma is at least this value."
+        },
+        "commentKarmaMax": {
+          "type": "number",
+          "description": "Matches when the author's comment karma is at most this value."
+        },
+        "isMod": {
+          "type": "boolean",
+          "description": "When true, matches moderators only. When false, matches non-moderators only."
+        },
+        "isContributor": {
+          "type": "boolean",
+          "description": "When true, matches approved contributors only. When false, matches non-contributors only."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "When true, matches authors with a verified email only."
+        },
+        "shadowBanned": {
+          "type": "boolean",
+          "description": "When true, matches shadow-banned accounts only."
+        }
       }
     },
     "ItemFilter": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Predicate set evaluated against the post or comment itself.",
       "properties": {
-        "over18":           { "type": "boolean" },
-        "locked":           { "type": "boolean" },
-        "stickied":         { "type": "boolean" },
-        "removed":          { "type": "boolean" },
-        "approved":         { "type": "boolean" },
-        "isSelf":           { "type": "boolean" },
-        "scoreMin":         { "type": "number" },
-        "scoreMax":         { "type": "number" },
-        "linkFlairTextIn":     { "type": "array", "items": { "type": "string" } },
-        "linkFlairTextNotIn":  { "type": "array", "items": { "type": "string" } },
-        "titleMatches":     { "type": "string" },
-        "bodyMatches":      { "type": "string" },
-        "urlMatches":       { "type": "string" }
+        "over18": {
+          "type": "boolean",
+          "description": "When true, matches NSFW items only. When false, matches SFW items only."
+        },
+        "locked": {
+          "type": "boolean",
+          "description": "When true, matches locked items only. When false, matches unlocked items only."
+        },
+        "stickied": {
+          "type": "boolean",
+          "description": "When true, matches stickied items only. When false, matches non-stickied items only."
+        },
+        "removed": {
+          "type": "boolean",
+          "description": "When true, matches removed items only. When false, matches non-removed items only."
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "When true, matches approved items only. When false, matches non-approved items only."
+        },
+        "isSelf": {
+          "type": "boolean",
+          "description": "When true, matches self-text posts only. When false, matches link posts only."
+        },
+        "scoreMin": {
+          "type": "number",
+          "description": "Matches when the item's score is at least this value."
+        },
+        "scoreMax": {
+          "type": "number",
+          "description": "Matches when the item's score is at most this value."
+        },
+        "linkFlairTextIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the post's link flair text is one of these values."
+        },
+        "linkFlairTextNotIn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Matches when the post's link flair text is not one of these values."
+        },
+        "titleMatches": {
+          "type": "string",
+          "description": "Regex source string matched against the post title."
+        },
+        "bodyMatches": {
+          "type": "string",
+          "description": "Regex source string matched against the post or comment body."
+        },
+        "urlMatches": {
+          "type": "string",
+          "description": "Regex source string matched against the post URL."
+        }
       }
     },
     "Action": {
@@ -235,82 +522,168 @@
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Removes the post or comment from the subreddit.",
           "properties": {
-            "kind": { "const": "remove" },
-            "isSpam": { "type": "boolean" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "remove",
+              "description": "Identifies this action as a removal action."
+            },
+            "isSpam": {
+              "type": "boolean",
+              "description": "When true, marks the removal as a spam removal."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Approves the post or comment.",
           "properties": {
-            "kind": { "const": "approve" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "approve",
+              "description": "Identifies this action as an approval action."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind", "template"],
+          "description": "Posts a moderator comment using the provided template text.",
           "properties": {
-            "kind": { "const": "comment" },
-            "template": { "type": "string" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "comment",
+              "description": "Identifies this action as a comment action."
+            },
+            "template": {
+              "type": "string",
+              "description": "Text of the comment to post. Supports template variables."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Locks the post or comment to prevent further replies.",
           "properties": {
-            "kind": { "const": "lock" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "lock",
+              "description": "Identifies this action as a lock action."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind", "reason"],
+          "description": "Reports the post or comment to the moderators with a reason.",
           "properties": {
-            "kind": { "const": "report" },
-            "reason": { "type": "string" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "report",
+              "description": "Identifies this action as a report action."
+            },
+            "reason": {
+              "type": "string",
+              "description": "The report reason shown to moderators."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Bans the author from the subreddit, optionally with a duration and message.",
           "properties": {
-            "kind": { "const": "ban" },
-            "duration": { "type": "number" },
-            "reason":   { "type": "string" },
-            "note":     { "type": "string" },
-            "message":  { "type": "string" },
-            "dryRun":   { "type": "boolean" }
+            "kind": {
+              "const": "ban",
+              "description": "Identifies this action as a ban action."
+            },
+            "duration": {
+              "type": "number",
+              "description": "Ban duration in days. Use 0 for a permanent ban."
+            },
+            "reason": {
+              "type": "string",
+              "description": "The mod-visible reason for the ban."
+            },
+            "note": {
+              "type": "string",
+              "description": "Internal mod note attached to the ban, not shown to the user."
+            },
+            "message": {
+              "type": "string",
+              "description": "Message sent to the banned user explaining the ban."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Sets the author's user flair on the subreddit.",
           "properties": {
-            "kind": { "const": "userFlair" },
-            "text":     { "type": "string" },
-            "cssClass": { "type": "string" },
-            "dryRun":   { "type": "boolean" }
+            "kind": {
+              "const": "userFlair",
+              "description": "Identifies this action as a user flair assignment action."
+            },
+            "text": {
+              "type": "string",
+              "description": "Flair text to apply to the author."
+            },
+            "cssClass": {
+              "type": "string",
+              "description": "CSS class for the flair styling."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
           "required": ["kind"],
+          "description": "Marks the post or comment as moderator-distinguished, optionally stickying it.",
           "properties": {
-            "kind":   { "const": "distinguish" },
-            "sticky": { "type": "boolean" },
-            "dryRun": { "type": "boolean" }
+            "kind": {
+              "const": "distinguish",
+              "description": "Identifies this action as a mod-distinguish action."
+            },
+            "sticky": {
+              "type": "boolean",
+              "description": "When true, pins the distinguished comment to the top of the thread (post-level comments only). Defaults to true."
+            },
+            "dryRun": {
+              "type": "boolean",
+              "description": "When true, simulates the action without executing it."
+            }
           }
         }
       ]
