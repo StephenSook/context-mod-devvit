@@ -14,6 +14,15 @@ export default defineConfig({
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['tests/e2e/**', 'tests/bench/**', '**/__snapshots__/**'],
     globals: false,
+    // codemirror-json-schema ships ESM/CJS files with extensionless sub-imports
+    // (e.g. `from "./features/completion"`) that Node ESM resolution rejects.
+    // server.deps.inline forces Vite's bundler to handle the package instead of
+    // native Node, where extensionless imports resolve correctly.
+    server: {
+      deps: {
+        inline: ['codemirror-json-schema'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],

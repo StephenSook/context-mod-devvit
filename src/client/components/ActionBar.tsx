@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { RefreshCw, FileText, ExternalLink, Download } from 'lucide-react';
+import { RefreshCw, FileText, ExternalLink, Download, FileEdit } from 'lucide-react';
 import type { EventRecord } from '../lib/types';
 import { eventsToCsv, csvFilename } from '../lib/csv-export';
 
@@ -22,10 +22,12 @@ export function ActionBar({
   subreddit,
   onReload,
   events,
+  onEditConfig,
 }: {
   subreddit: string;
   onReload: () => Promise<void> | void;
   events: EventRecord[];
+  onEditConfig: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
@@ -66,6 +68,22 @@ export function ActionBar({
     downloadCsv(events, subreddit);
     setFlash('exported');
     scheduleFlashClear();
+  };
+
+  // requestExpandedMode is in @devvit/client (browser condition only; the
+  // package exports map has no `types` field so tsc resolves to the panic
+  // shim in non-browser environments). We call it via a runtime-only path:
+  // dynamic import + unknown cast so the static type-checker is satisfied,
+  // and the whole block is best-effort (catch keeps the editor opening even
+  // when the Devvit runtime is absent or already expanded).
+  const handleEdit = async (e: React.MouseEvent) => {
+    try {
+      const devvitClient = await import('@devvit/client') as unknown as {
+        requestExpandedMode: (event: MouseEvent, entry: string) => Promise<void> | void;
+      };
+      await devvitClient.requestExpandedMode(e.nativeEvent, 'default');
+    } catch { /* expand is best-effort; open the editor regardless */ }
+    onEditConfig();
   };
 
   const wikiUrl = `https://www.reddit.com/r/${subreddit}/wiki/botconfig/contextmod`;
@@ -114,6 +132,15 @@ export function ActionBar({
               'Export CSV'
             )}
           </span>
+        </button>
+
+        <button
+          onClick={(e) => void handleEdit(e)}
+          className="group inline-flex items-center gap-1.5 text-[11px] text-bone-200 hover:text-bone-50 transition-colors"
+          title="Open inline config editor"
+        >
+          <FileEdit size={12} strokeWidth={1.8} />
+          <span className="tracking-wide">Edit config</span>
         </button>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Header } from './components/Header';
 import { StatsRow } from './components/StatsRow';
 import { Sparkline } from './components/Sparkline';
@@ -19,6 +19,12 @@ import { ModActivityFeed } from './components/ModActivityFeed';
 import { fetchRecentSafe, fetchStatsSafe, DEMO_EVENTS, DEMO_STATS, ZERO_STATS } from './lib/api';
 import type { EventRecord, StatsRollup } from './lib/types';
 
+// ConfigWorkbench contains CodeMirror 6 (~70KB). Lazy-load so CM6 stays in
+// a separate chunk and does NOT inflate the main dashboard entry bundle.
+const ConfigWorkbench = lazy(() =>
+  import('./components/ConfigWorkbench').then((m) => ({ default: m.ConfigWorkbench }))
+);
+
 const POLL_MS = 10_000;
 
 // Demo data is OPT-IN only via ?demo=1 — production never shows fabricated mod
@@ -37,6 +43,7 @@ export default function App() {
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState<boolean>(() => !hasSeenTour());
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   // Y2-X56: track initial load so first paint shows shimmer skeletons
   // instead of the empty-state CTA (which would mislead the mod into
   // thinking the bot is idle when actually we just haven't fetched yet).
@@ -118,6 +125,7 @@ export default function App() {
         handler: () => {
           setOverlayOpen(false);
           setHistoryOpen(false);
+          setEditorOpen(false);
         },
       },
       {
@@ -282,7 +290,7 @@ export default function App() {
 
         <ModActivityFeed refreshedAt={refreshedAt} />
 
-        <ActionBar subreddit={subreddit} onReload={refresh} events={events} />
+        <ActionBar subreddit={subreddit} onReload={refresh} events={events} onEditConfig={() => setEditorOpen(true)} />
       </div>
 
       <KeyboardOverlay
@@ -291,6 +299,11 @@ export default function App() {
         shortcuts={shortcuts}
       />
       <ConfigDiffViewer open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      {editorOpen && (
+        <Suspense fallback={null}>
+          <ConfigWorkbench subreddit={subreddit} onClose={() => setEditorOpen(false)} />
+        </Suspense>
+      )}
       {/* AE Polish #3: gate tour on !initialLoad so the modal doesn't open
           on top of shimmer-skeleton dashboard. Judges who haven't seen
           the tour got the modal at t=0 + couldn't see what it was

@@ -1,4 +1,4 @@
-import type { ApiResult, EventRecord, StatsRollup } from './types';
+import type { ApiResult, EventRecord, StatsRollup, ConfigRaw, SaveResult, SimResult } from './types';
 
 /**
  * fetchRecentSafe / fetchStatsSafe — return a discriminated ApiResult so the
@@ -91,3 +91,71 @@ export const ZERO_STATS: StatsRollup = {
 import { demoEvents, DEMO_STATS as SHARED_DEMO_STATS } from '../../lib/demo-fixtures';
 export const DEMO_EVENTS: EventRecord[] = demoEvents() as EventRecord[];
 export const DEMO_STATS: StatsRollup = SHARED_DEMO_STATS as StatsRollup;
+
+// ---------------------------------------------------------------------------
+// Config editor API helpers (Task 9)
+// Follow the same ApiResult<T> + extractServerError + demoSuffix pattern.
+// ---------------------------------------------------------------------------
+
+export async function fetchConfigRawSafe(): Promise<ApiResult<ConfigRaw>> {
+  try {
+    const res = await fetch(`/api/config/raw${demoSuffix()}`);
+    if (!res.ok) return { ok: false, error: await extractServerError(res) };
+    const data = (await res.json()) as ConfigRaw;
+    return { ok: true, empty: false, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function validateConfigSafe(text: string): Promise<{ ok: boolean; errors?: unknown }> {
+  try {
+    const res = await fetch('/api/config/validate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
+    });
+    return (await res.json()) as { ok: boolean; errors?: unknown };
+  } catch (err) {
+    return { ok: false, errors: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function simulateLiveSafe(text: string): Promise<ApiResult<SimResult>> {
+  try {
+    const res = await fetch('/api/config/simulate-live', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return { ok: false, error: await extractServerError(res) };
+    const data = (await res.json()) as { ok: boolean; error?: string } & SimResult;
+    if (!data.ok) return { ok: false, error: data.error ?? 'simulation failed' };
+    return { ok: true, empty: false, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function explainConfigSafe(text: string): Promise<ApiResult<string>> {
+  try {
+    const res = await fetch('/api/config/explain', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
+    });
+    const data = (await res.json()) as { ok: boolean; explanation?: string; error?: string };
+    if (!res.ok || !data.ok) return { ok: false, error: data.error ?? `HTTP ${res.status}` };
+    return { ok: true, empty: false, data: data.explanation ?? '' };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function saveConfigSafe(text: string, baseRevisionId: string | null): Promise<ApiResult<SaveResult>> {
+  try {
+    const res = await fetch('/api/config/save', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, baseRevisionId }),
+    });
+    const data = (await res.json()) as { ok: boolean; error?: string } & SaveResult;
+    if (!res.ok || !data.ok) return { ok: false, error: data.error ?? `HTTP ${res.status}` };
+    return { ok: true, empty: false, data };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
