@@ -40,6 +40,37 @@ The Devvit port preserves the rule/check/action concept model that 15+ existing 
 
 > **No hosting. No tokens. No central bottleneck.** Everything lives inside your subreddit's Devvit installation.
 
+## Moderator permissions and data access
+
+ContextMod is a moderator-only tool. Every surface that shows moderation data or performs a moderation action is gated on the caller being a moderator of the subreddit, verified server-side against Reddit's live moderator list (`reddit.getModerators()`) on every request, not just by the menu's `forUserType`. This section is the "who can see and do what" contract for any subreddit installing the app.
+
+**Menu items.** All six mod-menu entries (Reload config, View recent actions, Test rules, Simulate rule, Explain rule with AI, Set OpenAI API key) declare `"forUserType": "moderator"` in `devvit.json`, so non-moderators never see them in the menu.
+
+**Server-side verification (defense in depth).** The Observatory custom post is a webview, and its server endpoints are HTTP-reachable by anyone who can open the post, not only by the mod who clicked a menu item. So `forUserType` alone is not a security boundary. Every endpoint that returns mod data or performs an action calls `requireModerator()` before doing any work. The dashboard data and action API replies `403`; the menu and form handlers reply with a "Mod-only action" toast (the Devvit response shape they require). In both cases the work never runs for a non-moderator.
+
+| Surface | Endpoint(s) | Gate |
+|---|---|---|
+| Recent actions feed | `GET /api/recent` | `requireModerator` |
+| Stats counters | `GET /api/stats` | `requireModerator` |
+| Mod-activity feed | `GET /api/mod-activity` | `requireModerator` |
+| Config revision history | `GET /api/config-history` | `requireModerator` |
+| Muted rules (read + mutate) | `GET /api/muted-rules`, `POST /api/mute-rule`, `POST /api/unmute-rule` | `requireModerator` |
+| AI event explainer | `POST /api/explain-event` | `requireModerator` |
+| Config editor | `GET /api/config/raw`, `POST /api/config/{validate,simulate-live,explain,save}` | `requireModerator` |
+| Mod menu actions + forms | `POST /internal/menu/*`, `POST /internal/form/*` | `requireModerator` |
+
+A non-moderator who opens the Observatory post sees a "Moderators only" notice, never moderation data.
+
+**Permission granularity (documented exception).** The gate is "is a moderator of this subreddit." ContextMod does not distinguish granular Reddit moderator permissions (`wiki`, `config`, `posts`, `flair`, and so on): any moderator can view the telemetry and edit the rule config through the app. This is intentional. ContextMod's wiki config is the bot's control surface, managed by the moderator team as a whole, the same way AutoModerator's config is. The in-app editor writes the config wiki page on behalf of any moderator using the app's moderator scope. If your team needs to restrict who changes the bot's behavior, use Reddit's native moderator permissions plus your team's own process.
+
+**Exceptions to the mod gate (and why they are safe).**
+
+- `GET /api/health` is an unauthenticated liveness probe. It returns only `{ok, app name, version, timestamp}`: no moderation data, no Redis access. The dashboard's reload button and external uptime checks use it. `GET /api/health/deep` (which does touch Redis and Reddit context) IS mod-gated.
+- `?demo=1` on the read endpoints returns clearly-synthetic fixtures (`demo_mod_alice`, and so on) so the dashboard can be demoed without a live install. Real subreddit data is never served on the demo path.
+- `/internal/triggers/*` and `/internal/cron/*` are invoked by the Devvit platform (event triggers and schedulers), not by users, so they are not part of the moderator-facing surface.
+
+**Data isolation.** Each install runs in its own Devvit Redis namespace, so one subreddit's moderation data is never visible to another.
+
 ## Try locally in 3 commands (for judges + devs)
 
 See the Observatory dashboard render without installing the app, no Devvit credentials needed:
@@ -408,7 +439,7 @@ The concept model, schema validation, config publish pipeline, idempotency primi
 No. Devvit runs the server. You install via the Reddit App Directory, write your rules in your sub's wiki, and that's it.
 
 **Can other mods edit the config?**
-Yes, anyone with `wiki` permissions in your sub can edit `/wiki/botconfig/contextmod`. Standard Reddit wiki access control applies.
+Two paths. (1) Through the app: any moderator can edit and save the config via the in-app editor. The app writes the wiki page using its own moderator scope, so a granular `wiki` permission is not required in-app (see [Moderator permissions and data access](#moderator-permissions-and-data-access) for why this is intentional). (2) Directly: editing `/wiki/botconfig/contextmod` outside the app follows standard Reddit wiki access control, which needs the `wiki` moderator permission.
 
 **What happens if I edit the wiki and break the config?**
 The 5-minute refresh cron validates new config against an AJV JSON Schema. If it fails to parse or validate, the previous `cfg:current_rev` stays active and the error is logged. Your sub stays moderated by the last good config until you fix the wiki page.
