@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act, within } from '@testing-library/react';
 
 const fetchRecentSafe = vi.fn();
 const fetchStatsSafe = vi.fn();
@@ -172,6 +172,42 @@ describe('App.tsx demo branch (Polish #34)', () => {
       // After load: should not have any "demo" hint text
       expect(screen.queryByText(/demo · awaiting/i)).toBeNull();
     });
+  });
+});
+
+describe('App.tsx moderators-only gate (App Review fix 2026-06-07)', () => {
+  // Queries are scoped to each test's own `container` via within() — this
+  // suite has no testing-library auto-cleanup, so a global `screen` query
+  // would pick up a prior test's un-unmounted DOM.
+  it('renders "Moderators only" heading + NO error banner when the API 403s', async () => {
+    fetchRecentSafe.mockResolvedValue({
+      ok: false,
+      error: 'HTTP 403: not a moderator of this sub',
+      forbidden: true,
+    });
+    fetchStatsSafe.mockResolvedValue({
+      ok: false,
+      error: 'HTTP 403: not a moderator of this sub',
+      forbidden: true,
+    });
+    const { container } = render(<App />);
+    await waitFor(() => {
+      expect(within(container).getByRole('heading', { name: /moderators only/i })).toBeTruthy();
+    });
+    // The misleading "Telemetry API unreachable" retry banner must NOT show
+    // for a 403 — a non-mod viewing the post is an intentional, gated state.
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    expect(within(container).queryByText(/telemetry api unreachable/i)).toBeNull();
+  });
+
+  it('a non-forbidden error (503) does NOT trigger the moderators-only gate', async () => {
+    fetchRecentSafe.mockResolvedValue({ ok: false, error: 'HTTP 503' });
+    fetchStatsSafe.mockResolvedValue({ ok: false, error: 'HTTP 503' });
+    const { container } = render(<App />);
+    await waitFor(() => {
+      expect(within(container).getAllByText(/contextmod/i).length).toBeGreaterThan(0);
+    });
+    expect(within(container).queryByRole('heading', { name: /moderators only/i })).toBeNull();
   });
 });
 

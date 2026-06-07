@@ -43,7 +43,10 @@ export async function extractServerError(res: Response): Promise<string> {
 export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
   try {
     const res = await fetch(`/api/recent${demoSuffix()}`);
-    if (!res.ok) return { ok: false, error: await extractServerError(res) };
+    // forbidden: a 403 means "not a moderator", not an outage — the dashboard
+    // renders a "moderators only" notice instead of the retry banner.
+    if (!res.ok)
+      return { ok: false, error: await extractServerError(res), forbidden: res.status === 403 };
     const data = await res.json();
     const events = Array.isArray(data?.events) ? (data.events as EventRecord[]) : [];
     if (events.length === 0) return { ok: true, empty: true };
@@ -57,7 +60,8 @@ export async function fetchRecentSafe(): Promise<ApiResult<EventRecord[]>> {
 export async function fetchStatsSafe(): Promise<ApiResult<StatsRollup>> {
   try {
     const res = await fetch(`/api/stats${demoSuffix()}`);
-    if (!res.ok) return { ok: false, error: await extractServerError(res) };
+    if (!res.ok)
+      return { ok: false, error: await extractServerError(res), forbidden: res.status === 403 };
     const data = await res.json();
     const c = data?.counters;
     if (!c || typeof c !== 'object' || !Array.isArray(c.hourlyActions24h)) {

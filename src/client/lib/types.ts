@@ -57,13 +57,18 @@ export type StatsRollup = {
  *   - { ok: true, empty: true }:        server returned 200 + empty payload → show zero-state (fresh install, no rules firing yet)
  *   - { ok: false, error }:             network failure, 5xx, parse error → show error banner
  *
+ * `forbidden` is set when the server replied 403 (caller is not a moderator).
+ * The dashboard renders a dedicated "moderators only" notice for this case
+ * instead of the "Telemetry API unreachable" retry banner — a non-mod viewing
+ * the Observatory custom post is not an outage (App Review fix 2026-06-07).
+ *
  * Replaces the prior "return [] on any failure" pattern (Codex review HIGH F5)
  * where a backend outage was indistinguishable from "no events yet."
  */
 export type ApiResult<T> =
   | { ok: true; empty: false; data: T }
   | { ok: true; empty: true }
-  | { ok: false; error: string };
+  | { ok: false; error: string; forbidden?: boolean };
 
 export type ConfigRaw = { content: string; revisionId: string | null; isDefaultTemplate: boolean };
 export type SaveResult = { rev: number; ruleCount: number };
