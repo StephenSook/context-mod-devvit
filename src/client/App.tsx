@@ -44,6 +44,9 @@ export default function App() {
   const [tourOpen, setTourOpen] = useState<boolean>(() => !hasSeenTour());
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  // App Review (2026-06-07): when the API 403s (viewer is not a mod), show a
+  // dedicated "moderators only" notice instead of the retry banner.
+  const [forbidden, setForbidden] = useState(false);
   // Y2-X56: track initial load so first paint shows shimmer skeletons
   // instead of the empty-state CTA (which would mislead the mod into
   // thinking the bot is idle when actually we just haven't fetched yet).
@@ -55,12 +58,24 @@ export default function App() {
     // If EITHER call errored, surface the error and keep the last-good state
     // so the dashboard doesn't lose its display while the API recovers.
     if (!recent.ok || !statsData.ok) {
+      // A 403 (not a moderator) is not an outage. The server already gates
+      // every data endpoint; render the dedicated "moderators only" notice
+      // rather than the "Telemetry API unreachable" retry banner so a non-mod
+      // viewing the Observatory post sees an accurate, intentional state.
+      if ((!recent.ok && recent.forbidden) || (!statsData.ok && statsData.forbidden)) {
+        setForbidden(true);
+        setInitialLoad(false);
+        setRefreshedAt(Date.now());
+        return;
+      }
       const errMsg = !recent.ok ? recent.error : !statsData.ok ? statsData.error : 'unknown';
       setApiError(errMsg);
       setRefreshedAt(Date.now());
       return;
     }
 
+    // Recovered (or a mod was just added): clear any prior forbidden gate.
+    setForbidden(false);
     setApiError(null);
 
     // Both calls succeeded. Three branches: real data, empty + demo, empty + zero-state.
@@ -137,6 +152,26 @@ export default function App() {
     [refresh]
   );
   useKeyboardShortcuts(shortcuts);
+
+  // Moderators-only gate (App Review 2026-06-07). All hooks above run
+  // unconditionally; this early return is safe below them.
+  if (forbidden) {
+    return (
+      <div className="relative w-full h-full overflow-hidden flex flex-col items-center justify-center bg-ink-950 grain px-8 text-center">
+        <div className="relative z-10 max-w-sm">
+          <h1 className="text-bone-100 text-sm tracking-[0.18em] uppercase font-medium mb-2">
+            Moderators only
+          </h1>
+          <p className="telemetry text-[12px] leading-relaxed text-bone-300/80">
+            The ContextMod Observatory dashboard is visible only to moderators of
+            r/{subreddit}. Mod-action telemetry, rule config, and AI tools are
+            gated server-side. If you moderate this community, sign in with the
+            account that holds your mod permissions.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-col bg-ink-950 grain">

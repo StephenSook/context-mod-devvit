@@ -91,6 +91,27 @@ describe('fetchRecentSafe', () => {
     if (!result.ok) expect(result.error).toContain('404');
   });
 
+  it('App Review fix: 403 → ok:false forbidden:true (caller is not a moderator)', async () => {
+    mockFetch({
+      ok: false,
+      status: 403,
+      json: () => Promise.resolve({ error: 'not a moderator of this sub', events: [] }),
+    });
+    const result = await fetchRecentSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.forbidden).toBe(true);
+      expect(result.error).toContain('not a moderator');
+    }
+  });
+
+  it('App Review fix: non-403 error → forbidden falsy (only 403 gates the dashboard)', async () => {
+    mockFetch({ ok: false, status: 503 });
+    const result = await fetchRecentSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.forbidden).toBeFalsy();
+  });
+
   it('Polish #21: 503 + server error body → surfaces server message + code', async () => {
     // /api/recent returns this exact shape when reddit.getCurrentSubreddit throws.
     mockFetch({
@@ -224,6 +245,17 @@ describe('fetchStatsSafe', () => {
     const result = await fetchStatsSafe();
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toContain('500');
+  });
+
+  it('App Review fix: 403 → ok:false forbidden:true', async () => {
+    mockFetch({
+      ok: false,
+      status: 403,
+      json: () => Promise.resolve({ error: 'not a moderator of this sub', counters: {} }),
+    });
+    const result = await fetchStatsSafe();
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.forbidden).toBe(true);
   });
 
   it('network failure → ok:false', async () => {

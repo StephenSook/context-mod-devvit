@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.
 
 ## [Unreleased]
 
+### Security: App Review mod-permission gate (2026-06-07)
+
+Reddit App Review rejected cm-devvit 0.3.0 on mod-permission handling. This wave closes the gap: every mod-only surface is verified server-side, and the permission model is documented for installing subreddits.
+
+- **Gate all mod-menu handlers with `requireModerator()`** (`src/routes/menu.ts`): the six `/internal/menu/*` handlers (reload-config, recent-actions, set-openai-key, explain-rule, simulate-rule, test-rules) previously relied only on the menu item's `forUserType: "moderator"`. But the handler endpoints are HTTP-reachable by any viewer of the Observatory custom post (the same reachability the `/api/*` and form-submit handlers already defend against), so a non-mod could POST them directly. They now verify moderator status server-side before reading the wiki, publishing config, or creating the dashboard post, and return a "Mod-only action" toast otherwise. The two action handlers resolve the sub via `requireModerator()` (dropping a redundant `getCurrentSubreddit` call). Pinned by `tests/routes/menu-auth.test.ts`.
+- **Extract shared `authFailToast` helper** (`src/lib/authFailToast.ts`): the toast wording (including the Polish #10 transient-vs-terminal split) was a local function in `forms.ts`. Extracted so `menu.ts` reuses the exact same copy. One source of truth, same anti-drift rationale as `openaiErrors.ts`. Pinned by `tests/lib/authFailToast.test.ts`.
+- **Client "Moderators only" gate** (`src/client/{App.tsx,lib/api.ts,lib/types.ts}`): when a dashboard data endpoint replies `403`, the webview shows a dedicated "Moderators only" notice instead of the misleading "Telemetry API unreachable" retry banner. The gate triggers strictly on `403` (a `forbidden` flag on the API result), so a transient `503`/`500` for a real mod still shows the retry banner. Pinned by `tests/client/app.test.tsx` + `tests/client/api.test.ts`.
+- **Document the permission model** (`README.md`): new "Moderator permissions and data access" section enumerates every gated surface, states the gate is "is a moderator of this subreddit" (binary, not granular per Reddit mod-permission), and documents the intentional exception (any moderator can edit config via the app, analogous to AutoModerator) plus the safe unauthenticated exceptions (`/api/health` liveness, `?demo=1` synthetic fixtures, platform-only trigger/cron routes). The FAQ "Can other mods edit the config?" answer is corrected to describe both the in-app editor path and the direct-wiki path.
+
+Verified: `npm run type-check` and `npm run lint` clean, 923/923 tests pass. A second-model adversarial audit (gemini-agent, since the Codex CLI was unavailable) confirmed every mod-data and mod-action endpoint is gated and fails closed.
+
 Forward-looking (post-v0.6.7): see [`ROADMAP.md`](./ROADMAP.md).
 
 ## [0.6.7]: 2026-05-19

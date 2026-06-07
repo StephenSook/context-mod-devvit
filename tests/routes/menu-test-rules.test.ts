@@ -13,6 +13,11 @@ vi.mock('../../src/core/configSource', () => ({
   WIKI_PAGE: 'botconfig/contextmod',
 }));
 vi.mock('../../src/state/configStore');
+// menu handlers now gate on requireModerator (App Review fix 2026-06-07);
+// mock it as a mod so these handler-shape tests still exercise the form path.
+vi.mock('../../src/lib/requireModerator', () => ({
+  requireModerator: vi.fn(async () => ({ ok: true, sub: 'r_test', username: 'mod_alice' })),
+}));
 
 import { menu } from '../../src/routes/menu';
 

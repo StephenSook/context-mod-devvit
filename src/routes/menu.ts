@@ -16,6 +16,8 @@ import { loadFromWiki, WIKI_PAGE } from '../core/configSource';
 import { K } from '../state/keys';
 import { logModActivity, type ModActivityKind } from '../state/modActivity';
 import { log } from '../lib/log';
+import { requireModerator } from '../lib/requireModerator';
+import { authFailToast } from '../lib/authFailToast';
 
 async function logMenuAction(kind: ModActivityKind, detail?: string): Promise<void> {
   try {
@@ -37,15 +39,14 @@ export const menu = new Hono();
 
 menu.post('/reload-config', async (c) => {
   await c.req.json<MenuItemRequest>();
-  let subName: string;
-  try {
-    subName = (await reddit.getCurrentSubreddit()).name;
-  } catch (err) {
-    log.error('cm/menu/reload-config', 'could not resolve current sub', { err });
-    return c.json({
-      showToast: 'Could not resolve current subreddit — try again.',
-    });
-  }
+  // App Review (2026-06-07): mod-only ACTIONS must verify mod status
+  // server-side, not rely on the menu's forUserType alone — this endpoint is
+  // HTTP-reachable by any custom-post viewer. requireModerator also resolves
+  // the sub, so it replaces the separate getCurrentSubreddit call (a 5xx/blip
+  // there now surfaces as the same transient-retry toast via authFailToast).
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'reload the config') });
+  const subName = auth.sub;
 
   const loaded = await loadFromWiki(subName);
   if (!loaded.ok) {
@@ -83,10 +84,13 @@ menu.post('/reload-config', async (c) => {
 menu.post('/recent-actions', async (c) => {
   try {
     await c.req.json<MenuItemRequest>();
+    // App Review (2026-06-07): gate post-creation behind a server-side mod
+    // check (defense-in-depth beyond the menu's forUserType).
+    const auth = await requireModerator();
+    if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'open the Observatory dashboard') });
     log.info('cm/menu/recent-actions', 'creating Observatory post');
-    const subreddit = await reddit.getCurrentSubreddit();
     const post = await reddit.submitCustomPost({
-      subredditName: subreddit.name,
+      subredditName: auth.sub,
       title: 'ContextMod Observatory',
       entry: 'default',
       textFallback: {
@@ -119,6 +123,8 @@ menu.post('/recent-actions', async (c) => {
 
 menu.post('/set-openai-key', async (c) => {
   await c.req.json<MenuItemRequest>();
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'set the OpenAI key') });
   return c.json({
     showForm: {
       name: 'setOpenaiKey',
@@ -143,6 +149,8 @@ menu.post('/set-openai-key', async (c) => {
 
 menu.post('/explain-rule', async (c) => {
   await c.req.json<MenuItemRequest>();
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'use AI rule explanations') });
   return c.json({
     showForm: {
       name: 'explainRule',
@@ -168,6 +176,8 @@ menu.post('/explain-rule', async (c) => {
 
 menu.post('/simulate-rule', async (c) => {
   await c.req.json<MenuItemRequest>();
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'simulate rules') });
   return c.json({
     showForm: {
       name: 'simulateRule',
@@ -193,6 +203,8 @@ menu.post('/simulate-rule', async (c) => {
 
 menu.post('/test-rules', async (c) => {
   const evt = await c.req.json<MenuItemRequest>();
+  const auth = await requireModerator();
+  if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'dry-run rules') });
   log.info('cm/menu/test-rules', 'opened', { targetId: evt.targetId });
   if (!evt.targetId) {
     return c.json({
