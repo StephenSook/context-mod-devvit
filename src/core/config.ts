@@ -65,6 +65,67 @@ function tryYaml(text: string): { ok: true; value: unknown } | { ok: false; erro
   }
 }
 
+/**
+ * Normalize an upstream-ContextMod-shaped config toward our internal shape
+ * BEFORE AJV validation. ContextMod's Schema/App.json names a few check fields
+ * differently or nests them where ours does not:
+ *   - `condition` (AND/OR) is our `combinator`.
+ *   - check-level `itemIs` / `authorIs` are our nested `filters.{itemIs,authorIs}`.
+ * A missing combinator defaults to AND (upstream marks it required, but a check
+ * is unambiguous without it). `enable`, `description`, and `kind` are accepted
+ * natively by the schema and honored in runCheck, so they pass through. Mutates
+ * `raw` in place. Genuinely unsupported fields are LEFT for AJV to reject with a
+ * clear "additional property" error rather than silently dropped — a moderator
+ * must know when a field is being ignored. 2026-06-09, SampleOfNone feedback.
+ */
+function normalizeUpstreamShape(raw: Record<string, unknown>): void {
+  const runs = raw.runs;
+  if (!Array.isArray(runs)) return;
+  for (const run of runs) {
+    if (!run || typeof run !== 'object') continue;
+    const checks = (run as { checks?: unknown }).checks;
+    if (!Array.isArray(checks)) continue;
+    for (const check of checks) {
+      if (!check || typeof check !== 'object') continue;
+      const c = check as Record<string, unknown>;
+
+      // upstream `condition` (AND/OR) -> our `combinator`. A recognized value is
+      // consumed (mapped + alias removed). An UNRECOGNIZED `condition` is LEFT in
+      // place so AJV rejects it with a clear "additional property" error rather
+      // than silently coercing the check to AND — a silent semantic flip (OR->AND)
+      // would change moderation behavior without telling the operator.
+      if (c.combinator != null) {
+        // native shape (or both supplied) — combinator wins; drop any alias
+        delete c.condition;
+      } else if (typeof c.condition === 'string') {
+        const cond = c.condition.toUpperCase();
+        if (cond === 'AND' || cond === 'OR' || cond === 'NOT') {
+          c.combinator = cond;
+          delete c.condition; // consumed
+        }
+        // unrecognized string: leave c.condition -> AJV surfaces the error
+      } else if (c.condition === undefined) {
+        // neither combinator nor condition supplied -> unambiguous default
+        c.combinator = 'AND';
+      }
+      // (condition present but non-string -> left in place -> AJV rejects)
+
+      // upstream check-level itemIs/authorIs -> our nested filters.{itemIs,authorIs}
+      if (c.itemIs != null || c.authorIs != null) {
+        const filters =
+          c.filters != null && typeof c.filters === 'object'
+            ? (c.filters as Record<string, unknown>)
+            : {};
+        if (c.itemIs != null && filters.itemIs == null) filters.itemIs = c.itemIs;
+        if (c.authorIs != null && filters.authorIs == null) filters.authorIs = c.authorIs;
+        c.filters = filters;
+        delete c.itemIs;
+        delete c.authorIs;
+      }
+    }
+  }
+}
+
 export function parseConfig(text: string): ParseResult {
   const detected = sniffFormat(text);
   // Try detected format first. On failure, try the other so leading-comment
@@ -115,6 +176,10 @@ export function parseConfig(text: string): ParseResult {
       }`,
     };
   }
+
+  // Map upstream ContextMod check shape onto ours before validating, so real
+  // ContextMod configs validate instead of tripping additionalProperties.
+  normalizeUpstreamShape(raw as Record<string, unknown>);
 
   if (!validate(raw)) {
     return { ok: false, errors: validate.errors ?? [] };

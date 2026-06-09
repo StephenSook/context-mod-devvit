@@ -62,6 +62,96 @@ describe('parseConfig — valid configs', () => {
   });
 });
 
+describe('parseConfig — upstream ContextMod shape (SampleOfNone 2026-06-09)', () => {
+  it('accepts a check using upstream condition, enable, description, kind', () => {
+    const json5 = `{
+      runs: [{
+        name: 'main',
+        checks: [{
+          name: 'block-scam',
+          condition: 'OR',
+          enable: true,
+          description: 'blocks scam titles',
+          kind: 'submission',
+          rules: [{ kind: 'regex', pattern: 'scam', target: 'title' }],
+          actions: [{ kind: 'remove' }],
+        }],
+      }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const check = r.config.runs[0]!.checks[0]!;
+      expect(check.combinator).toBe('OR'); // condition normalized -> combinator
+      expect(check.enable).toBe(true);
+      expect(check.kind).toBe('submission');
+      expect((check as { condition?: unknown }).condition).toBeUndefined();
+    }
+  });
+
+  it('defaults a missing combinator to AND', () => {
+    const json5 = `{
+      runs: [{ name: 'main', checks: [{
+        name: 'c', rules: [{ kind: 'regex', pattern: 'x' }],
+      }] }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.config.runs[0]!.checks[0]!.combinator).toBe('AND');
+  });
+
+  it('lifts check-level itemIs/authorIs into filters', () => {
+    const json5 = `{
+      runs: [{ name: 'main', checks: [{
+        name: 'c', combinator: 'AND',
+        itemIs: { over18: true },
+        authorIs: { isMod: false },
+        rules: [{ kind: 'regex', pattern: 'x' }],
+      }] }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const check = r.config.runs[0]!.checks[0]!;
+      expect(check.filters?.itemIs).toEqual({ over18: true });
+      expect(check.filters?.authorIs).toEqual({ isMod: false });
+      expect((check as { itemIs?: unknown }).itemIs).toBeUndefined();
+    }
+  });
+
+  it('still rejects a genuinely unsupported check field (clear error, not silent)', () => {
+    const json5 = `{
+      runs: [{ name: 'main', checks: [{
+        name: 'c', combinator: 'AND', rules: [{ kind: 'regex', pattern: 'x' }],
+        notARealField: true,
+      }] }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(false);
+  });
+
+  it('rejects an unrecognized condition value instead of silently defaulting to AND', () => {
+    const json5 = `{
+      runs: [{ name: 'main', checks: [{
+        name: 'c', condition: 'XOR', rules: [{ kind: 'regex', pattern: 'x' }],
+      }] }],
+    }`;
+    const r = parseConfig(json5);
+    // left in place -> AJV rejects it as an additional property (no silent AND coercion)
+    expect(r.ok).toBe(false);
+  });
+
+  it('rejects a non-string condition', () => {
+    const json5 = `{
+      runs: [{ name: 'main', checks: [{
+        name: 'c', condition: 5, rules: [{ kind: 'regex', pattern: 'x' }],
+      }] }],
+    }`;
+    const r = parseConfig(json5);
+    expect(r.ok).toBe(false);
+  });
+});
+
 describe('parseConfig — malformed configs', () => {
   it('returns ok=false on JSON5 parse error', () => {
     const r = parseConfig('this is not json');
@@ -89,9 +179,9 @@ describe('parseConfig — malformed configs', () => {
       runs: [{
         name: 'r',
         checks: [{
-          // missing combinator
+          // missing required \`rules\` (combinator is optional since 2026-06-09)
           name: 'c',
-          rules: [{ kind: 'regex', pattern: 'x' }],
+          combinator: 'AND',
         }],
       }],
     }`;

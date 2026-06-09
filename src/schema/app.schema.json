@@ -45,7 +45,7 @@
     "Check": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "combinator", "rules"],
+      "required": ["name", "rules"],
       "properties": {
         "name": {
           "type": "string",
@@ -53,7 +53,19 @@
         },
         "combinator": {
           "enum": ["AND", "OR", "NOT"],
-          "description": "How rules are combined: AND requires all rules to trigger, OR requires any, NOT requires none."
+          "description": "How rules are combined: AND requires all rules to trigger, OR requires any, NOT requires none. Optional; defaults to AND. Upstream ContextMod's `condition` is normalized to this at parse time."
+        },
+        "enable": {
+          "type": "boolean",
+          "description": "Upstream ContextMod compat: when false the check is skipped entirely. Defaults to true."
+        },
+        "description": {
+          "type": "string",
+          "description": "Upstream ContextMod compat: human-readable note. Accepted and ignored by the engine."
+        },
+        "kind": {
+          "enum": ["submission", "comment"],
+          "description": "Upstream ContextMod compat: scope this check to submissions or comments only. Omit to apply to both."
         },
         "rules": {
           "type": "array",

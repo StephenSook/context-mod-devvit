@@ -65,6 +65,43 @@ describe('runCheck', () => {
     expect(r.triggered).toBe(true);
   });
 
+  it('enable:false → skipped, never triggers even with a matching rule', async () => {
+    const r = await runCheck(
+      { name: 'c', combinator: 'OR', enable: false, rules: [ruleHit], actions: [removeAction] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+    expect(r.actions).toEqual([]);
+  });
+
+  it("kind:'comment' on a post item (t3_) → skipped", async () => {
+    const r = await runCheck(
+      { name: 'c', combinator: 'OR', kind: 'comment', rules: [ruleHit], actions: [removeAction] },
+      baseItem, // id 't3_a' → a post
+      baseAuthor
+    );
+    expect(r.triggered).toBe(false);
+  });
+
+  it("kind:'submission' on a post item (t3_) → runs normally", async () => {
+    const r = await runCheck(
+      { name: 'c', combinator: 'OR', kind: 'submission', rules: [ruleHit], actions: [removeAction] },
+      baseItem,
+      baseAuthor
+    );
+    expect(r.triggered).toBe(true);
+  });
+
+  it("kind:'comment' on a comment item (t1_) → runs normally", async () => {
+    const r = await runCheck(
+      { name: 'c', combinator: 'OR', kind: 'comment', rules: [ruleHit], actions: [removeAction] },
+      { ...baseItem, id: 't1_b' },
+      baseAuthor
+    );
+    expect(r.triggered).toBe(true);
+  });
+
   it('filter mismatch → not triggered, no rules run', async () => {
     const r = await runCheck(
       {
