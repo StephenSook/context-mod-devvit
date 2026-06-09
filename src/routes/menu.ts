@@ -144,9 +144,11 @@ menu.post('/recent-actions', async (c) => {
     // non-mods that open it hit the server-gated "Moderators only" screen.
     // Best-effort: a remove failure must not strand the mod without a link, so
     // we log and still return the dashboard. The post id is reused next time.
+    let removeFailed = false;
     try {
       await reddit.remove(post.id, false);
     } catch (removeErr) {
+      removeFailed = true;
       log.warn('cm/menu/recent-actions', 'post-create remove failed — post left visible', {
         postId: post.id,
         removeErr,
@@ -158,7 +160,11 @@ menu.post('/recent-actions', async (c) => {
     await logMenuAction('recent-actions');
     return c.json({
       navigateTo: `https://reddit.com${post.permalink}`,
-      showToast: 'Observatory dashboard ready',
+      // Surface the remove failure: a mod can't read server logs, and a
+      // dashboard post left in the public feed needs manual removal.
+      showToast: removeFailed
+        ? 'Dashboard ready, but it could not be hidden from the feed — remove the post manually.'
+        : 'Observatory dashboard ready',
     });
   } catch (err) {
     // Surface real error class to the mod so they have something actionable.

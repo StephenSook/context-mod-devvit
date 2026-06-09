@@ -193,6 +193,8 @@ describe('mod-menu handlers allow mods (happy path stays intact)', () => {
     expect(getPostById).toHaveBeenCalledWith('t3_existing');
     expect(submitCustomPost).not.toHaveBeenCalled();
     expect(removePost).not.toHaveBeenCalled();
+    // reuse must not rewrite the stored id (no double-write invariant)
+    expect(redisSet).not.toHaveBeenCalled();
     expect(json.navigateTo).toContain('/r/r_test/comments/old/');
   });
 
@@ -215,9 +217,11 @@ describe('mod-menu handlers allow mods (happy path stays intact)', () => {
     submitCustomPost.mockResolvedValue({ id: 't3_x', permalink: '/r/r_test/comments/x/' });
     removePost.mockRejectedValue(new Error('remove blew up'));
     const res = await postMenu('/recent-actions');
-    const json = (await res.json()) as { navigateTo?: string };
+    const json = (await res.json()) as { navigateTo?: string; showToast?: string };
     expect(redisSet).toHaveBeenCalledWith('cm:dash:r_test', 't3_x');
     expect(json.navigateTo).toContain('/r/r_test/comments/x/');
+    // the mod is told the post could not be hidden (can't read server logs)
+    expect(json.showToast).toMatch(/could not be hidden|remove the post manually/i);
   });
 
   it('set-openai-key: a mod sees the form', async () => {
