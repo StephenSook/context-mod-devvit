@@ -17,18 +17,26 @@ const requireModeratorMock = vi.fn();
 const loadFromWiki = vi.fn();
 const publish = vi.fn();
 const submitCustomPost = vi.fn();
+const getPostById = vi.fn();
+const removePost = vi.fn();
 const getCurrentSubreddit = vi.fn(async () => ({ name: 'r_test' }));
 const getCurrentUser = vi.fn(async () => ({ username: 'mod_alice' }));
 const logModActivity = vi.fn();
 const redisSet = vi.fn();
+const redisGet = vi.fn();
 
 vi.mock('@devvit/web/server', () => ({
   reddit: {
     getCurrentSubreddit: () => getCurrentSubreddit(),
     getCurrentUser: () => getCurrentUser(),
     submitCustomPost: (...a: unknown[]) => submitCustomPost(...a),
+    getPostById: (...a: unknown[]) => getPostById(...a),
+    remove: (...a: unknown[]) => removePost(...a),
   },
-  redis: { set: (...a: unknown[]) => redisSet(...a) },
+  redis: {
+    set: (...a: unknown[]) => redisSet(...a),
+    get: (...a: unknown[]) => redisGet(...a),
+  },
 }));
 vi.mock('../../src/lib/requireModerator', () => ({
   requireModerator: () => requireModeratorMock(),
@@ -44,7 +52,10 @@ vi.mock('../../src/state/modActivity', () => ({
   logModActivity: (...a: unknown[]) => logModActivity(...a),
 }));
 vi.mock('../../src/state/keys', () => ({
-  K: { cfgLastWikiRev: (sub: string) => `cm:cfg:lastwiki:${sub}` },
+  K: {
+    cfgLastWikiRev: (sub: string) => `cm:cfg:lastwiki:${sub}`,
+    dashboardPostId: (sub: string) => `cm:dash:${sub}`,
+  },
 }));
 
 import { menu } from '../../src/routes/menu';
@@ -80,6 +91,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   getCurrentSubreddit.mockResolvedValue({ name: 'r_test' });
   getCurrentUser.mockResolvedValue({ username: 'mod_alice' });
+  // Default: no stored dashboard post, so recent-actions takes the create path.
+  redisGet.mockResolvedValue(null);
 });
 
 describe('mod-menu handlers reject non-mods (App Review fix 2026-06-07)', () => {
@@ -150,6 +163,60 @@ describe('mod-menu handlers allow mods (happy path stays intact)', () => {
     expect(submitCustomPost).toHaveBeenCalledWith(
       expect.objectContaining({ subredditName: 'r_test', entry: 'default' })
     );
+    expect(json.navigateTo).toContain('/r/r_test/comments/x/');
+  });
+
+  it('recent-actions: a new post is created with a splash, removed from the feed, and its id stored', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValue(null);
+    submitCustomPost.mockResolvedValue({ id: 't3_new', permalink: '/r/r_test/comments/new/' });
+    await postMenu('/recent-actions');
+    // created with a splash cover (SampleOfNone 2026-06-09)
+    expect(submitCustomPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entry: 'default',
+        splash: expect.objectContaining({ appDisplayName: 'ContextMod Observatory' }),
+      })
+    );
+    // removed from the public feed immediately
+    expect(removePost).toHaveBeenCalledWith('t3_new', false);
+    // id persisted for reuse
+    expect(redisSet).toHaveBeenCalledWith('cm:dash:r_test', 't3_new');
+  });
+
+  it('recent-actions: reuses the existing dashboard post instead of creating a new one', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValue('t3_existing');
+    getPostById.mockResolvedValue({ id: 't3_existing', permalink: '/r/r_test/comments/old/' });
+    const res = await postMenu('/recent-actions');
+    const json = (await res.json()) as { navigateTo?: string };
+    expect(getPostById).toHaveBeenCalledWith('t3_existing');
+    expect(submitCustomPost).not.toHaveBeenCalled();
+    expect(removePost).not.toHaveBeenCalled();
+    expect(json.navigateTo).toContain('/r/r_test/comments/old/');
+  });
+
+  it('recent-actions: recreates the post when the stored id is gone', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValue('t3_gone');
+    getPostById.mockRejectedValue(new Error('404 not found'));
+    submitCustomPost.mockResolvedValue({ id: 't3_fresh', permalink: '/r/r_test/comments/fresh/' });
+    const res = await postMenu('/recent-actions');
+    const json = (await res.json()) as { navigateTo?: string };
+    expect(submitCustomPost).toHaveBeenCalledTimes(1);
+    expect(removePost).toHaveBeenCalledWith('t3_fresh', false);
+    expect(redisSet).toHaveBeenCalledWith('cm:dash:r_test', 't3_fresh');
+    expect(json.navigateTo).toContain('/r/r_test/comments/fresh/');
+  });
+
+  it('recent-actions: a remove failure still returns the dashboard link (best-effort)', async () => {
+    requireModeratorMock.mockResolvedValue(AS_MOD);
+    redisGet.mockResolvedValue(null);
+    submitCustomPost.mockResolvedValue({ id: 't3_x', permalink: '/r/r_test/comments/x/' });
+    removePost.mockRejectedValue(new Error('remove blew up'));
+    const res = await postMenu('/recent-actions');
+    const json = (await res.json()) as { navigateTo?: string };
+    expect(redisSet).toHaveBeenCalledWith('cm:dash:r_test', 't3_x');
     expect(json.navigateTo).toContain('/r/r_test/comments/x/');
   });
 

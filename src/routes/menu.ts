@@ -81,6 +81,24 @@ menu.post('/reload-config', async (c) => {
   }
 });
 
+// Splash cover shown on the Observatory post before the webview launches.
+// NB: SubmitCustomPostSplashOptions is @deprecated in @devvit 0.12.24
+// ("implement splash as an HTML inline entrypoint; support removed soon"),
+// but it is the only splash-customization API in this version and is still
+// functional. Migrate to an inline splash entrypoint with the 0.13.x bump.
+const OBSERVATORY_SPLASH = {
+  appDisplayName: 'ContextMod Observatory',
+  heading: 'ContextMod Observatory',
+  description: 'Moderator-only moderation telemetry and config editor.',
+  buttonLabel: 'Open dashboard',
+} as const;
+
+const OBSERVATORY_TEXT_FALLBACK = {
+  text:
+    'ContextMod Observatory — recent rule firings and mod-action telemetry. ' +
+    'Open this post in a Devvit-compatible Reddit client to view the dashboard.',
+} as const;
+
 menu.post('/recent-actions', async (c) => {
   try {
     await c.req.json<MenuItemRequest>();
@@ -88,22 +106,59 @@ menu.post('/recent-actions', async (c) => {
     // check (defense-in-depth beyond the menu's forUserType).
     const auth = await requireModerator();
     if (!auth.ok) return c.json({ showToast: authFailToast(auth.status, 'open the Observatory dashboard') });
+
+    // Reuse this sub's existing Observatory post instead of spawning a new one
+    // on every click (SampleOfNone 2026-06-09). If the stored post is gone
+    // (mod-deleted, etc.), fall through and recreate.
+    const existingId = await redis.get(K.dashboardPostId(auth.sub));
+    if (existingId) {
+      try {
+        const existing = await reddit.getPostById(existingId as `t3_${string}`);
+        if (existing?.permalink) {
+          log.info('cm/menu/recent-actions', 'reusing Observatory post', { postId: existing.id });
+          await logMenuAction('recent-actions');
+          return c.json({
+            navigateTo: `https://reddit.com${existing.permalink}`,
+            showToast: 'Opening the Observatory dashboard',
+          });
+        }
+      } catch (lookupErr) {
+        log.warn('cm/menu/recent-actions', 'stored dashboard post gone — recreating', {
+          existingId,
+          lookupErr,
+        });
+      }
+    }
+
     log.info('cm/menu/recent-actions', 'creating Observatory post');
     const post = await reddit.submitCustomPost({
       subredditName: auth.sub,
       title: 'ContextMod Observatory',
       entry: 'default',
-      textFallback: {
-        text:
-          'ContextMod Observatory — recent rule firings and mod-action telemetry. ' +
-          'Open this post in a Devvit-compatible Reddit client to view the dashboard.',
-      },
+      splash: OBSERVATORY_SPLASH,
+      textFallback: OBSERVATORY_TEXT_FALLBACK,
     });
+
+    // Immediately remove the post so the dashboard never sits in the public
+    // feed (SampleOfNone 2026-06-09). Mods reach it via the stored permalink;
+    // non-mods that open it hit the server-gated "Moderators only" screen.
+    // Best-effort: a remove failure must not strand the mod without a link, so
+    // we log and still return the dashboard. The post id is reused next time.
+    try {
+      await reddit.remove(post.id, false);
+    } catch (removeErr) {
+      log.warn('cm/menu/recent-actions', 'post-create remove failed — post left visible', {
+        postId: post.id,
+        removeErr,
+      });
+    }
+
+    await redis.set(K.dashboardPostId(auth.sub), post.id);
     log.info('cm/menu/recent-actions', 'post created', { postId: post.id });
     await logMenuAction('recent-actions');
     return c.json({
       navigateTo: `https://reddit.com${post.permalink}`,
-      showToast: 'Observatory dashboard pinned',
+      showToast: 'Observatory dashboard ready',
     });
   } catch (err) {
     // Surface real error class to the mod so they have something actionable.
