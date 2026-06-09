@@ -15,6 +15,7 @@
  */
 
 import type { Check, CheckResult, Item, Author } from '../shared/types';
+import { isPostId, isCommentId } from '../shared/types';
 import { passesFilters } from './filters';
 import { runRule } from './runRule';
 import { isRuleMuted } from '../state/muteSet';
@@ -26,6 +27,18 @@ export async function runCheck(
   sub?: string,
   runName?: string
 ): Promise<CheckResult> {
+  // Upstream ContextMod compat (2026-06-09): a disabled check never runs.
+  if (check.enable === false) {
+    return { triggered: false, checkName: check.name, actions: [] };
+  }
+  // Upstream ContextMod compat: `kind` scopes a check to one item type. A
+  // submission-only check skips comments and vice versa; absent = both.
+  if (
+    (check.kind === 'submission' && !isPostId(item.id)) ||
+    (check.kind === 'comment' && !isCommentId(item.id))
+  ) {
+    return { triggered: false, checkName: check.name, actions: [] };
+  }
   // AE CRITICAL #4: hard-mute short-circuit. Skip if (sub, runName) absent
   // (e.g. dry-run sibling path may not thread them) so we don't break the
   // existing call site contract.

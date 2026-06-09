@@ -358,6 +358,13 @@ export interface Check {
   actions?: Action[]; // fired when the check triggers; the run
   // collects these in order on a triggered run.
   postBehavior?: PostBehavior; // default 'next'
+  // Upstream ContextMod compatibility (2026-06-09, SampleOfNone feedback).
+  // `condition` (AND/OR) and check-level `itemIs`/`authorIs` are normalized
+  // into `combinator`/`filters` at parse time (see config.ts); these three
+  // pass through and are honored by the engine (runCheck.ts).
+  enable?: boolean; // when false the check is skipped entirely (default true)
+  description?: string; // cosmetic; accepted and ignored by the engine
+  kind?: 'submission' | 'comment'; // scope to one item type (default: both)
 }
 
 export interface Run {

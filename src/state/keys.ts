@@ -70,6 +70,12 @@ export const K = {
   // Stable pointer to the current install's installId so cron handlers (no
   // inbound request context) can resolve the install-scope state.
   currentInstallId: () => `cm:current-install-id`,
+
+  // Observatory dashboard custom-post id, per sub. The "View recent actions"
+  // menu reuses this post instead of spawning a new one on every click, and
+  // the post is removed from the public feed right after creation (it is only
+  // reachable by mods via its permalink). 2026-06-09, SampleOfNone feedback.
+  dashboardPostId: (sub: string = SUB_DEFAULT) => `cm:${sub}:dashboard:post-id`,
 };
 
 export const SUB_SENTINEL = SUB_DEFAULT;
