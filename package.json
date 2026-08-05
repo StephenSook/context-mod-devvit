@@ -53,7 +53,7 @@
     "@axe-core/playwright": "^4.11.3",
     "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
-    "@devvit/start": "0.12.24",
+    "@devvit/start": "0.13.0",
     "@devvit/web": "0.12.24",
     "@eslint/js": "9.39.2",
     "@playwright/test": "^1.60.0",
